@@ -1,0 +1,15 @@
+# Personal context files are local only. Do not upload these to GitHub.
+ben_project_summary.md
+ben-hq-codex-context.md
+
+# Codex/local workspace metadata
+.agents/
+
+# Environment and machine-local files
+.env
+.env.*
+!.env.example
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

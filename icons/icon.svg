@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ben HQ icon">
+  <rect width="512" height="512" rx="72" fill="#070a0f"/>
+  <path d="M86 116c48-58 139-72 207-32 61 36 106 32 135 11v304c-35 26-86 28-142 2-70-33-148-23-200 26V116z" fill="#132231"/>
+  <path d="M107 139c40-40 109-47 160-17 58 34 103 32 139 8v238c-40 21-86 17-136-7-60-29-122-23-163 16V139z" fill="#142f3f"/>
+  <circle cx="256" cy="256" r="112" fill="none" stroke="#7ce7ff" stroke-width="12" opacity=".78"/>
+  <circle cx="256" cy="256" r="72" fill="none" stroke="#79f2b5" stroke-width="10" opacity=".72"/>
+  <text x="256" y="279" text-anchor="middle" fill="#eef5ff" font-family="Arial, sans-serif" font-size="82" font-weight="700">BH</text>
+</svg>

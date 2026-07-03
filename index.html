@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#080b10" />
+    <title>Ben HQ</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="app-shell">
+      <aside class="side-rail" aria-label="Primary navigation">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">BH</div>
+          <div>
+            <p class="eyebrow">Personal command center</p>
+            <h1>Ben HQ</h1>
+          </div>
+        </div>
+        <nav class="nav-list" id="desktopNav"></nav>
+        <div class="rail-status">
+          <span class="status-dot"></span>
+          <div>
+            <strong>Local design mode</strong>
+            <span>Seeded data only</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-stage">
+        <header class="top-bar">
+          <button class="icon-button mobile-menu-button" id="mobileMenuButton" aria-label="Open navigation">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div>
+            <p class="eyebrow" id="todayLabel">Today</p>
+            <h2 id="pageTitle">Today</h2>
+          </div>
+          <div class="top-actions">
+            <button class="ghost-button" data-action="open-review">Weekly review</button>
+            <button class="primary-button" data-action="focus-capture">Quick capture</button>
+          </div>
+        </header>
+
+        <section class="mobile-nav-drawer" id="mobileNavDrawer" aria-label="Mobile navigation">
+          <nav class="nav-list" id="mobileNav"></nav>
+        </section>
+
+        <section class="capture-strip glass-panel" aria-label="Quick capture">
+          <div>
+            <p class="eyebrow">Capture first, organize later</p>
+            <h3>Drop in a task, note, reminder, or idea.</h3>
+          </div>
+          <form class="capture-form" id="captureForm">
+            <select id="captureType" aria-label="Capture type">
+              <option value="task">Task</option>
+              <option value="note">Note</option>
+              <option value="idea">Idea</option>
+              <option value="reminder">Reminder</option>
+              <option value="training">Training note</option>
+              <option value="pokemon">Pokemon GO goal</option>
+            </select>
+            <input id="captureInput" type="text" placeholder="Example: plan Saturday tempo route" autocomplete="off" />
+            <button class="primary-button" type="submit">Add</button>
+          </form>
+        </section>
+
+        <section class="page-view active" id="view-today" aria-labelledby="today-heading">
+          <div class="hero-grid">
+            <article class="hero-panel liquid-panel">
+              <div class="hero-copy">
+                <p class="eyebrow" id="heroDate">Friday, July 3</p>
+                <h2 id="today-heading">What matters today</h2>
+                <p class="summary-text">
+                  Keep today light and useful: protect weekend running, clear the highest-friction personal tasks,
+                  and save one good idea for later instead of letting it float away.
+                </p>
+                <div class="hero-stat-row" aria-label="Today signals">
+                  <span><strong>3</strong> priorities</span>
+                  <span><strong>3-4</strong> easy miles</span>
+                  <span><strong>5:45</strong> next event</span>
+                </div>
+              </div>
+              <div class="signal-orbit" aria-label="Daily readiness visualization">
+                <div class="orbit-ring ring-one"></div>
+                <div class="orbit-ring ring-two"></div>
+                <div class="orbit-core">
+                  <strong>73</strong>
+                  <span>daily signal</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="glass-panel priority-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Top three</p>
+                  <h3>Priorities</h3>
+                </div>
+                <span class="freshness">Manual</span>
+              </div>
+              <ul class="priority-list" id="priorityList"></ul>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="glass-card action-card">
+              <p class="eyebrow">Next event</p>
+              <h3>Family dinner window</h3>
+              <p>5:45 PM - Keep the evening low-friction and avoid stacking errands too late.</p>
+              <button class="text-button">View agenda</button>
+            </article>
+            <article class="glass-card action-card workout-card">
+              <p class="eyebrow">Today's workout</p>
+              <h3>Easy run or mobility reset</h3>
+              <p>3-4 easy miles if legs feel normal. If fatigue is high, do 20 minutes of mobility and core.</p>
+              <div class="button-row">
+                <button class="secondary-button">Complete</button>
+                <button class="text-button">Modify</button>
+              </div>
+            </article>
+            <article class="glass-card action-card">
+              <p class="eyebrow">Pokemon GO</p>
+              <h3>Check weekend event prep</h3>
+              <p>Confirm item space, raid passes, and a short play window with your son.</p>
+              <span class="source-badge">Mock data - not live</span>
+            </article>
+            <article class="glass-card action-card">
+              <p class="eyebrow">Learning queue</p>
+              <h3>One useful thing</h3>
+              <p>Save a short AI workflow idea for weekly review instead of opening a feed.</p>
+              <button class="text-button">Open queue</button>
+            </article>
+            <article class="glass-card action-card">
+              <p class="eyebrow">Finance pulse</p>
+              <h3>Read-only placeholder</h3>
+              <p>Later: show freshness-labeled YNAB-style summary, debt payoff, and upcoming large bills.</p>
+              <span class="source-badge">Not connected</span>
+            </article>
+            <article class="glass-card action-card">
+              <p class="eyebrow">Recommendation</p>
+              <h3>Do the smallest prep step</h3>
+              <p>Pack running gear tonight if Saturday quality work is still the plan.</p>
+              <span class="reason-pill">Because weekend running matters</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="page-view" id="view-tasks">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Personal operating layer</p>
+              <h2>Tasks Inbox</h2>
+            </div>
+            <span class="freshness">Local only</span>
+          </div>
+          <div class="two-column">
+            <article class="glass-panel">
+              <h3>Inbox</h3>
+              <ul class="task-list" id="taskInbox"></ul>
+            </article>
+            <article class="glass-panel">
+              <h3>Today focus</h3>
+              <ul class="task-list" id="todayTasks"></ul>
+            </article>
+          </div>
+        </section>
+
+        <section class="page-view" id="view-calendar">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Planning surface</p>
+              <h2>Calendar</h2>
+            </div>
+            <span class="freshness">Internal preview</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </section>
+
+        <section class="page-view" id="view-training">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Rules before AI</p>
+              <h2>Training Hub</h2>
+            </div>
+            <span class="freshness">Generated from constraints</span>
+          </div>
+          <div class="training-layout">
+            <article class="liquid-panel training-summary">
+              <p class="eyebrow">This week</p>
+              <h3>Sustainable base week</h3>
+              <p>
+                One quality run, one long run, two strength sessions, and enough easy work to preserve the base.
+              </p>
+              <div class="metric-row">
+                <span><strong>22</strong> miles</span>
+                <span><strong>2</strong> lifts</span>
+                <span><strong>1</strong> quality day</span>
+              </div>
+            </article>
+            <div class="workout-stack" id="workoutStack"></div>
+          </div>
+        </section>
+
+        <section class="page-view" id="view-pokemon">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Planning companion</p>
+              <h2>Pokemon GO</h2>
+            </div>
+            <span class="freshness">Mock events - not live</span>
+          </div>
+          <div class="dashboard-grid" id="pokemonCards"></div>
+        </section>
+
+        <section class="page-view" id="view-learn">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Curated, not infinite</p>
+              <h2>Learning Queue</h2>
+            </div>
+            <span class="freshness">Seeded</span>
+          </div>
+          <div class="dashboard-grid" id="learningCards"></div>
+        </section>
+
+        <section class="page-view" id="view-prompts">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Reusable AI workflows</p>
+              <h2>Prompt Library</h2>
+            </div>
+            <input class="search-input" id="promptSearch" type="search" placeholder="Search prompts" />
+          </div>
+          <div class="prompt-grid" id="promptGrid"></div>
+        </section>
+
+        <section class="page-view" id="view-library">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Personal knowledge</p>
+              <h2>Library</h2>
+            </div>
+            <span class="freshness">Notes preview</span>
+          </div>
+          <div class="two-column" id="libraryList"></div>
+        </section>
+
+        <section class="page-view" id="view-review">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Low-maintenance reset</p>
+              <h2>Weekly Review</h2>
+            </div>
+            <span class="freshness">12 minute flow</span>
+          </div>
+          <div class="review-board" id="reviewBoard"></div>
+        </section>
+
+        <section class="page-view" id="view-settings">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Private by default</p>
+              <h2>Settings</h2>
+            </div>
+            <span class="freshness">No integrations connected</span>
+          </div>
+          <div class="settings-grid">
+            <article class="glass-panel">
+              <h3>Design mode</h3>
+              <p>Liquid glass dark theme, compact cards, mobile-first command surface.</p>
+            </article>
+            <article class="glass-panel">
+              <h3>Privacy stance</h3>
+              <p>Personal-only app. No workplace files, email, or workplace applications are connected.</p>
+            </article>
+            <article class="glass-panel">
+              <h3>Future integrations</h3>
+              <p>Calendar, training, Pokemon GO sources, learning sources, and finance snapshots will need explicit setup.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

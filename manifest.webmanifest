@@ -1,0 +1,17 @@
+{
+  "name": "Ben HQ",
+  "short_name": "Ben HQ",
+  "description": "A private personal daily command center.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070a0f",
+  "theme_color": "#080b10",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
