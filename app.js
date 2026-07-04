@@ -16,16 +16,53 @@ const navItems = [
 const seed = {
   priorities: [
     {
-      title: "Protect the weekend training rhythm",
-      meta: "Keep Friday easy so Saturday speed and Sunday long run stay viable.",
+      title: "Play the Sobble window deliberately",
+      meta: "2-5 PM local: clear storage, run a Water Mega, and evolve for Hydro Cannon if you get a good candidate.",
     },
     {
-      title: "Process the personal task inbox",
-      meta: "Aim for five minutes, not a full productivity ceremony.",
+      title: "Keep training compatible with Community Day",
+      meta: "Do the easy run or mobility reset before the event so the afternoon stays open.",
     },
     {
-      title: "Pick one family-friendly outing option",
-      meta: "Have a low-friction plan ready before the weekend gets crowded.",
+      title: "Make the anniversary event low-friction",
+      meta: "Use the July 4-6 10th Anniversary Party as a light family play window, not an all-day grind.",
+    },
+  ],
+  todayAgenda: [
+    {
+      time: "Morning",
+      title: "Prep the day",
+      detail: "Easy run or mobility, charge phone, clear Pokemon storage, check Poke Balls.",
+      tone: "training",
+    },
+    {
+      time: "2-5 PM",
+      title: "Sobble Community Day",
+      detail: "Catch Sobble, prioritize shiny/high-IV checks, use Water Mega candy bonus, evolve for Hydro Cannon.",
+      tone: "pokemon",
+    },
+    {
+      time: "Jul 4-6",
+      title: "10th Anniversary Party",
+      detail: "Check event research and bonuses once, then keep the play plan family-friendly.",
+      tone: "ai",
+    },
+  ],
+  todayInsights: [
+    {
+      label: "Main window",
+      value: "2-5 PM",
+      detail: "Sobble Community Day",
+    },
+    {
+      label: "Event overlap",
+      value: "Jul 4-6",
+      detail: "10th Anniversary Party",
+    },
+    {
+      label: "Best prep",
+      value: "80+ slots",
+      detail: "Clear storage before leaving",
     },
   ],
   inbox: [
@@ -71,10 +108,22 @@ const seed = {
   ],
   pokemon: [
     {
+      title: "Sobble Community Day",
+      summary: "Today, 2-5 PM local time. Focus on shiny/high-IV Sobble, Water Mega candy bonus, and Hydro Cannon Inteleon.",
+      source: "Public event schedule - manual",
+      actions: ["Clear 80+ storage", "Mega Evolve a Water type", "Evolve best Drizzile to Inteleon"],
+    },
+    {
+      title: "10th Anniversary Party",
+      summary: "Runs July 4-6 and overlaps Community Day. Treat it as a light bonus layer: check research, claim easy rewards, avoid over-grinding.",
+      source: "Public event schedule - manual",
+      actions: ["Check event research", "Watch for bonus spawns", "Use one family play loop"],
+    },
+    {
       title: "Pokemon GO public data",
-      summary: "Live game-master style reference data from PoGoAPI will load here when reachable.",
+      summary: "Live reference counts from PoGoAPI are useful background, but event priorities should be explicit on Today.",
       source: "PoGoAPI - loading",
-      actions: ["Clear 30 Pokemon slots", "Pick one raid target", "Plan a son-friendly play window"],
+      actions: ["Refresh public counts", "Keep event plan source-labeled", "Update manual event cards"],
     },
     {
       title: "Raid resource discipline",
@@ -607,6 +656,49 @@ function renderPriorities() {
     .join("");
 }
 
+function renderTodayInsights() {
+  const target = document.getElementById("todayInsightGrid");
+  if (!target) return;
+  target.innerHTML = seed.todayInsights
+    .map(
+      (item) => `
+        <span>
+          <strong>${escapeHtml(item.value)}</strong>
+          ${escapeHtml(item.label)}
+          <em>${escapeHtml(item.detail)}</em>
+        </span>
+      `,
+    )
+    .join("");
+}
+
+function renderTodayAgenda() {
+  const target = document.getElementById("todayAgendaCard");
+  if (!target) return;
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
+      <p class="eyebrow">Today agenda</p>
+    </div>
+    <h3>High-signal plan</h3>
+    <div class="agenda-list">
+      ${seed.todayAgenda
+        .map(
+          (item) => `
+            <div class="agenda-item module-${item.tone}">
+              <span>${escapeHtml(item.time)}</span>
+              <div>
+                <strong>${escapeHtml(item.title)}</strong>
+                <p>${escapeHtml(item.detail)}</p>
+              </div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function renderTasks() {
   document.getElementById("taskInbox").innerHTML =
     capturedItems
@@ -694,17 +786,17 @@ function renderPokemon() {
         </article>
   `;
 
-  const planningCards = seed.pokemon.slice(1).map(
+  const planningCards = seed.pokemon.map(
     (card) => `
         <article class="glass-card action-card module-pokemon">
           <div class="module-header">
             <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
             <p class="eyebrow">${card.source}</p>
           </div>
-          <h3>${card.title}</h3>
-          <p>${card.summary}</p>
+          <h3>${escapeHtml(card.title)}</h3>
+          <p>${escapeHtml(card.summary)}</p>
           <ul class="check-list">
-            ${card.actions.map((action) => `<li class="check-item"><span class="task-check"></span><span>${action}</span></li>`).join("")}
+            ${card.actions.map((action) => `<li class="check-item"><span class="task-check"></span><span>${escapeHtml(action)}</span></li>`).join("")}
           </ul>
         </article>
       `,
@@ -1002,9 +1094,7 @@ function renderDailySignals() {
   document.getElementById("sourceSignal").textContent = sourceWord;
   document.getElementById("dailySignalScore").textContent = cappedScore;
   document.getElementById("dailyBrief").textContent =
-    sourceCount > 0
-      ? `Ben HQ has ${sourceCount} public signal${sourceCount === 1 ? "" : "s"} online. Keep the day useful: protect training, clear one personal loop, and use live data without overfitting the plan.`
-      : "Ben HQ is in local mode. Keep the day useful: protect training, clear one personal loop, and let live sources come back when they are reachable.";
+    "Today has a real afternoon anchor: Sobble Community Day from 2-5 PM, layered with the 10th Anniversary Party running July 4-6. Keep the morning light, prep storage and battery, then use the event window deliberately.";
 }
 
 function renderIntelligence() {
@@ -1609,6 +1699,8 @@ function init() {
   renderNav("desktopNav");
   renderNav("mobileNav");
   renderPriorities();
+  renderTodayInsights();
+  renderTodayAgenda();
   renderTasks();
   renderCalendar();
   renderWorkouts();

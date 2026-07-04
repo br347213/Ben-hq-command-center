@@ -695,6 +695,43 @@ h3 {
   font-size: 1.08rem;
 }
 
+.today-insight-grid,
+.mini-fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.today-insight-grid span,
+.mini-fact-grid span {
+  min-height: 64px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid rgba(224, 244, 255, 0.14);
+  border-radius: var(--radius);
+  color: var(--muted);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.026)),
+    rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.today-insight-grid strong,
+.mini-fact-grid strong {
+  color: var(--text);
+  font-family: var(--display-font);
+  font-size: 1rem;
+}
+
+.today-insight-grid em {
+  color: #c8d8e8;
+  font-size: 0.74rem;
+  font-style: normal;
+}
+
 .signal-orbit {
   position: relative;
   z-index: 1;
@@ -860,6 +897,44 @@ h3 {
 
 .action-card p:not(.eyebrow) {
   color: #c5d3e3;
+}
+
+.agenda-card {
+  min-height: 240px;
+}
+
+.agenda-list {
+  display: grid;
+  gap: 8px;
+}
+
+.agenda-item {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(224, 244, 255, 0.13);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.024)),
+    rgba(255, 255, 255, 0.03);
+}
+
+.agenda-item > span {
+  color: var(--cyan);
+  font-family: var(--display-font);
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.agenda-item p {
+  margin-top: 3px;
+  color: #c5d3e3;
+  font-size: 0.84rem;
+}
+
+.today-pokemon-card {
+  border-color: rgba(255, 209, 102, 0.42);
 }
 
 .weather-main {

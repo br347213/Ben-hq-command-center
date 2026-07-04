@@ -16,6 +16,7 @@ Ben HQ is a private personal daily command center. It should reduce recurring de
 ## Version One Modules
 
 - Today dashboard
+- At-a-glance daily briefing with useful details visible before navigating into modules
 - Live weather signal
 - Live Pokemon GO public data pulse
 - Live Lichess daily puzzle signal

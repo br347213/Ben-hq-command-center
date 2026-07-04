@@ -86,6 +86,7 @@
                   <span><strong id="weatherSignal">--</strong> weather</span>
                   <span><strong id="sourceSignal">0/3</strong> live sources</span>
                 </div>
+                <div class="today-insight-grid" id="todayInsightGrid" aria-label="Today quick facts"></div>
               </div>
               <div class="signal-orbit" aria-label="Daily readiness visualization">
                 <div class="orbit-ring ring-one"></div>
@@ -126,14 +127,13 @@
               </div>
               <span class="source-badge">Open-Meteo - loading</span>
             </article>
-            <article class="glass-card action-card">
+            <article class="glass-card action-card agenda-card" id="todayAgendaCard">
               <div class="module-header">
                 <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
-                <p class="eyebrow">Next event</p>
+                <p class="eyebrow">Today agenda</p>
               </div>
-              <h3>Family dinner window</h3>
-              <p>5:45 PM - Keep the evening low-friction and avoid stacking errands too late.</p>
-              <button class="text-button">View agenda</button>
+              <h3>Loading today plan</h3>
+              <p>Daily agenda details will appear here.</p>
             </article>
             <article class="glass-card action-card workout-card module-training">
               <div class="module-header">
@@ -147,13 +147,19 @@
                 <button class="text-button">Modify</button>
               </div>
             </article>
-            <article class="glass-card action-card module-pokemon">
+            <article class="glass-card action-card module-pokemon today-pokemon-card" id="todayPokemonCard">
               <div class="module-header">
                 <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
                 <p class="eyebrow">Pokemon GO</p>
               </div>
-              <h3>Check weekend event prep</h3>
-              <p>Use the live public data pulse in the Pokemon tab, then keep prep simple: space, passes, and one family-friendly play window.</p>
+              <h3>Sobble Community Day today</h3>
+              <p>2-5 PM local time. Clear storage, run a Water Mega, and evolve a strong Drizzile into Inteleon for Hydro Cannon.</p>
+              <div class="mini-fact-grid">
+                <span><strong>2x</strong> candy</span>
+                <span><strong>1/4</strong> hatch distance</span>
+                <span><strong>Jul 4-6</strong> anniversary</span>
+              </div>
+              <span class="source-badge">Public event schedule - checked Jul 4</span>
               <button class="text-button" data-view="pokemon">Open Pokemon</button>
             </article>
             <article class="glass-card action-card module-chess">

@@ -41,6 +41,7 @@
 
 ## Pokemon GO
 
+- Replace manual July 4 event seed with a stable public event feed when a trustworthy source is confirmed.
 - Add manual event entry.
 - Add event freshness and source fields.
 - Expand PoGoAPI public data cards beyond counts when stable and useful.

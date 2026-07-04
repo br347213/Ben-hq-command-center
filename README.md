@@ -15,6 +15,7 @@ The current machine path does not have Node or npm available, so the first build
 - Liquid glass dark visual direction
 - Responsive desktop layout and mobile navigation
 - Today-first dashboard
+- At-a-glance daily briefing with explicit event windows, agenda, and action facts
 - Live Arden weather card using Open-Meteo
 - Dynamic daily signal, source health, and recommendation card
 - Sources view for integration status and privacy guardrails
@@ -27,6 +28,7 @@ The current machine path does not have Node or npm available, so the first build
 - Calendar preview
 - Training hub preview
 - Pokemon GO public data pulse through PoGoAPI
+- Manual, source-labeled Pokemon GO event brief for Sobble Community Day and the 10th Anniversary Party
 - Chess module with an interactive puzzle board and Lichess daily puzzle metadata
 - Learning queue
 - Prompt library with search
