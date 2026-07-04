@@ -364,6 +364,7 @@ const storageKeys = {
   contextImports: "ben-hq-context-imports-v1",
   privateDaily: "ben-hq-private-daily-v1",
   bridgeSettings: "ben-hq-bridge-settings-v1",
+  autoSync: "ben-hq-auto-sync-v1",
 };
 const memoryTypes = new Set(["note", "idea", "training", "pokemon", "chess"]);
 const contextSourceTypes = {
@@ -385,6 +386,7 @@ let completedTasks = loadStoredSet(storageKeys.completed);
 let contextImports = loadStoredContextImports();
 let privateDaily = loadPrivateDaily();
 let bridgeSettings = loadBridgeSettings();
+let autoSyncSettings = loadAutoSyncSettings();
 let selectedChessSquare = null;
 let chessSolved = false;
 let weatherState = {
@@ -793,6 +795,16 @@ function loadBridgeSettings() {
   };
 }
 
+function loadAutoSyncSettings() {
+  const stored = readJson(storageKeys.autoSync, {});
+  return {
+    key: typeof stored.key === "string" ? stored.key : "",
+    lastSyncAt: typeof stored.lastSyncAt === "string" ? stored.lastSyncAt : "",
+    status: typeof stored.status === "string" ? stored.status : "not configured",
+    error: typeof stored.error === "string" ? stored.error : "",
+  };
+}
+
 function saveCapturedItems() {
   writeJson(storageKeys.captures, capturedItems);
 }
@@ -811,6 +823,10 @@ function savePrivateDaily() {
 
 function saveBridgeSettings() {
   writeJson(storageKeys.bridgeSettings, bridgeSettings);
+}
+
+function saveAutoSyncSettings() {
+  writeJson(storageKeys.autoSync, autoSyncSettings);
 }
 
 function removeStoredItem(key) {
@@ -962,6 +978,101 @@ function decodePacketHashValue(value) {
   return new TextDecoder().decode(bytes);
 }
 
+function decodeBase64UrlBytes(value) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+async function deriveAutoSyncCryptoKey(secret, saltBytes) {
+  const baseKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 120000,
+      hash: "SHA-256",
+    },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"],
+  );
+}
+
+async function deriveAutoSyncBits(secret, saltBytes, bits = 512) {
+  const baseKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveBits"]);
+  return crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 120000,
+      hash: "SHA-256",
+    },
+    baseKey,
+    bits,
+  );
+}
+
+function concatBytes(...arrays) {
+  const total = arrays.reduce((sum, array) => sum + array.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  arrays.forEach((array) => {
+    output.set(array, offset);
+    offset += array.length;
+  });
+  return output;
+}
+
+async function decryptAutoSyncEnvelope(envelope) {
+  if (!envelope || !["AES-GCM-256-PBKDF2-SHA256", "AES-CBC-256-PBKDF2-HMACSHA256"].includes(envelope.algorithm)) {
+    throw new Error("Unsupported encrypted packet");
+  }
+  const salt = decodeBase64UrlBytes(envelope.salt);
+  const iv = decodeBase64UrlBytes(envelope.iv);
+  const ciphertext = decodeBase64UrlBytes(envelope.ciphertext);
+
+  if (envelope.algorithm === "AES-CBC-256-PBKDF2-HMACSHA256") {
+    const expectedMac = decodeBase64UrlBytes(envelope.mac);
+    const bits = new Uint8Array(await deriveAutoSyncBits(autoSyncSettings.key, salt));
+    const encKeyBytes = bits.slice(0, 32);
+    const macKeyBytes = bits.slice(32, 64);
+    const macKey = await crypto.subtle.importKey("raw", macKeyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const verified = await crypto.subtle.verify("HMAC", macKey, expectedMac, concatBytes(iv, ciphertext));
+    if (!verified) throw new Error("Encrypted packet signature mismatch");
+    const encKey = await crypto.subtle.importKey("raw", encKeyBytes, "AES-CBC", false, ["decrypt"]);
+    const plainBuffer = await crypto.subtle.decrypt({ name: "AES-CBC", iv }, encKey, ciphertext);
+    return JSON.parse(new TextDecoder().decode(plainBuffer));
+  }
+
+  const tag = decodeBase64UrlBytes(envelope.tag);
+  const encrypted = concatBytes(ciphertext, tag);
+  const key = await deriveAutoSyncCryptoKey(autoSyncSettings.key, salt);
+  const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encrypted);
+  return JSON.parse(new TextDecoder().decode(plainBuffer));
+}
+
+function importSyncKeyFromLocationHash() {
+  const hash = window.location.hash ? window.location.hash.slice(1) : "";
+  if (!hash) return false;
+  const params = new URLSearchParams(hash);
+  const syncKey = params.get("syncKey") || params.get("auto-sync-key");
+  if (!syncKey) return false;
+  autoSyncSettings = {
+    ...autoSyncSettings,
+    key: syncKey,
+    status: "configured",
+    error: "",
+  };
+  saveAutoSyncSettings();
+  if (window.history?.replaceState) {
+    window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+  }
+  return true;
+}
+
 function importPacketFromLocationHash() {
   const hash = window.location.hash ? window.location.hash.slice(1) : "";
   if (!hash) return false;
@@ -978,6 +1089,48 @@ function importPacketFromLocationHash() {
     return loaded;
   } catch (error) {
     alert("That Ben HQ packet link could not be read.");
+    return false;
+  }
+}
+
+function autoSyncPacketUrl() {
+  return new URL("private/ben-hq-latest.enc.json", window.location.href).toString();
+}
+
+async function refreshEncryptedAutoSync() {
+  if (!autoSyncSettings.key) {
+    autoSyncSettings.status = "not configured";
+    saveAutoSyncSettings();
+    renderBridgePanel();
+    return false;
+  }
+
+  sourceHealthState.private = "loading";
+  autoSyncSettings.status = "checking";
+  autoSyncSettings.error = "";
+  saveAutoSyncSettings();
+  renderBridgePanel();
+  renderIntelligence();
+
+  try {
+    const response = await fetch(`${autoSyncPacketUrl()}?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Encrypted packet request failed: ${response.status}`);
+    const envelope = await response.json();
+    const packet = await decryptAutoSyncEnvelope(envelope);
+    if (!applyPrivateDailyPacket(packet, "auto")) throw new Error("Packet did not contain usable Ben HQ data");
+    autoSyncSettings.status = "live";
+    autoSyncSettings.lastSyncAt = new Date().toISOString();
+    autoSyncSettings.error = "";
+    saveAutoSyncSettings();
+    renderBridgePanel();
+    return true;
+  } catch (error) {
+    sourceHealthState.private = hasPrivateDailyData() ? "live" : "offline";
+    autoSyncSettings.status = "error";
+    autoSyncSettings.error = "Auto Sync could not decrypt the latest packet yet.";
+    saveAutoSyncSettings();
+    renderBridgePanel();
+    renderIntelligence();
     return false;
   }
 }
@@ -1586,7 +1739,7 @@ function renderSourceHealth() {
     { label: "Weather", state: sourceHealthState.weather },
     { label: "Pokemon GO", state: sourceHealthState.pokemon },
     { label: "Lichess", state: sourceHealthState.lichess },
-    { label: "Private bridge", state: sourceHealthState.private },
+    { label: "Auto Sync", state: sourceHealthState.private },
     { label: "Local memory", state: sourceHealthState.local },
   ];
 
@@ -1596,7 +1749,7 @@ function renderSourceHealth() {
       <p class="eyebrow">Source health</p>
     </div>
     <h3>${liveSourceCount()} of 4 approved signals live</h3>
-    <p>Public signals refresh in-browser. Private sources sync through your saved bridge or an imported daily packet.</p>
+    <p>Public signals refresh in-browser. Private summaries load from encrypted Auto Sync packets when configured.</p>
     <div class="source-status-list">
       ${statuses
         .map(
@@ -1800,7 +1953,7 @@ function renderBridgePanel() {
 
   target.innerHTML = `
     <div class="bridge-status-head">
-      <strong>${bridgeSettings.url ? "Bridge saved" : "No bridge saved"}</strong>
+      <strong>${autoSyncSettings.key ? "Auto Sync key saved" : "Auto Sync not set up"}</strong>
       <span class="source-status" data-state="${sourceHealthState.private}">${sourceStatusLabel(sourceHealthState.private)}</span>
     </div>
     <div class="local-data-metrics">
@@ -1809,7 +1962,15 @@ function renderBridgePanel() {
       <span><strong>${privateDaily.mail.needsReply.length}</strong> replies</span>
       <span><strong>${privateDaily.recommendations.length}</strong> recs</span>
     </div>
-    <p class="item-meta">${hasPacket ? escapeHtml(privateDailyFreshness()) : "Import a daily packet or save a bridge URL to make private signals live."}</p>
+    <p class="item-meta">${
+      hasPacket
+        ? escapeHtml(privateDailyFreshness())
+        : autoSyncSettings.key
+          ? "Auto Sync is configured. Waiting for the first encrypted packet."
+          : "Open the one-time setup link to enable automatic encrypted updates."
+    }</p>
+    ${autoSyncSettings.lastSyncAt ? `<p class="item-meta">Auto Sync checked ${escapeHtml(new Date(autoSyncSettings.lastSyncAt).toLocaleString())}</p>` : ""}
+    ${autoSyncSettings.error ? `<p class="danger-note">${escapeHtml(autoSyncSettings.error)}</p>` : ""}
     ${bridgeSettings.error ? `<p class="danger-note">${escapeHtml(bridgeSettings.error)}</p>` : ""}
   `;
 }
@@ -2174,16 +2335,30 @@ function clearPrivateDaily() {
   refreshLocalSurfaces();
 }
 
+function clearAutoSync() {
+  autoSyncSettings = {
+    key: "",
+    lastSyncAt: "",
+    status: "not configured",
+    error: "",
+  };
+  removeStoredItem(storageKeys.autoSync);
+  renderBridgePanel();
+  renderIntelligence();
+}
+
 function resetLocalData() {
   if (!confirm("Reset local Ben HQ captures and checkmarks on this device?")) return;
   removeStoredItem(storageKeys.captures);
   removeStoredItem(storageKeys.completed);
   removeStoredItem(storageKeys.contextImports);
   removeStoredItem(storageKeys.privateDaily);
+  removeStoredItem(storageKeys.autoSync);
   capturedItems = [...seed.inbox];
   completedTasks = new Set();
   contextImports = [];
   privateDaily = emptyPrivateDaily();
+  autoSyncSettings = loadAutoSyncSettings();
   sourceHealthState.private = "offline";
   refreshLocalSurfaces();
 }
@@ -2474,6 +2649,9 @@ function wireEvents() {
     if (actionButton?.dataset.action === "clear-private-bridge") {
       clearPrivateBridge();
     }
+    if (actionButton?.dataset.action === "clear-auto-sync") {
+      clearAutoSync();
+    }
     if (actionButton?.dataset.action === "clear-private-daily") {
       clearPrivateDaily();
     }
@@ -2625,12 +2803,14 @@ function init() {
   renderLichessDaily();
   renderChessBoard();
   formatToday();
+  const importedSyncKey = importSyncKeyFromLocationHash();
   const importedFromLink = importPacketFromLocationHash();
   renderIntelligence();
   wireEvents();
-  if (importedFromLink) {
+  if (importedSyncKey || importedFromLink) {
     navigate("today");
   }
+  refreshEncryptedAutoSync();
   refreshWeather();
   refreshLichessDaily();
   refreshPokemonLiveData();
