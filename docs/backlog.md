@@ -16,7 +16,7 @@
 - Build on the current source health card and dynamic daily signal.
 - Add source records with name, freshness, permission level, last refresh, and confidence.
 - Add a personal-only allowlist before connecting calendar, email, files, or app accounts.
-- Build a review queue before imported context can influence durable memory.
+- Expand the current manual source intake and review queue before imported context can influence durable memory.
 - Add connector health states: connected, loading, offline, permission needed, and paused.
 - Keep visible local export, import, and reset controls for browser-stored personal context.
 - Exclude direct finance account connectors unless the scope changes later.
@@ -69,8 +69,8 @@
 
 ## Living Knowledge Vault
 
-- Add file upload and source labeling.
-- Expand current local data export/import into a fuller living-vault workflow.
+- Add file upload and source labeling beyond the current paste-based intake lane.
+- Expand current local data export/import and review queue into a fuller living-vault workflow.
 - Add personal context review and approval flow.
 - Add editable memory cards.
 - Add source-backed recommendation explanations.

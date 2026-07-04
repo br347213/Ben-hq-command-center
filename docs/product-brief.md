@@ -39,6 +39,7 @@ Near-term product ideas:
 
 - Public, account-free adapters first, starting with Open-Meteo weather for daily planning.
 - Public no-secret adapters for PoGoAPI and Lichess where browser CORS allows.
+- Manual private-source intake that keeps pasted summaries in local review before promotion.
 - File and note uploads with source labels.
 - Local browser export/import/reset as the first private-device memory control.
 - Personal context cards that can be edited, archived, or promoted into durable memory.

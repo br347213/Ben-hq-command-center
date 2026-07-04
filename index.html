@@ -233,6 +233,36 @@
               </div>
             </article>
             <div class="source-grid" id="sourceGrid"></div>
+            <article class="glass-panel context-intake-panel">
+              <div class="module-header">
+                <span class="module-icon ai-icon" aria-hidden="true">In</span>
+                <p class="eyebrow">Manual private intake</p>
+              </div>
+              <h3>Paste personal context for review.</h3>
+              <p class="summary-text">Use this for summaries from Gmail, Calendar, ChatGPT, Apple Notes, Garmin, Apple Health, or anything else personal. It stays in this browser until you export, promote, archive, or reset it.</p>
+              <form class="context-intake-form" id="contextIntakeForm">
+                <div class="context-input-row">
+                  <select id="contextSource" aria-label="Context source">
+                    <option value="ChatGPT">ChatGPT summary</option>
+                    <option value="Gmail">Gmail summary</option>
+                    <option value="Calendar">Calendar note</option>
+                    <option value="Apple Notes">Apple Notes</option>
+                    <option value="Garmin">Garmin summary</option>
+                    <option value="Apple Health">Apple Health summary</option>
+                    <option value="Pokemon GO">Pokemon GO note</option>
+                    <option value="Chess">Chess note</option>
+                    <option value="Personal">General personal note</option>
+                  </select>
+                  <input id="contextTitle" type="text" placeholder="Optional title" />
+                </div>
+                <textarea id="contextBody" rows="5" placeholder="Paste a personal summary, exported note, workout recap, calendar context, or idea to review later."></textarea>
+                <div class="settings-actions">
+                  <button class="secondary-button" type="submit">Save for review</button>
+                  <button class="text-button" data-action="clear-context-intake" type="button">Clear</button>
+                </div>
+              </form>
+              <div class="context-review-list" id="contextReviewList" aria-live="polite"></div>
+            </article>
           </div>
         </section>
 

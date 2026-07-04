@@ -18,6 +18,7 @@ The current machine path does not have Node or npm available, so the first build
 - Live Arden weather card using Open-Meteo
 - Dynamic daily signal, source health, and recommendation card
 - Sources view for integration status and privacy guardrails
+- Manual private context intake with local review before memory or task promotion
 - Quick capture with local in-memory task insertion
 - Local-device persistence for captures and task checkmarks
 - Local data export, import, and reset controls for browser-stored context
@@ -93,6 +94,7 @@ src/
 
 - Seed data remains in the prototype, but captures and task checkmarks persist in this browser's local storage.
 - Local browser data can be exported from Settings before clearing browser data or switching devices.
+- Private-source context can be pasted into Sources for local review without adding account tokens to GitHub Pages.
 - Weather depends on the public Open-Meteo API being reachable from the browser.
 - Pokemon GO public counts depend on PoGoAPI being reachable from the browser.
 - Lichess daily puzzle metadata depends on the public Lichess API being reachable from the browser.

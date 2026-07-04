@@ -974,7 +974,7 @@ h3 {
 
 .local-data-metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
   gap: 8px;
   margin-top: 14px;
 }
@@ -1100,6 +1100,106 @@ h3 {
 
 .source-grid .module-icon {
   width: 44px;
+}
+
+.context-intake-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 16px;
+}
+
+.context-intake-form {
+  display: grid;
+  gap: 10px;
+}
+
+.context-input-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.context-intake-form select,
+.context-intake-form input,
+.context-intake-form textarea {
+  width: 100%;
+  border: 1px solid rgba(224, 244, 255, 0.16);
+  border-radius: var(--radius);
+  color: var(--text);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.context-intake-form select,
+.context-intake-form input {
+  min-height: 46px;
+  padding: 0 12px;
+}
+
+.context-intake-form textarea {
+  min-height: 128px;
+  resize: vertical;
+  padding: 12px;
+  line-height: 1.5;
+}
+
+.context-intake-form select:focus,
+.context-intake-form input:focus,
+.context-intake-form textarea:focus {
+  border-color: rgba(124, 231, 255, 0.42);
+  box-shadow:
+    0 0 0 3px rgba(124, 231, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.context-review-list {
+  display: grid;
+  gap: 10px;
+}
+
+.context-review-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid rgba(224, 244, 255, 0.13);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.03);
+}
+
+.context-review-item[data-status="promoted"],
+.context-review-item[data-status="converted"] {
+  border-color: rgba(121, 242, 181, 0.25);
+}
+
+.context-review-title,
+.context-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.context-review-title span {
+  padding: 4px 8px;
+  border: 1px solid rgba(224, 244, 255, 0.14);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.context-review-item p:not(.item-meta) {
+  margin-top: 6px;
+  color: #c8d8e8;
+  font-size: 0.9rem;
 }
 
 .two-column,
@@ -1430,6 +1530,8 @@ h3 {
   .capture-strip,
   .hero-grid,
   .hero-panel,
+  .context-input-row,
+  .context-review-item,
   .two-column,
   .training-layout,
   .source-layout,
@@ -1497,6 +1599,7 @@ h3 {
   .prompt-grid,
   .source-grid,
   .settings-grid,
+  .local-data-metrics,
   .review-board {
     grid-template-columns: 1fr;
   }

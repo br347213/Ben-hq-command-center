@@ -269,12 +269,25 @@ const seed = {
 const storageKeys = {
   captures: "ben-hq-captures-v1",
   completed: "ben-hq-completed-tasks-v1",
+  contextImports: "ben-hq-context-imports-v1",
 };
 const memoryTypes = new Set(["note", "idea", "training", "pokemon", "chess"]);
+const contextSourceTypes = {
+  "Apple Health": "training",
+  "Apple Notes": "note",
+  Calendar: "note",
+  ChatGPT: "idea",
+  Chess: "chess",
+  Garmin: "training",
+  Gmail: "note",
+  Personal: "note",
+  "Pokemon GO": "pokemon",
+};
 
 let currentView = "today";
 let capturedItems = loadStoredItems();
 let completedTasks = loadStoredSet(storageKeys.completed);
+let contextImports = loadStoredContextImports();
 let selectedChessSquare = null;
 let chessSolved = false;
 let weatherState = {
@@ -450,12 +463,21 @@ function loadStoredSet(key) {
   return new Set(Array.isArray(stored) ? stored : []);
 }
 
+function loadStoredContextImports() {
+  const stored = readJson(storageKeys.contextImports, []);
+  return Array.isArray(stored) ? stored.map(normalizeContextImport).filter(Boolean) : [];
+}
+
 function saveCapturedItems() {
   writeJson(storageKeys.captures, capturedItems);
 }
 
 function saveCompletedTasks() {
   writeJson(storageKeys.completed, [...completedTasks]);
+}
+
+function saveContextImports() {
+  writeJson(storageKeys.contextImports, contextImports);
 }
 
 function removeStoredItem(key) {
@@ -476,11 +498,60 @@ function normalizeCapturedItem(item) {
   if (!title) return null;
   const type = memoryTypes.has(item.type) || item.type === "task" ? item.type : "note";
   const meta = typeof item.meta === "string" && item.meta.trim() ? item.meta : "Imported";
-  return {
+  const normalized = {
     title,
     type,
     meta,
   };
+  if (typeof item.body === "string" && item.body.trim()) normalized.body = item.body.trim();
+  if (typeof item.source === "string" && item.source.trim()) normalized.source = item.source.trim();
+  return normalized;
+}
+
+function normalizeContextImport(item) {
+  if (!item || typeof item.body !== "string") return null;
+  const body = item.body.trim();
+  if (!body) return null;
+  const source = typeof item.source === "string" && item.source.trim() ? item.source.trim() : "Personal";
+  return {
+    id: typeof item.id === "string" && item.id ? item.id : makeContextId(),
+    source,
+    title: typeof item.title === "string" && item.title.trim() ? item.title.trim() : deriveContextTitle(body, source),
+    body,
+    status: ["review", "promoted", "converted", "archived"].includes(item.status) ? item.status : "review",
+    createdAt: typeof item.createdAt === "string" && item.createdAt ? item.createdAt : new Date().toISOString(),
+  };
+}
+
+function makeContextId() {
+  return `ctx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function deriveContextTitle(body, source) {
+  const firstLine = body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean);
+  const base = firstLine || `${source} note`;
+  return base.length > 72 ? `${base.slice(0, 69)}...` : base;
+}
+
+function contextTypeForSource(source) {
+  return contextSourceTypes[source] || "note";
+}
+
+function pendingContextImports() {
+  return contextImports.filter((item) => item.status === "review");
+}
+
+function formatContextDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "recently";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function contextPreview(body) {
+  return body.length > 180 ? `${body.slice(0, 177)}...` : body;
 }
 
 function localDataSnapshot() {
@@ -490,12 +561,14 @@ function localDataSnapshot() {
     exportedAt: new Date().toISOString(),
     captures: capturedItems,
     completedTasks: [...completedTasks],
+    contextImports,
   };
 }
 
 function refreshLocalSurfaces() {
   renderTasks();
   renderLibrary();
+  renderContextReview();
   renderLocalDataSettings();
   renderIntelligence();
 }
@@ -707,7 +780,7 @@ function renderLibrary() {
           <p class="eyebrow">Captured ${escapeHtml(meta.toLowerCase())}</p>
         </div>
         <h3>${escapeHtml(item.title)}</h3>
-        <p class="summary-text">Local ${escapeHtml(type)} saved from quick capture.</p>
+        <p class="summary-text">${escapeHtml(item.body || `Local ${type} saved from quick capture.`)}</p>
       </article>
     `;
     },
@@ -716,6 +789,45 @@ function renderLibrary() {
   document.getElementById("libraryList").innerHTML = [...localCards, ...seedCards].join("");
   document.getElementById("libraryFreshness").textContent =
     localItems.length > 0 ? `${localItems.length} local memory ${localItems.length === 1 ? "card" : "cards"}` : "Local vault ready";
+}
+
+function renderContextReview() {
+  const target = document.getElementById("contextReviewList");
+  if (!target) return;
+
+  const visibleImports = contextImports.filter((item) => item.status !== "archived").slice(0, 8);
+  if (!visibleImports.length) {
+    target.innerHTML = `<div class="empty-state">No private context waiting for review.</div>`;
+    return;
+  }
+
+  target.innerHTML = visibleImports
+    .map(
+      (item) => `
+        <div class="context-review-item" data-status="${item.status}">
+          <div>
+            <div class="context-review-title">
+              <strong>${escapeHtml(item.title)}</strong>
+              <span>${escapeHtml(item.status)}</span>
+            </div>
+            <p class="item-meta">${escapeHtml(item.source)} - ${formatContextDate(item.createdAt)}</p>
+            <p>${escapeHtml(contextPreview(item.body))}</p>
+          </div>
+          <div class="context-actions">
+            ${
+              item.status === "review"
+                ? `
+                  <button class="text-button" data-action="promote-context" data-context-id="${escapeHtml(item.id)}" type="button">Memory</button>
+                  <button class="text-button" data-action="task-context" data-context-id="${escapeHtml(item.id)}" type="button">Task</button>
+                `
+                : `<span class="source-badge">${item.status === "promoted" ? "In library" : "In tasks"}</span>`
+            }
+            <button class="text-button" data-action="archive-context" data-context-id="${escapeHtml(item.id)}" type="button">Archive</button>
+          </div>
+        </div>
+      `,
+    )
+    .join("");
 }
 
 function renderReview() {
@@ -842,6 +954,14 @@ function buildRecommendation() {
     };
   }
 
+  if (pendingContextImports().length > 0) {
+    return {
+      title: "Review imported context",
+      body: "There is personal context waiting in Sources. Promote one item into memory or turn it into a task before adding more.",
+      reason: `${pendingContextImports().length} private import ${pendingContextImports().length === 1 ? "item" : "items"} waiting`,
+    };
+  }
+
   if (lichessState.status === "live") {
     return {
       title: "Take the chess rep",
@@ -919,12 +1039,14 @@ function renderLocalDataSettings() {
   if (!target) return;
   const memoryCount = localMemoryItems().length;
   const completedCount = completedTasks.size;
+  const reviewCount = pendingContextImports().length;
   target.innerHTML = `
     <h3>Local data</h3>
     <p>Captures and checkmarks stay in this browser only. Export before clearing browser data or switching devices.</p>
     <div class="local-data-metrics">
       <span><strong>${capturedItems.length}</strong> captures</span>
       <span><strong>${memoryCount}</strong> memory</span>
+      <span><strong>${reviewCount}</strong> review</span>
       <span><strong>${completedCount}</strong> done</span>
     </div>
     <div class="settings-actions">
@@ -934,6 +1056,74 @@ function renderLocalDataSettings() {
     </div>
     <input class="hidden-file-input" id="localImportInput" type="file" accept="application/json" />
   `;
+}
+
+function addContextImport(source, title, body) {
+  const normalized = normalizeContextImport({
+    id: makeContextId(),
+    source,
+    title,
+    body,
+    status: "review",
+    createdAt: new Date().toISOString(),
+  });
+  if (!normalized) return false;
+  contextImports = [normalized, ...contextImports];
+  saveContextImports();
+  refreshLocalSurfaces();
+  return true;
+}
+
+function findContextImport(id) {
+  return contextImports.find((item) => item.id === id);
+}
+
+function promoteContextImport(id) {
+  const item = findContextImport(id);
+  if (!item || item.status !== "review") return;
+  capturedItems = [
+    {
+      title: item.title,
+      type: contextTypeForSource(item.source),
+      meta: `${item.source} - reviewed`,
+      body: item.body,
+      source: item.source,
+    },
+    ...capturedItems,
+  ];
+  item.status = "promoted";
+  saveCapturedItems();
+  saveContextImports();
+  refreshLocalSurfaces();
+  navigate("library");
+}
+
+function taskContextImport(id) {
+  const item = findContextImport(id);
+  if (!item || item.status !== "review") return;
+  capturedItems = [
+    {
+      title: item.title,
+      type: "task",
+      meta: `${item.source} - reviewed`,
+      body: item.body,
+      source: item.source,
+    },
+    ...capturedItems,
+  ];
+  item.status = "converted";
+  saveCapturedItems();
+  saveContextImports();
+  refreshLocalSurfaces();
+  navigate("tasks");
+}
+
+function archiveContextImport(id) {
+  const item = findContextImport(id);
+  if (!item) return;
+  item.status = "archived";
+  saveContextImports();
+  refreshLocalSurfaces();
 }
 
 function exportLocalData() {
@@ -958,8 +1148,12 @@ function importLocalData(file) {
       }
       capturedItems = payload.captures.map(normalizeCapturedItem).filter(Boolean);
       completedTasks = new Set(payload.completedTasks.filter((item) => typeof item === "string"));
+      contextImports = Array.isArray(payload.contextImports)
+        ? payload.contextImports.map(normalizeContextImport).filter(Boolean)
+        : [];
       saveCapturedItems();
       saveCompletedTasks();
+      saveContextImports();
       refreshLocalSurfaces();
       navigate("library");
     } catch (error) {
@@ -973,8 +1167,10 @@ function resetLocalData() {
   if (!confirm("Reset local Ben HQ captures and checkmarks on this device?")) return;
   removeStoredItem(storageKeys.captures);
   removeStoredItem(storageKeys.completed);
+  removeStoredItem(storageKeys.contextImports);
   capturedItems = [...seed.inbox];
   completedTasks = new Set();
+  contextImports = [];
   refreshLocalSurfaces();
 }
 
@@ -1252,6 +1448,19 @@ function wireEvents() {
     if (actionButton?.dataset.action === "reset-local-data") {
       resetLocalData();
     }
+    if (actionButton?.dataset.action === "clear-context-intake") {
+      document.getElementById("contextTitle").value = "";
+      document.getElementById("contextBody").value = "";
+    }
+    if (actionButton?.dataset.action === "promote-context") {
+      promoteContextImport(actionButton.dataset.contextId);
+    }
+    if (actionButton?.dataset.action === "task-context") {
+      taskContextImport(actionButton.dataset.contextId);
+    }
+    if (actionButton?.dataset.action === "archive-context") {
+      archiveContextImport(actionButton.dataset.contextId);
+    }
 
     const chessSquare = event.target.closest("[data-square]");
     if (chessSquare) {
@@ -1298,6 +1507,19 @@ function wireEvents() {
     event.target.value = "";
   });
 
+  document.getElementById("contextIntakeForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const source = document.getElementById("contextSource").value;
+    const titleInput = document.getElementById("contextTitle");
+    const bodyInput = document.getElementById("contextBody");
+    const body = bodyInput.value.trim();
+    if (!body) return;
+
+    addContextImport(source, titleInput.value.trim(), body);
+    titleInput.value = "";
+    bodyInput.value = "";
+  });
+
   document.getElementById("promptSearch").addEventListener("input", (event) => {
     renderPrompts(event.target.value);
   });
@@ -1333,6 +1555,7 @@ function init() {
   renderLibrary();
   renderReview();
   renderSources();
+  renderContextReview();
   renderLocalDataSettings();
   renderWeather();
   renderLichessDaily();
