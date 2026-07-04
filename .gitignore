@@ -4,6 +4,15 @@ ben-hq-codex-context.md
 
 # Codex/local workspace metadata
 .agents/
+.ben-hq-private/
+
+# Local Garmin/GarminDB data and credentials
+.GarminDb/
+GarminDb/
+garmin-data/
+*.db
+*.sqlite
+*.sqlite3
 
 # Environment and machine-local files
 .env

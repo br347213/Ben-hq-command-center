@@ -40,8 +40,10 @@ The current machine path does not have Node or npm available, so the first build
 - Settings privacy stance
 - PWA manifest and icon
 - Google Apps Script bridge starter in `tools/ben-hq-google-bridge.gs`
+- GarminDB local sync wrapper in `tools/garmin-sync.ps1`
 - Daily packet sample in `samples/ben-hq-daily-packet.sample.json`
 - Private bridge setup notes in `docs/private-bridge.md`
+- Garmin auto-sync notes in `docs/garmin-auto-sync.md`
 
 ## Version One Direction
 
