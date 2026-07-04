@@ -29,7 +29,7 @@ The current machine path does not have Node or npm available, so the first build
 - Training hub preview
 - Pokemon GO public data pulse through PoGoAPI
 - Manual, source-labeled Pokemon GO event brief for Sobble Community Day and the 10th Anniversary Party
-- Chess module with an interactive puzzle board and Lichess daily puzzle metadata
+- Chess module with a polished interactive puzzle board and Lichess daily puzzle metadata
 - Learning queue
 - Prompt library with search
 - Personal knowledge library preview

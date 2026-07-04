@@ -63,6 +63,7 @@
 - Add a real chess engine such as chess.js for legal move validation.
 - Add daily puzzles with difficulty, themes, and completion history.
 - Use Lichess daily puzzle metadata as the public no-secret feed.
+- Replace Unicode chess glyphs with dedicated piece assets if a stronger visual set is added later.
 - Import or curate Lichess puzzle data with FEN, solution moves, ratings, themes, and popularity.
 - Add a puzzle review queue for missed tactics.
 - Add chess tips based on recurring mistakes.

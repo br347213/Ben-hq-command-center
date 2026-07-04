@@ -1503,10 +1503,13 @@ function renderChessBoard() {
         const solvedTarget = chessSolved && square === chessPuzzle.expectedTo ? " solved" : "";
         const icon = piece ? chessPieceGlyphs[piece.side][piece.label] : "";
         const content = piece ? `<span class="piece ${piece.side}" aria-hidden="true">${icon}</span>` : "";
+        const rankLabel = fileIndex === 0 ? `<span class="coord coord-rank">${rank}</span>` : "";
+        const fileLabel = rank === 1 ? `<span class="coord coord-file">${"abcdefgh"[fileIndex]}</span>` : "";
         return `
           <button class="chess-square ${shade}${selected}${solvedTarget}" type="button" data-square="${square}" aria-label="${square}">
             ${content}
-            <span class="square-label">${square}</span>
+            ${rankLabel}
+            ${fileLabel}
           </button>
         `;
       }).join(""),
