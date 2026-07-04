@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#080b10" />
     <title>Ben HQ</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260704-training-brief-1" />
+    <link rel="stylesheet" href="styles.css?v=20260704-private-bridge-1" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -84,7 +84,7 @@
                 <div class="hero-stat-row" aria-label="Today signals">
                   <span><strong id="priorityCount">3</strong> priorities</span>
                   <span><strong id="weatherSignal">--</strong> weather</span>
-                  <span><strong id="sourceSignal">0/3</strong> live sources</span>
+                <span><strong id="sourceSignal">0/4</strong> live sources</span>
                 </div>
                 <div class="today-insight-grid" id="todayInsightGrid" aria-label="Today quick facts"></div>
               </div>
@@ -135,7 +135,7 @@
               <h3>Loading today plan</h3>
               <p>Daily agenda details will appear here.</p>
             </article>
-            <article class="glass-card action-card workout-card module-training">
+            <article class="glass-card action-card workout-card module-training" id="todayWorkoutCard">
               <div class="module-header">
                 <span class="module-icon training-icon" aria-hidden="true">Run</span>
                 <p class="eyebrow">Today's workout</p>
@@ -181,7 +181,7 @@
               <p>Save a short AI workflow idea for weekly review instead of opening a feed.</p>
               <button class="text-button">Open queue</button>
             </article>
-            <article class="glass-card action-card module-finance">
+            <article class="glass-card action-card module-finance" id="privatePulseCard" aria-live="polite">
               <div class="module-header">
                 <span class="module-icon finance-icon" aria-hidden="true">Src</span>
                 <p class="eyebrow">Sources pulse</p>
@@ -240,6 +240,36 @@
               </div>
             </article>
             <div class="source-grid" id="sourceGrid"></div>
+            <article class="glass-panel bridge-panel module-ai" id="bridgePanel">
+              <div class="module-header">
+                <span class="module-icon ai-icon" aria-hidden="true">Link</span>
+                <p class="eyebrow">Private daily bridge</p>
+              </div>
+              <div class="bridge-panel-copy">
+                <h3>Connect personal summaries without putting secrets in GitHub.</h3>
+                <p class="summary-text">
+                  Save a private bridge URL or import a daily packet from iPhone Shortcuts, Google Apps Script, ChatGPT exports, Gmail summaries, Calendar, Drive, Notes, Garmin, or Apple Health. The data stays in this browser unless you export it.
+                </p>
+              </div>
+              <form class="bridge-form" id="bridgeSettingsForm">
+                <label>
+                  <span>Bridge URL</span>
+                  <input id="bridgeUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" />
+                </label>
+                <label>
+                  <span>Passcode</span>
+                  <input id="bridgePasscode" type="password" placeholder="Stored only on this device" autocomplete="off" />
+                </label>
+                <div class="settings-actions">
+                  <button class="secondary-button" type="submit">Save bridge</button>
+                  <button class="secondary-button" data-action="sync-private-bridge" type="button">Sync now</button>
+                  <button class="secondary-button" data-action="import-daily-packet" type="button">Import packet</button>
+                  <button class="text-button danger-text" data-action="clear-private-bridge" type="button">Clear bridge</button>
+                </div>
+                <input class="hidden-file-input" id="dailyPacketInput" type="file" accept="application/json,.json" />
+              </form>
+              <div class="bridge-status-card" id="bridgeStatusCard"></div>
+            </article>
             <article class="glass-panel context-intake-panel">
               <div class="module-header">
                 <span class="module-icon ai-icon" aria-hidden="true">In</span>
@@ -301,7 +331,7 @@
               <p class="eyebrow">Planning surface</p>
               <h2>Calendar</h2>
             </div>
-            <span class="freshness">Internal preview</span>
+            <span class="freshness" id="calendarFreshness">Internal preview</span>
           </div>
           <div class="calendar-grid" id="calendarGrid"></div>
         </section>
@@ -312,7 +342,7 @@
               <p class="eyebrow">Rules before AI</p>
               <h2>Training Hub</h2>
             </div>
-            <span class="freshness">Generated from constraints</span>
+            <span class="freshness" id="trainingFreshness">Generated from constraints</span>
           </div>
           <div class="training-layout">
             <article class="liquid-panel training-summary" id="trainingSummaryCard">
@@ -479,10 +509,14 @@
               </div>
               <input class="hidden-file-input" id="localImportInput" type="file" accept="application/json" />
             </article>
+            <article class="glass-panel" id="privatePacketCard">
+              <h3>Private packet</h3>
+              <p>Daily summaries from bridges and phone imports appear here after sync.</p>
+            </article>
           </div>
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260704-training-brief-1"></script>
+    <script src="app.js?v=20260704-private-bridge-1"></script>
   </body>
 </html>

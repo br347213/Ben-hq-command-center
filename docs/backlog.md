@@ -15,8 +15,9 @@
 - Keep public GitHub Pages integrations limited to no-secret APIs and source links.
 - Build on the current source health card and dynamic daily signal.
 - Add source records with name, freshness, permission level, last refresh, and confidence.
-- Add a personal-only allowlist before connecting calendar, email, files, or app accounts.
+- Expand the personal-only bridge allowlist before connecting broader calendar, email, files, or app accounts.
 - Expand the current manual source intake and review queue before imported context can influence durable memory.
+- Add better bridge packet validation, freshness warnings, and source confidence labels.
 - Add connector health states: connected, loading, offline, permission needed, and paused.
 - Keep visible local export, import, and reset controls for browser-stored personal context.
 - Exclude direct finance account connectors unless the scope changes later.
@@ -76,6 +77,8 @@
 - Add editable memory cards.
 - Add source-backed recommendation explanations.
 - Add import adapters for selected ChatGPT exports, personal email summaries, calendar items, notes, and app data.
+- Build iPhone Shortcut packet instructions for Apple Notes, Health, Garmin summaries, and manual daily context.
+- Improve the Google Apps Script bridge with user-configurable Gmail searches and calendar allowlists.
 - Add deletion and export controls for stored personal context.
 - Add Google Drive selected-file import for personal docs and exports.
 - Add Apple Notes import path through export/share workflow or a future iCloud bridge.

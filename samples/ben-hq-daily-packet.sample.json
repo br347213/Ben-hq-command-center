@@ -1,0 +1,102 @@
+{
+  "app": "Ben HQ",
+  "kind": "daily-packet",
+  "generatedAt": "2026-07-04T09:30:00-04:00",
+  "summary": "Keep the morning light, handle one reply, protect the run option, and leave the afternoon open for Pokemon GO.",
+  "sources": [
+    {
+      "name": "Google Calendar",
+      "status": "synced",
+      "detail": "Personal calendar for today"
+    },
+    {
+      "name": "Gmail",
+      "status": "synced",
+      "detail": "Recent inbox metadata"
+    },
+    {
+      "name": "Apple Health",
+      "status": "imported",
+      "detail": "Shortcut summary"
+    }
+  ],
+  "agenda": [
+    {
+      "time": "Morning",
+      "title": "Prep the easy run option",
+      "detail": "Shoes, water, headphones, and a short route are enough.",
+      "source": "Ben HQ",
+      "tone": "training"
+    }
+  ],
+  "calendar": {
+    "events": [
+      {
+        "time": "2:00 PM-5:00 PM",
+        "title": "Sobble Community Day",
+        "detail": "Pokemon GO event window",
+        "source": "Manual calendar",
+        "tone": "pokemon"
+      }
+    ]
+  },
+  "gmail": {
+    "highlights": [
+      {
+        "title": "Weekend plan thread",
+        "detail": "From family",
+        "meta": "Today",
+        "source": "Gmail"
+      }
+    ],
+    "needsReply": [
+      {
+        "title": "Confirm timing",
+        "detail": "A short reply would close this loop.",
+        "meta": "Today",
+        "source": "Gmail"
+      }
+    ]
+  },
+  "drive": {
+    "recent": [
+      {
+        "title": "Family activity ideas",
+        "detail": "Modified today",
+        "source": "Google Drive"
+      }
+    ]
+  },
+  "notes": {
+    "items": [
+      {
+        "title": "Pokemon birthday idea",
+        "detail": "Save for the activity bank.",
+        "source": "Apple Notes"
+      }
+    ]
+  },
+  "health": {
+    "sleepHours": "7.1",
+    "steps": "3,240",
+    "readiness": "Normal",
+    "readinessNote": "Easy run is fine; keep it conversational."
+  },
+  "training": {
+    "recommendedWorkout": {
+      "title": "Easy run or mobility reset",
+      "detail": "Use the easy version unless heat or fatigue says otherwise.",
+      "duration": "25-40 min",
+      "fallback": "20 min mobility"
+    },
+    "lastWorkout": "Upper strength",
+    "rule": "No hero reps"
+  },
+  "recommendations": [
+    {
+      "title": "Handle the reply before the event window",
+      "detail": "One short message clears the personal loop before Pokemon GO time.",
+      "source": "Private daily packet"
+    }
+  ]
+}

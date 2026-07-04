@@ -43,6 +43,8 @@ Near-term product ideas:
 - Public no-secret adapters for PoGoAPI and Lichess where browser CORS allows.
 - Manual private-source intake that keeps pasted summaries in local review before promotion.
 - Local text, Markdown, and JSON imports with source labels.
+- Private daily packet import and bridge sync for Gmail, Calendar, Drive, Notes, health/training, and recommendations.
+- Browser-only bridge settings so the public app can stay free on GitHub Pages without committing secrets.
 - Local browser export/import/reset as the first private-device memory control.
 - Personal context cards that can be edited, archived, or promoted into durable memory.
 - A review queue for new imported knowledge before it influences recommendations.
@@ -56,8 +58,8 @@ Future integration ideas:
 - Personal email read-only triage with explicit account permission.
 - Calendar read integration for schedule-aware recommendations.
 - Google Drive file selection for personal docs, exports, PDFs, and notes.
-- Apple Notes imports through export/share workflow or a future iCloud bridge.
-- Garmin and Apple Health summaries for training, sleep, recovery, and consistency signals.
+- Apple Notes imports through export/share workflow, iPhone Shortcuts, or a future iCloud bridge.
+- Garmin and Apple Health summaries for training, sleep, recovery, and consistency signals through daily packets.
 - Lichess puzzle imports for real tactics and missed-pattern review.
 - Pokemon GO event imports from official event pages, public calendars, or vetted community calendars.
 - App adapters for tasks, notes, learning queues, and selected health or fitness summaries.
