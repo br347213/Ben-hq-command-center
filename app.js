@@ -461,6 +461,200 @@ const chessPieceGlyphs = {
   },
 };
 
+const starterDailyPacket = {
+  app: "Ben HQ",
+  kind: "daily-packet",
+  generatedAt: new Date().toISOString(),
+  summary:
+    "Starter private packet loaded. Use this as the shape for Gmail, Calendar, Drive, Notes, Garmin, Apple Health, and ChatGPT summaries.",
+  sources: [
+    { name: "Google Calendar", status: "starter", detail: "Replace with personal calendar bridge" },
+    { name: "Gmail", status: "starter", detail: "Replace with personal inbox summary" },
+    { name: "Apple Health / Garmin", status: "starter", detail: "Replace with iPhone Shortcut packet" },
+  ],
+  agenda: [
+    {
+      time: "Morning",
+      title: "Check private pulse",
+      detail: "Review calendar anchors, reply-needed mail, and training readiness before adding new tasks.",
+      source: "Starter packet",
+      tone: "ai",
+    },
+  ],
+  calendar: {
+    events: [
+      {
+        time: "2:00 PM-5:00 PM",
+        title: "Pokemon GO event window",
+        detail: "Use this as an example of how personal calendar events appear on Today.",
+        source: "Starter packet",
+        tone: "pokemon",
+      },
+    ],
+  },
+  gmail: {
+    highlights: [
+      {
+        title: "Example inbox highlight",
+        detail: "Summaries can show the sender and why it matters without exposing full email bodies.",
+        meta: "Today",
+        source: "Starter Gmail",
+      },
+    ],
+    needsReply: [
+      {
+        title: "Example reply-needed loop",
+        detail: "A short response would close this personal loop.",
+        meta: "Today",
+        source: "Starter Gmail",
+      },
+    ],
+  },
+  drive: {
+    recent: [
+      {
+        title: "Example planning doc",
+        detail: "Recently modified personal file metadata can surface here.",
+        source: "Starter Drive",
+      },
+    ],
+  },
+  notes: {
+    items: [
+      {
+        title: "Example iPhone note",
+        detail: "Notes can become reviewable memory cards after import.",
+        source: "Starter Notes",
+      },
+    ],
+  },
+  health: {
+    sleepHours: "7.0",
+    steps: "3,200",
+    readiness: "Normal",
+    readinessNote: "Keep the workout easy unless fatigue or heat says otherwise.",
+  },
+  training: {
+    recommendedWorkout: {
+      title: "Easy run or mobility reset",
+      detail: "Use imported health and schedule context to pick the sensible version.",
+      duration: "25-40 min",
+      fallback: "20 min mobility",
+    },
+    lastWorkout: "Starter import",
+    rule: "Protect tomorrow",
+  },
+  recommendations: [
+    {
+      title: "Set up one real source next",
+      detail: "Copy the Google script, deploy it, then paste the Web App URL into Ben HQ.",
+      source: "Starter packet",
+    },
+  ],
+};
+
+const googleBridgeScriptTemplate = `const BEN_HQ_VERSION = "2026-07-04-bridge-helper-1";
+
+function doGet(event) {
+  const configuredKey = PropertiesService.getScriptProperties().getProperty("BEN_HQ_PASSCODE");
+  const providedKey = event && event.parameter ? event.parameter.key : "";
+  if (configuredKey && providedKey !== configuredKey) {
+    return jsonOutput({ app: "Ben HQ", error: "Unauthorized" });
+  }
+  return jsonOutput(buildBenHqDailyPacket());
+}
+
+function buildBenHqDailyPacket() {
+  const now = new Date();
+  return {
+    app: "Ben HQ",
+    kind: "daily-packet",
+    version: BEN_HQ_VERSION,
+    generatedAt: now.toISOString(),
+    summary: "Personal bridge synced Gmail, Calendar, and Drive metadata for today's planning surface.",
+    sources: [
+      { name: "Google Calendar", status: "synced", detail: "Default personal calendar, today only" },
+      { name: "Gmail", status: "synced", detail: "Recent inbox thread metadata only" },
+      { name: "Google Drive", status: "synced", detail: "Recently modified file metadata only" }
+    ],
+    calendar: { events: getTodayCalendarEvents(now) },
+    gmail: { highlights: getInboxHighlights(), needsReply: getLikelyReplyThreads() },
+    drive: { recent: getRecentDriveFiles(now) },
+    recommendations: [
+      {
+        title: "Scan the private pulse first",
+        detail: "Review calendar anchors and reply-needed mail before adding new tasks.",
+        source: "Ben HQ bridge"
+      }
+    ]
+  };
+}
+
+function getTodayCalendarEvents(now) {
+  return CalendarApp.getDefaultCalendar().getEventsForDay(now).slice(0, 8).map(function (event) {
+    return {
+      time: formatTimeWindow(event.getStartTime(), event.getEndTime()),
+      title: event.getTitle(),
+      detail: event.getLocation() || "Calendar event",
+      source: "Google Calendar",
+      tone: "calendar"
+    };
+  });
+}
+
+function getInboxHighlights() {
+  return GmailApp.search("in:inbox newer_than:3d -category:promotions", 0, 8).map(function (thread) {
+    const message = thread.getMessages()[thread.getMessageCount() - 1];
+    return {
+      title: thread.getFirstMessageSubject() || "Inbox thread",
+      detail: "From " + cleanSender(message.getFrom()),
+      meta: Utilities.formatDate(message.getDate(), Session.getScriptTimeZone(), "EEE h:mm a"),
+      source: "Gmail"
+    };
+  });
+}
+
+function getLikelyReplyThreads() {
+  return GmailApp.search("in:inbox newer_than:7d -from:me", 0, 5).map(function (thread) {
+    const message = thread.getMessages()[thread.getMessageCount() - 1];
+    return {
+      title: thread.getFirstMessageSubject() || "Possible reply",
+      detail: "Consider whether this needs a response from " + cleanSender(message.getFrom()),
+      meta: Utilities.formatDate(message.getDate(), Session.getScriptTimeZone(), "EEE h:mm a"),
+      source: "Gmail"
+    };
+  });
+}
+
+function getRecentDriveFiles(now) {
+  const cutoff = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 7);
+  const cutoffText = Utilities.formatDate(cutoff, "GMT", "yyyy-MM-dd'T'HH:mm:ss");
+  const files = DriveApp.searchFiles('modifiedDate > "' + cutoffText + '" and trashed = false');
+  const results = [];
+  while (files.hasNext() && results.length < 8) {
+    const file = files.next();
+    results.push({
+      title: file.getName(),
+      detail: "Modified " + Utilities.formatDate(file.getLastUpdated(), Session.getScriptTimeZone(), "MMM d h:mm a"),
+      source: "Google Drive"
+    });
+  }
+  return results;
+}
+
+function cleanSender(value) {
+  return String(value || "").replace(/<[^>]+>/g, "").replace(/"/g, "").trim();
+}
+
+function formatTimeWindow(start, end) {
+  const zone = Session.getScriptTimeZone();
+  return Utilities.formatDate(start, zone, "h:mm a") + "-" + Utilities.formatDate(end, zone, "h:mm a");
+}
+
+function jsonOutput(payload) {
+  return ContentService.createTextOutput(JSON.stringify(payload, null, 2)).setMimeType(ContentService.MimeType.JSON);
+}`;
+
 const sourceAdapters = {
   weather: {
     name: "Open-Meteo",
@@ -1819,6 +2013,46 @@ function applyPrivateDailyPacket(payload, origin = "import") {
   return true;
 }
 
+function loadStarterPacket() {
+  applyPrivateDailyPacket(starterDailyPacket, "starter");
+  navigate("today");
+}
+
+async function copyTextToClipboard(text, successMessage) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    alert(successMessage);
+  } catch (error) {
+    alert("Copy failed. Try again from a desktop browser if iPhone blocks clipboard access.");
+  }
+}
+
+function copyGoogleBridgeScript() {
+  copyTextToClipboard(
+    googleBridgeScriptTemplate,
+    "Google bridge script copied. Paste it into a new Google Apps Script project in your personal Google account.",
+  );
+}
+
+function copyPacketTemplate() {
+  copyTextToClipboard(
+    JSON.stringify(starterDailyPacket, null, 2),
+    "Daily packet template copied. Use this shape for iPhone Shortcuts, Apple Health, Garmin, Notes, or manual imports.",
+  );
+}
+
 function importDailyPacket(file) {
   if (!file) return;
   const reader = new FileReader();
@@ -1838,6 +2072,16 @@ function importDailyPacket(file) {
 function saveBridgeFromForm() {
   const url = document.getElementById("bridgeUrl")?.value.trim() || "";
   const passcode = document.getElementById("bridgePasscode")?.value.trim() || "";
+  if (!url) {
+    bridgeSettings = {
+      ...bridgeSettings,
+      status: "not configured",
+      error: "Paste the Google Apps Script Web App URL here after you deploy the bridge.",
+    };
+    saveBridgeSettings();
+    renderBridgePanel();
+    return false;
+  }
   bridgeSettings = {
     ...bridgeSettings,
     url,
@@ -1847,6 +2091,7 @@ function saveBridgeFromForm() {
   };
   saveBridgeSettings();
   renderBridgePanel();
+  return true;
 }
 
 function bridgeRequestUrl() {
@@ -1857,9 +2102,8 @@ function bridgeRequestUrl() {
 }
 
 async function syncPrivateBridge() {
-  saveBridgeFromForm();
-  if (!bridgeSettings.url) {
-    alert("Add a private bridge URL first.");
+  if (!saveBridgeFromForm()) {
+    alert("Load the starter packet for now, or copy the Google script and paste its deployed Web App URL here.");
     return;
   }
   sourceHealthState.private = "loading";
@@ -2186,6 +2430,15 @@ function wireEvents() {
     }
     if (actionButton?.dataset.action === "sync-private-bridge") {
       syncPrivateBridge();
+    }
+    if (actionButton?.dataset.action === "load-starter-packet") {
+      loadStarterPacket();
+    }
+    if (actionButton?.dataset.action === "copy-google-bridge-script") {
+      copyGoogleBridgeScript();
+    }
+    if (actionButton?.dataset.action === "copy-packet-template") {
+      copyPacketTemplate();
     }
     if (actionButton?.dataset.action === "import-daily-packet") {
       document.getElementById("dailyPacketInput")?.click();

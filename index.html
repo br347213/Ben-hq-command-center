@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#080b10" />
     <title>Ben HQ</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260704-private-bridge-1" />
+    <link rel="stylesheet" href="styles.css?v=20260704-bridge-helper-1" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -250,6 +250,34 @@
                 <p class="summary-text">
                   Save a private bridge URL or import a daily packet from iPhone Shortcuts, Google Apps Script, ChatGPT exports, Gmail summaries, Calendar, Drive, Notes, Garmin, or Apple Health. The data stays in this browser unless you export it.
                 </p>
+              </div>
+              <div class="bridge-helper">
+                <div class="bridge-step">
+                  <strong>1</strong>
+                  <div>
+                    <h4>Use the starter packet first.</h4>
+                    <p>This fills the app with realistic private-source structure so Today, Training, Agenda, and Recommendations come alive immediately.</p>
+                  </div>
+                </div>
+                <div class="bridge-step">
+                  <strong>2</strong>
+                  <div>
+                    <h4>Then create the Google bridge.</h4>
+                    <p>Copy the script, paste it into Google Apps Script, deploy it, then paste the Web App URL below.</p>
+                  </div>
+                </div>
+                <div class="bridge-step">
+                  <strong>3</strong>
+                  <div>
+                    <h4>Phone health and notes use packets.</h4>
+                    <p>Apple Health, Garmin, and Notes need an iPhone Shortcut or export that matches the packet template.</p>
+                  </div>
+                </div>
+                <div class="settings-actions bridge-helper-actions">
+                  <button class="secondary-button" data-action="load-starter-packet" type="button">Load starter packet</button>
+                  <button class="secondary-button" data-action="copy-google-bridge-script" type="button">Copy Google script</button>
+                  <button class="secondary-button" data-action="copy-packet-template" type="button">Copy packet template</button>
+                </div>
               </div>
               <form class="bridge-form" id="bridgeSettingsForm">
                 <label>
@@ -517,6 +545,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260704-private-bridge-1"></script>
+    <script src="app.js?v=20260704-bridge-helper-1"></script>
   </body>
 </html>
