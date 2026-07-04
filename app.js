@@ -84,26 +84,69 @@ const seed = {
     { day: "Sat", events: ["Quality run - tempo", "Pokemon event check"] },
     { day: "Sun", events: ["Long run - 6 mi", "Weekly review"] },
   ],
+  training: {
+    title: "Sustainable base week",
+    summary:
+      "Keep the week boring on purpose: one quality run, one long run, two strength sessions, and easy work that does not steal from recovery.",
+    metrics: [
+      { value: "22", label: "target miles" },
+      { value: "2", label: "strength days" },
+      { value: "1", label: "quality run" },
+    ],
+    readiness: [
+      {
+        label: "Today",
+        value: "Easy",
+        detail: "Use conversational effort. If legs are flat, choose mobility without guilt.",
+      },
+      {
+        label: "Watch",
+        value: "Heat + schedule",
+        detail: "Move the run earlier if weather or Pokemon event timing crowds the afternoon.",
+      },
+      {
+        label: "Rule",
+        value: "No hero reps",
+        detail: "Leave every workout feeling like you could have done a little more.",
+      },
+    ],
+  },
   workouts: [
+    {
+      title: "Today: easy run or mobility reset",
+      meta: "25-40 min - RPE 3-4",
+      tag: "Today",
+      purpose: "Preserve the rhythm without borrowing energy from the weekend.",
+      steps: ["3-4 easy miles at conversational effort", "Keep cadence relaxed; no pace target", "Finish with 5 minutes calves, hips, and hamstrings"],
+      fallback: "If sleep, heat, or legs feel off: skip mileage and do 20 minutes mobility plus dead bugs, side planks, and glute bridges.",
+      checklist: ["Shoes ready", "Hydrate before heading out", "Stop while it still feels easy"],
+    },
     {
       title: "Upper strength / physique",
       meta: "45 min - push, pull, shoulders, arms",
-      reason: "Keeps strength progress moving without loading legs before weekend running.",
-    },
-    {
-      title: "Full-body support",
-      meta: "50 min - posterior chain, unilateral legs, trunk",
-      reason: "Builds running durability while keeping soreness controlled.",
+      tag: "Strength",
+      purpose: "Keep strength progress moving without loading legs before weekend running.",
+      steps: ["DB press 3x8-10", "Chest-supported row 3x10", "Lateral raise 3x12-15", "Curl + triceps superset 2-3 rounds"],
+      fallback: "If time is tight: press, row, lateral raise. Leave accessories for later.",
+      checklist: ["2 reps in reserve", "No grinder sets", "Log top set"],
     },
     {
       title: "Saturday tempo",
       meta: "Warmup, 18-24 min steady, cooldown",
-      reason: "One quality day per week keeps fitness sharp without crowding recovery.",
+      tag: "Quality",
+      purpose: "One controlled quality day keeps fitness sharp without crowding recovery.",
+      steps: ["10 min warmup easy", "18-24 min steady tempo, not a race", "8-10 min cooldown", "Optional 4 relaxed strides if fresh"],
+      fallback: "If heat or life timing interferes: 30-35 minutes easy with 6 x 20 second pickups.",
+      checklist: ["Route picked", "Effort smooth", "Finish controlled"],
     },
     {
       title: "Sunday long run",
       meta: "6 miles easy",
-      reason: "Preserves the aerobic base and keeps the weekly rhythm simple.",
+      tag: "Long",
+      purpose: "Preserve the aerobic base and keep the weekly rhythm simple.",
+      steps: ["6 miles easy", "First mile deliberately slow", "Stay relaxed on hills", "Walk 2-3 minutes after finishing"],
+      fallback: "If the week runs long: cap at 45 minutes and keep the streak alive.",
+      checklist: ["Start easy", "Bring water if hot", "No fast finish needed"],
     },
   ],
   pokemon: [
@@ -319,6 +362,8 @@ const storageKeys = {
   captures: "ben-hq-captures-v1",
   completed: "ben-hq-completed-tasks-v1",
   contextImports: "ben-hq-context-imports-v1",
+  privateDaily: "ben-hq-private-daily-v1",
+  bridgeSettings: "ben-hq-bridge-settings-v1",
 };
 const memoryTypes = new Set(["note", "idea", "training", "pokemon", "chess"]);
 const contextSourceTypes = {
@@ -338,6 +383,8 @@ let currentView = "today";
 let capturedItems = loadStoredItems();
 let completedTasks = loadStoredSet(storageKeys.completed);
 let contextImports = loadStoredContextImports();
+let privateDaily = loadPrivateDaily();
+let bridgeSettings = loadBridgeSettings();
 let selectedChessSquare = null;
 let chessSolved = false;
 let weatherState = {
@@ -369,6 +416,7 @@ let sourceHealthState = {
   weather: "loading",
   pokemon: "loading",
   lichess: "loading",
+  private: hasPrivateDailyData(privateDaily) ? "live" : "offline",
   local: "live",
 };
 
@@ -518,6 +566,39 @@ function loadStoredContextImports() {
   return Array.isArray(stored) ? stored.map(normalizeContextImport).filter(Boolean) : [];
 }
 
+function emptyPrivateDaily() {
+  return {
+    status: "empty",
+    generatedAt: "",
+    importedAt: "",
+    summary: "",
+    sources: [],
+    agenda: [],
+    calendarEvents: [],
+    mail: { highlights: [], needsReply: [] },
+    drive: { items: [] },
+    notes: { items: [] },
+    health: {},
+    training: {},
+    recommendations: [],
+  };
+}
+
+function loadPrivateDaily() {
+  return normalizePrivateDailyPacket(readJson(storageKeys.privateDaily, null), "stored");
+}
+
+function loadBridgeSettings() {
+  const stored = readJson(storageKeys.bridgeSettings, {});
+  return {
+    url: typeof stored.url === "string" ? stored.url : "",
+    passcode: typeof stored.passcode === "string" ? stored.passcode : "",
+    lastSyncAt: typeof stored.lastSyncAt === "string" ? stored.lastSyncAt : "",
+    status: typeof stored.status === "string" ? stored.status : "not configured",
+    error: typeof stored.error === "string" ? stored.error : "",
+  };
+}
+
 function saveCapturedItems() {
   writeJson(storageKeys.captures, capturedItems);
 }
@@ -530,6 +611,14 @@ function saveContextImports() {
   writeJson(storageKeys.contextImports, contextImports);
 }
 
+function savePrivateDaily() {
+  writeJson(storageKeys.privateDaily, privateDaily);
+}
+
+function saveBridgeSettings() {
+  writeJson(storageKeys.bridgeSettings, bridgeSettings);
+}
+
 function removeStoredItem(key) {
   try {
     window.localStorage?.removeItem(key);
@@ -540,6 +629,135 @@ function removeStoredItem(key) {
 
 function localMemoryItems() {
   return capturedItems.filter((item) => memoryTypes.has(item.type));
+}
+
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object") return Object.values(value);
+  return [];
+}
+
+function compactText(value, fallback = "") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function normalizeSourceList(value) {
+  return asArray(value)
+    .map((item) => {
+      if (typeof item === "string") return { name: item, status: "synced" };
+      if (!item || typeof item !== "object") return null;
+      const name = compactText(item.name || item.title || item.source);
+      if (!name) return null;
+      return {
+        name,
+        status: compactText(item.status || item.state, "synced"),
+        detail: compactText(item.detail || item.summary || item.freshness),
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeAgendaItem(item, source = "Private bridge") {
+  if (!item || typeof item !== "object") return null;
+  const title = compactText(item.title || item.summary || item.name);
+  if (!title) return null;
+  return {
+    time: compactText(item.time || item.when || item.start || item.window, "Today"),
+    title,
+    detail: compactText(item.detail || item.description || item.body || item.location, ""),
+    tone: compactText(item.tone || item.type, "calendar"),
+    source: compactText(item.source, source),
+  };
+}
+
+function normalizeTextItem(item, fallbackTitle = "Private item") {
+  if (typeof item === "string") {
+    return { title: item, detail: "", source: "Private bridge" };
+  }
+  if (!item || typeof item !== "object") return null;
+  const title = compactText(item.title || item.subject || item.name || item.summary, fallbackTitle);
+  const detail = compactText(item.detail || item.body || item.snippet || item.description || item.reason, "");
+  return {
+    title,
+    detail,
+    source: compactText(item.source || item.from || item.app, "Private bridge"),
+    meta: compactText(item.meta || item.when || item.date || item.status, ""),
+  };
+}
+
+function normalizePrivateDailyPacket(payload, origin = "import") {
+  if (!payload || typeof payload !== "object") return emptyPrivateDaily();
+  const data = payload.daily || payload.packet || payload;
+  const mail = data.gmail || data.mail || {};
+  const drive = data.drive || {};
+  const notes = data.notes || {};
+  const health = data.health || data.appleHealth || data.fitness || {};
+  const training = data.training || data.garmin || {};
+  const generatedAt = compactText(data.generatedAt || data.updatedAt || data.date, "");
+  const importedAt = compactText(data.importedAt, new Date().toISOString());
+
+  const agenda = asArray(data.agenda).map((item) => normalizeAgendaItem(item, "Daily packet")).filter(Boolean);
+  const calendarEvents = asArray(data.calendar?.events || data.calendarEvents || data.events)
+    .map((item) => normalizeAgendaItem(item, "Calendar"))
+    .filter(Boolean);
+  const highlights = asArray(mail.highlights || mail.items || mail.summaries)
+    .map((item) => normalizeTextItem(item, "Inbox highlight"))
+    .filter(Boolean);
+  const needsReply = asArray(mail.needsReply || mail.actions || mail.replyNeeded)
+    .map((item) => normalizeTextItem(item, "Needs reply"))
+    .filter(Boolean);
+  const driveItems = asArray(drive.items || drive.recent || drive.files)
+    .map((item) => normalizeTextItem(item, "Drive item"))
+    .filter(Boolean);
+  const noteItems = asArray(notes.items || notes.recent || notes)
+    .map((item) => normalizeTextItem(item, "Note"))
+    .filter(Boolean);
+  const recommendations = asArray(data.recommendations || data.suggestions || data.actions)
+    .map((item) => normalizeTextItem(item, "Recommendation"))
+    .filter(Boolean);
+  const sources = normalizeSourceList(data.sources);
+
+  const normalized = {
+    status: origin === "stored" ? compactText(data.status, "stored") : "live",
+    generatedAt,
+    importedAt,
+    summary: compactText(data.summary || data.brief || data.dailyBrief, ""),
+    sources,
+    agenda,
+    calendarEvents,
+    mail: { highlights, needsReply },
+    drive: { items: driveItems },
+    notes: { items: noteItems },
+    health: typeof health === "object" && health ? health : {},
+    training: typeof training === "object" && training ? training : {},
+    recommendations,
+  };
+
+  return hasPrivateDailyData(normalized) ? normalized : emptyPrivateDaily();
+}
+
+function hasPrivateDailyData(packet = privateDaily) {
+  if (!packet || typeof packet !== "object") return false;
+  return Boolean(
+    compactText(packet.summary) ||
+      asArray(packet.sources).length ||
+      asArray(packet.agenda).length ||
+      asArray(packet.calendarEvents).length ||
+      asArray(packet.mail?.highlights).length ||
+      asArray(packet.mail?.needsReply).length ||
+      asArray(packet.drive?.items).length ||
+      asArray(packet.notes?.items).length ||
+      asArray(packet.recommendations).length ||
+      Object.keys(packet.health || {}).length ||
+      Object.keys(packet.training || {}).length,
+  );
+}
+
+function privateDailyFreshness() {
+  if (!hasPrivateDailyData()) return "No private packet yet";
+  const date = new Date(privateDaily.generatedAt || privateDaily.importedAt);
+  if (Number.isNaN(date.getTime())) return "Private packet loaded";
+  return `Synced ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
 function normalizeCapturedItem(item) {
@@ -612,13 +830,20 @@ function localDataSnapshot() {
     captures: capturedItems,
     completedTasks: [...completedTasks],
     contextImports,
+    privateDaily,
   };
 }
 
 function refreshLocalSurfaces() {
   renderTasks();
+  renderTodayAgenda();
+  renderTodayWorkout();
+  renderCalendar();
+  renderTrainingOverview();
+  renderPrivatePulse();
   renderLibrary();
   renderContextReview();
+  renderBridgePanel();
   renderLocalDataSettings();
   renderIntelligence();
 }
@@ -634,6 +859,11 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function safeModuleTone(value) {
+  const tone = compactText(value, "calendar").toLowerCase().replace(/[^a-z-]/g, "");
+  return ["weather", "calendar", "training", "pokemon", "chess", "learning", "finance", "ai"].includes(tone) ? tone : "calendar";
 }
 
 function taskKey(task) {
@@ -675,27 +905,64 @@ function renderTodayInsights() {
 function renderTodayAgenda() {
   const target = document.getElementById("todayAgendaCard");
   if (!target) return;
+  const privateAgenda = [...privateDaily.agenda, ...privateDaily.calendarEvents].slice(0, 4);
+  const agendaItems = privateAgenda.length ? privateAgenda : seed.todayAgenda;
+  const heading = privateAgenda.length ? "Personal agenda loaded" : "High-signal plan";
   target.innerHTML = `
     <div class="module-header">
       <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
       <p class="eyebrow">Today agenda</p>
     </div>
-    <h3>High-signal plan</h3>
+    <h3>${heading}</h3>
     <div class="agenda-list">
-      ${seed.todayAgenda
+      ${agendaItems
         .map(
           (item) => `
-            <div class="agenda-item module-${item.tone}">
+            <div class="agenda-item module-${safeModuleTone(item.tone)}">
               <span>${escapeHtml(item.time)}</span>
               <div>
                 <strong>${escapeHtml(item.title)}</strong>
                 <p>${escapeHtml(item.detail)}</p>
+                ${item.source ? `<em>${escapeHtml(item.source)}</em>` : ""}
               </div>
             </div>
           `,
         )
         .join("")}
     </div>
+  `;
+}
+
+function renderTodayWorkout() {
+  const target = document.getElementById("todayWorkoutCard");
+  if (!target) return;
+  const training = privateDaily.training || {};
+  const health = privateDaily.health || {};
+  const recommendation = training.recommendedWorkout || training.today || training.recommendation;
+  const workout = typeof recommendation === "object" && recommendation ? recommendation : {};
+  const title = compactText(workout.title || recommendation, seed.workouts[0].title.replace(/^Today:\s*/i, ""));
+  const detail = compactText(
+    workout.detail || workout.summary || training.summary || health.readinessNote,
+    seed.workouts[0].purpose,
+  );
+  const duration = compactText(workout.duration || training.duration, "25-40 min");
+  const readiness = compactText(health.readiness || training.readiness || training.status, "RPE 3");
+  const fallback = compactText(workout.fallback || training.fallback, "mobility");
+  const source = hasPrivateDailyData() ? "Private packet" : "Training rules";
+
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon training-icon" aria-hidden="true">Run</span>
+      <p class="eyebrow">Today's workout</p>
+    </div>
+    <h3>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(detail)}</p>
+    <div class="mini-fact-grid">
+      <span><strong>${escapeHtml(duration)}</strong> plan</span>
+      <span><strong>${escapeHtml(readiness)}</strong> readiness</span>
+      <span><strong>${escapeHtml(fallback)}</strong> fallback</span>
+    </div>
+    <span class="source-badge">${escapeHtml(source)}</span>
   `;
 }
 
@@ -731,7 +998,18 @@ function renderTasks() {
 }
 
 function renderCalendar() {
-  document.getElementById("calendarGrid").innerHTML = seed.calendar
+  const privateEvents = privateDaily.calendarEvents.slice(0, 8);
+  const privateCards = privateEvents.length
+    ? [
+        `
+          <article class="day-card module-calendar">
+            <strong>Today</strong>
+            ${privateEvents.map((event) => `<span class="calendar-chip">${escapeHtml(event.time)} - ${escapeHtml(event.title)}</span>`).join("")}
+          </article>
+        `,
+      ]
+    : [];
+  const seedCards = seed.calendar
     .map(
       (day) => `
         <article class="day-card">
@@ -739,24 +1017,117 @@ function renderCalendar() {
           ${day.events.map((event) => `<span class="calendar-chip">${event}</span>`).join("")}
         </article>
       `,
-    )
-    .join("");
+    );
+  document.getElementById("calendarGrid").innerHTML = [...privateCards, ...seedCards].join("");
+  const freshness = document.getElementById("calendarFreshness");
+  if (freshness) freshness.textContent = privateEvents.length ? privateDailyFreshness() : "Internal preview";
+}
+
+function renderTrainingOverview() {
+  const hasPrivateTraining = hasPrivateDailyData() && (Object.keys(privateDaily.training || {}).length || Object.keys(privateDaily.health || {}).length);
+  const training = privateDaily.training || {};
+  const health = privateDaily.health || {};
+  const title = hasPrivateTraining ? compactText(training.title || health.title, seed.training.title) : seed.training.title;
+  const summaryText = hasPrivateTraining
+    ? compactText(training.summary || health.summary || health.readinessNote, seed.training.summary)
+    : seed.training.summary;
+  const metrics = hasPrivateTraining
+    ? [
+        { value: compactText(health.sleepHours || health.sleep || training.sleep, "--"), label: "sleep" },
+        { value: compactText(health.steps || training.steps, "--"), label: "steps" },
+        { value: compactText(health.readiness || training.readiness || training.status, "check"), label: "readiness" },
+      ]
+    : seed.training.metrics;
+  const readinessItems = hasPrivateTraining
+    ? [
+        {
+          label: "Today",
+          value: compactText(health.readiness || training.readiness || "Check"),
+          detail: compactText(health.readinessNote || training.readinessNote || training.summary, seed.training.readiness[0].detail),
+        },
+        {
+          label: "Last",
+          value: compactText(training.lastWorkout || health.lastWorkout || "No import"),
+          detail: compactText(training.lastWorkoutDetail || health.lastWorkoutDetail, "Use recent activity context before adding more load."),
+        },
+        {
+          label: "Rule",
+          value: compactText(training.rule || "Protect recovery"),
+          detail: compactText(training.fallback || health.recoveryNote, seed.training.readiness[2].detail),
+        },
+      ]
+    : seed.training.readiness;
+  const summaryCard = document.getElementById("trainingSummaryCard");
+  if (summaryCard) {
+    summaryCard.innerHTML = `
+      <p class="eyebrow">This week</p>
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(summaryText)}</p>
+      <div class="metric-row">
+        ${metrics
+          .map((metric) => `<span><strong>${escapeHtml(metric.value)}</strong> ${escapeHtml(metric.label)}</span>`)
+          .join("")}
+      </div>
+    `;
+  }
+
+  const readinessCard = document.getElementById("trainingReadinessCard");
+  if (readinessCard) {
+    readinessCard.innerHTML = `
+      <div class="module-header">
+        <span class="module-icon training-icon" aria-hidden="true">Fit</span>
+        <p class="eyebrow">Readiness rules</p>
+      </div>
+      <h3>Choose the version that protects tomorrow.</h3>
+      <div class="training-rule-list">
+        ${readinessItems
+          .map(
+            (item) => `
+              <div class="training-rule">
+                <span>${escapeHtml(item.label)}</span>
+                <div>
+                  <strong>${escapeHtml(item.value)}</strong>
+                  <p>${escapeHtml(item.detail)}</p>
+                </div>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+  const freshness = document.getElementById("trainingFreshness");
+  if (freshness) freshness.textContent = hasPrivateTraining ? privateDailyFreshness() : "Generated from constraints";
 }
 
 function renderWorkouts() {
   document.getElementById("workoutStack").innerHTML = seed.workouts
     .map(
       (workout) => `
-        <article class="glass-card action-card">
+        <article class="glass-card workout-detail-card module-training">
           <div class="module-header">
             <span class="module-icon training-icon" aria-hidden="true">Run</span>
-            <p class="eyebrow">${workout.meta}</p>
+            <p class="eyebrow">${escapeHtml(workout.tag)} - ${escapeHtml(workout.meta)}</p>
           </div>
-          <h3>${workout.title}</h3>
-          <p>${workout.reason}</p>
-          <div class="button-row">
-            <button class="secondary-button">Open</button>
-            <button class="text-button">Adjust</button>
+          <div class="workout-detail-head">
+            <h3>${escapeHtml(workout.title)}</h3>
+            <span class="source-badge">${escapeHtml(workout.meta)}</span>
+          </div>
+          <p>${escapeHtml(workout.purpose)}</p>
+          <div class="workout-prescription">
+            <div>
+              <strong>Do this</strong>
+              <ol>
+                ${workout.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
+              </ol>
+            </div>
+            <div>
+              <strong>If tired</strong>
+              <p>${escapeHtml(workout.fallback)}</p>
+            </div>
+          </div>
+          <div class="tag-row">
+            ${workout.checklist.map((item) => `<span class="tag-pill">${escapeHtml(item)}</span>`).join("")}
           </div>
         </article>
       `,
@@ -982,7 +1353,7 @@ function sourceStatusLabel(status) {
 }
 
 function liveSourceCount() {
-  return ["weather", "pokemon", "lichess"].filter((key) => sourceHealthState[key] === "live").length;
+  return ["weather", "pokemon", "lichess", "private"].filter((key) => sourceHealthState[key] === "live").length;
 }
 
 function renderSourceHealth() {
@@ -993,6 +1364,7 @@ function renderSourceHealth() {
     { label: "Weather", state: sourceHealthState.weather },
     { label: "Pokemon GO", state: sourceHealthState.pokemon },
     { label: "Lichess", state: sourceHealthState.lichess },
+    { label: "Private bridge", state: sourceHealthState.private },
     { label: "Local memory", state: sourceHealthState.local },
   ];
 
@@ -1001,8 +1373,8 @@ function renderSourceHealth() {
       <span class="module-icon ai-icon" aria-hidden="true">Src</span>
       <p class="eyebrow">Source health</p>
     </div>
-    <h3>${liveSourceCount()} of 3 public signals live</h3>
-    <p>Private sources stay gated; public signals refresh in-browser and local captures stay on this device.</p>
+    <h3>${liveSourceCount()} of 4 approved signals live</h3>
+    <p>Public signals refresh in-browser. Private sources sync through your saved bridge or an imported daily packet.</p>
     <div class="source-status-list">
       ${statuses
         .map(
@@ -1015,6 +1387,58 @@ function renderSourceHealth() {
         )
         .join("")}
     </div>
+  `;
+}
+
+function privatePulseItems() {
+  return [
+    ...privateDaily.mail.needsReply.map((item) => ({ ...item, group: "Reply" })),
+    ...privateDaily.mail.highlights.map((item) => ({ ...item, group: "Mail" })),
+    ...privateDaily.calendarEvents.map((item) => ({ title: item.title, detail: item.detail, meta: item.time, source: item.source, group: "Calendar" })),
+    ...privateDaily.notes.items.map((item) => ({ ...item, group: "Notes" })),
+    ...privateDaily.drive.items.map((item) => ({ ...item, group: "Drive" })),
+  ].slice(0, 5);
+}
+
+function renderPrivatePulse() {
+  const target = document.getElementById("privatePulseCard");
+  if (!target) return;
+  const items = privatePulseItems();
+  if (!items.length) {
+    target.innerHTML = `
+      <div class="module-header">
+        <span class="module-icon finance-icon" aria-hidden="true">Src</span>
+        <p class="eyebrow">Personal pulse</p>
+      </div>
+      <h3>Private sources ready</h3>
+      <p>Connect the daily bridge or import a packet to surface Gmail, Calendar, Drive, Notes, Garmin, and Apple Health summaries here.</p>
+      <button class="text-button" data-view="sources">Set up sources</button>
+    `;
+    return;
+  }
+
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon finance-icon" aria-hidden="true">Src</span>
+      <p class="eyebrow">Personal pulse</p>
+    </div>
+    <h3>${privateDaily.summary ? escapeHtml(privateDaily.summary) : "Private daily signal"}</h3>
+    <div class="pulse-list">
+      ${items
+        .map(
+          (item) => `
+            <div class="pulse-item">
+              <span>${escapeHtml(item.group)}</span>
+              <div>
+                <strong>${escapeHtml(item.title)}</strong>
+                <p>${escapeHtml(item.detail || item.meta || item.source || "")}</p>
+              </div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+    <span class="source-badge">${escapeHtml(privateDailyFreshness())}</span>
   `;
 }
 
@@ -1055,6 +1479,15 @@ function buildRecommendation() {
     };
   }
 
+  if (privateDaily.recommendations.length > 0) {
+    const item = privateDaily.recommendations[0];
+    return {
+      title: item.title,
+      body: item.detail || "Private bridge found a useful next action for today.",
+      reason: item.source || "Private daily packet",
+    };
+  }
+
   if (lichessState.status === "live") {
     return {
       title: "Take the chess rep",
@@ -1087,13 +1520,14 @@ function renderDailySignals() {
   const baseScore = 58 + sourceCount * 7 + completedToday * 5;
   const cappedScore = Math.min(92, baseScore);
   const weatherWord = weatherState.status === "live" ? weatherState.temp : "--";
-  const sourceWord = `${sourceCount}/3`;
+  const sourceWord = `${sourceCount}/4`;
 
   document.getElementById("priorityCount").textContent = seed.priorities.length;
   document.getElementById("weatherSignal").textContent = weatherWord;
   document.getElementById("sourceSignal").textContent = sourceWord;
   document.getElementById("dailySignalScore").textContent = cappedScore;
   document.getElementById("dailyBrief").textContent =
+    privateDaily.summary ||
     "Today has a real afternoon anchor: Sobble Community Day from 2-5 PM, layered with the 10th Anniversary Party running July 4-6. Keep the morning light, prep storage and battery, then use the event window deliberately.";
 }
 
@@ -1125,6 +1559,39 @@ function renderSources() {
     .join("");
 }
 
+function renderBridgePanel() {
+  const urlInput = document.getElementById("bridgeUrl");
+  const passcodeInput = document.getElementById("bridgePasscode");
+  if (urlInput && document.activeElement !== urlInput) urlInput.value = bridgeSettings.url;
+  if (passcodeInput && document.activeElement !== passcodeInput) passcodeInput.value = bridgeSettings.passcode;
+
+  const target = document.getElementById("bridgeStatusCard");
+  if (!target) return;
+  const hasPacket = hasPrivateDailyData();
+  const sourceCount = privateDaily.sources.length || [
+    privateDaily.calendarEvents.length,
+    privateDaily.mail.highlights.length + privateDaily.mail.needsReply.length,
+    privateDaily.drive.items.length,
+    privateDaily.notes.items.length,
+    Object.keys(privateDaily.health || {}).length,
+  ].filter(Boolean).length;
+
+  target.innerHTML = `
+    <div class="bridge-status-head">
+      <strong>${bridgeSettings.url ? "Bridge saved" : "No bridge saved"}</strong>
+      <span class="source-status" data-state="${sourceHealthState.private}">${sourceStatusLabel(sourceHealthState.private)}</span>
+    </div>
+    <div class="local-data-metrics">
+      <span><strong>${sourceCount}</strong> sources</span>
+      <span><strong>${privateDaily.calendarEvents.length}</strong> events</span>
+      <span><strong>${privateDaily.mail.needsReply.length}</strong> replies</span>
+      <span><strong>${privateDaily.recommendations.length}</strong> recs</span>
+    </div>
+    <p class="item-meta">${hasPacket ? escapeHtml(privateDailyFreshness()) : "Import a daily packet or save a bridge URL to make private signals live."}</p>
+    ${bridgeSettings.error ? `<p class="danger-note">${escapeHtml(bridgeSettings.error)}</p>` : ""}
+  `;
+}
+
 function renderLocalDataSettings() {
   const target = document.getElementById("localDataCard");
   if (!target) return;
@@ -1146,6 +1613,25 @@ function renderLocalDataSettings() {
       <button class="text-button danger-text" data-action="reset-local-data" type="button">Reset</button>
     </div>
     <input class="hidden-file-input" id="localImportInput" type="file" accept="application/json" />
+  `;
+
+  const packetTarget = document.getElementById("privatePacketCard");
+  if (!packetTarget) return;
+  const hasPacket = hasPrivateDailyData();
+  packetTarget.innerHTML = `
+    <h3>Private packet</h3>
+    <p>${hasPacket ? "Daily summaries are loaded on this device." : "No private daily packet has been imported on this device yet."}</p>
+    <div class="local-data-metrics">
+      <span><strong>${privateDaily.mail.highlights.length}</strong> mail</span>
+      <span><strong>${privateDaily.calendarEvents.length}</strong> events</span>
+      <span><strong>${privateDaily.notes.items.length + privateDaily.drive.items.length}</strong> notes/files</span>
+      <span><strong>${privateDaily.recommendations.length}</strong> recs</span>
+    </div>
+    <div class="settings-actions">
+      <button class="secondary-button" data-view="sources" type="button">Sources</button>
+      <button class="secondary-button" data-action="import-daily-packet" type="button">Import packet</button>
+      <button class="text-button danger-text" data-action="clear-private-daily" type="button">Clear packet</button>
+    </div>
   `;
 }
 
@@ -1295,9 +1781,12 @@ function importLocalData(file) {
       contextImports = Array.isArray(payload.contextImports)
         ? payload.contextImports.map(normalizeContextImport).filter(Boolean)
         : [];
+      privateDaily = normalizePrivateDailyPacket(payload.privateDaily, "stored");
+      sourceHealthState.private = hasPrivateDailyData() ? "live" : "offline";
       saveCapturedItems();
       saveCompletedTasks();
       saveContextImports();
+      savePrivateDaily();
       refreshLocalSurfaces();
       navigate("library");
     } catch (error) {
@@ -1307,14 +1796,123 @@ function importLocalData(file) {
   reader.readAsText(file);
 }
 
+function applyPrivateDailyPacket(payload, origin = "import") {
+  const normalized = normalizePrivateDailyPacket(payload, origin);
+  if (!hasPrivateDailyData(normalized)) {
+    alert("That file did not contain a readable Ben HQ daily packet.");
+    return false;
+  }
+  privateDaily = {
+    ...normalized,
+    status: origin === "bridge" ? "live" : "imported",
+    importedAt: new Date().toISOString(),
+  };
+  sourceHealthState.private = "live";
+  bridgeSettings.error = "";
+  if (origin === "bridge") {
+    bridgeSettings.status = "live";
+    bridgeSettings.lastSyncAt = new Date().toISOString();
+    saveBridgeSettings();
+  }
+  savePrivateDaily();
+  refreshLocalSurfaces();
+  return true;
+}
+
+function importDailyPacket(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const payload = JSON.parse(String(reader.result || "{}"));
+      if (applyPrivateDailyPacket(payload, "import")) {
+        navigate("today");
+      }
+    } catch (error) {
+      alert("That file is not valid JSON.");
+    }
+  });
+  reader.readAsText(file);
+}
+
+function saveBridgeFromForm() {
+  const url = document.getElementById("bridgeUrl")?.value.trim() || "";
+  const passcode = document.getElementById("bridgePasscode")?.value.trim() || "";
+  bridgeSettings = {
+    ...bridgeSettings,
+    url,
+    passcode,
+    status: url ? "saved" : "not configured",
+    error: "",
+  };
+  saveBridgeSettings();
+  renderBridgePanel();
+}
+
+function bridgeRequestUrl() {
+  const url = new URL(bridgeSettings.url);
+  if (bridgeSettings.passcode) url.searchParams.set("key", bridgeSettings.passcode);
+  url.searchParams.set("format", "ben-hq-daily");
+  return url.toString();
+}
+
+async function syncPrivateBridge() {
+  saveBridgeFromForm();
+  if (!bridgeSettings.url) {
+    alert("Add a private bridge URL first.");
+    return;
+  }
+  sourceHealthState.private = "loading";
+  bridgeSettings.status = "syncing";
+  bridgeSettings.error = "";
+  saveBridgeSettings();
+  renderBridgePanel();
+  renderIntelligence();
+
+  try {
+    const response = await fetch(bridgeRequestUrl(), { cache: "no-store" });
+    if (!response.ok) throw new Error(`Bridge request failed: ${response.status}`);
+    const payload = await response.json();
+    applyPrivateDailyPacket(payload, "bridge");
+    navigate("today");
+  } catch (error) {
+    sourceHealthState.private = hasPrivateDailyData() ? "live" : "offline";
+    bridgeSettings.status = "error";
+    bridgeSettings.error = "Private bridge sync failed. Check the URL, passcode, deployment access, and CORS.";
+    saveBridgeSettings();
+    renderBridgePanel();
+    renderIntelligence();
+  }
+}
+
+function clearPrivateBridge() {
+  bridgeSettings = loadBridgeSettings();
+  bridgeSettings.url = "";
+  bridgeSettings.passcode = "";
+  bridgeSettings.status = "not configured";
+  bridgeSettings.error = "";
+  saveBridgeSettings();
+  renderBridgePanel();
+}
+
+function clearPrivateDaily() {
+  privateDaily = emptyPrivateDaily();
+  sourceHealthState.private = "offline";
+  removeStoredItem(storageKeys.privateDaily);
+  refreshLocalSurfaces();
+}
+
 function resetLocalData() {
   if (!confirm("Reset local Ben HQ captures and checkmarks on this device?")) return;
   removeStoredItem(storageKeys.captures);
   removeStoredItem(storageKeys.completed);
   removeStoredItem(storageKeys.contextImports);
+  removeStoredItem(storageKeys.privateDaily);
   capturedItems = [...seed.inbox];
   completedTasks = new Set();
   contextImports = [];
+  privateDaily = emptyPrivateDaily();
+  sourceHealthState.private = "offline";
   refreshLocalSurfaces();
 }
 
@@ -1586,6 +2184,18 @@ function wireEvents() {
     if (actionButton?.dataset.action === "refresh-pokemon") {
       refreshPokemonLiveData();
     }
+    if (actionButton?.dataset.action === "sync-private-bridge") {
+      syncPrivateBridge();
+    }
+    if (actionButton?.dataset.action === "import-daily-packet") {
+      document.getElementById("dailyPacketInput")?.click();
+    }
+    if (actionButton?.dataset.action === "clear-private-bridge") {
+      clearPrivateBridge();
+    }
+    if (actionButton?.dataset.action === "clear-private-daily") {
+      clearPrivateDaily();
+    }
     if (actionButton?.dataset.action === "export-local-data") {
       exportLocalData();
     }
@@ -1663,6 +2273,17 @@ function wireEvents() {
     event.target.value = "";
   });
 
+  document.body.addEventListener("change", (event) => {
+    if (event.target.id !== "dailyPacketInput") return;
+    importDailyPacket(event.target.files?.[0]);
+    event.target.value = "";
+  });
+
+  document.getElementById("bridgeSettingsForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveBridgeFromForm();
+  });
+
   document.getElementById("contextIntakeForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const source = document.getElementById("contextSource").value;
@@ -1704,8 +2325,10 @@ function init() {
   renderPriorities();
   renderTodayInsights();
   renderTodayAgenda();
+  renderTodayWorkout();
   renderTasks();
   renderCalendar();
+  renderTrainingOverview();
   renderWorkouts();
   renderPokemon();
   renderLearning();
@@ -1713,7 +2336,9 @@ function init() {
   renderLibrary();
   renderReview();
   renderSources();
+  renderPrivatePulse();
   renderContextReview();
+  renderBridgePanel();
   renderLocalDataSettings();
   renderWeather();
   renderLichessDaily();
