@@ -77,21 +77,21 @@
               <div class="hero-copy">
                 <p class="eyebrow" id="heroDate">Friday, July 3</p>
                 <h2 id="today-heading">What matters today</h2>
-                <p class="summary-text">
+                <p class="summary-text" id="dailyBrief">
                   Keep today light and useful: protect weekend running, clear the highest-friction personal tasks,
                   and save one good idea for later instead of letting it float away.
                 </p>
                 <div class="hero-stat-row" aria-label="Today signals">
-                  <span><strong>3</strong> priorities</span>
-                  <span><strong>3-4</strong> easy miles</span>
-                  <span><strong>5:45</strong> next event</span>
+                  <span><strong id="priorityCount">3</strong> priorities</span>
+                  <span><strong id="weatherSignal">--</strong> weather</span>
+                  <span><strong id="sourceSignal">0/3</strong> live sources</span>
                 </div>
               </div>
               <div class="signal-orbit" aria-label="Daily readiness visualization">
                 <div class="orbit-ring ring-one"></div>
                 <div class="orbit-ring ring-two"></div>
                 <div class="orbit-core">
-                  <strong>73</strong>
+                  <strong id="dailySignalScore">73</strong>
                   <span>daily signal</span>
                 </div>
               </div>
@@ -188,9 +188,20 @@
                 <span class="module-icon ai-icon" aria-hidden="true">AI</span>
                 <p class="eyebrow">Recommendation</p>
               </div>
-              <h3>Do the smallest prep step</h3>
-              <p>Pack running gear tonight if Saturday quality work is still the plan.</p>
-              <span class="reason-pill">Because weekend running matters</span>
+              <div id="recommendationCard" aria-live="polite">
+                <h3>Do the smallest prep step</h3>
+                <p>Pack running gear tonight if Saturday quality work is still the plan.</p>
+                <span class="reason-pill">Because weekend running matters</span>
+              </div>
+            </article>
+            <article class="glass-card action-card module-ai" id="sourceHealthCard" aria-live="polite">
+              <div class="module-header">
+                <span class="module-icon ai-icon" aria-hidden="true">Src</span>
+                <p class="eyebrow">Source health</p>
+              </div>
+              <h3>Checking public signals</h3>
+              <p>Weather, Pokemon GO, and Lichess will report live or offline status here.</p>
+              <span class="source-badge">Loading</span>
             </article>
           </div>
         </section>

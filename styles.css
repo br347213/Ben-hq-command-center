@@ -911,6 +911,43 @@ h3 {
   gap: 8px;
 }
 
+.source-status-list {
+  display: grid;
+  gap: 8px;
+}
+
+.source-status {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(224, 244, 255, 0.13);
+  border-radius: var(--radius);
+  color: var(--muted);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.source-status strong {
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.source-status[data-state="live"] {
+  border-color: rgba(121, 242, 181, 0.28);
+}
+
+.source-status[data-state="offline"] {
+  border-color: rgba(255, 142, 179, 0.24);
+}
+
+.source-status[data-state="loading"] {
+  border-color: rgba(255, 209, 102, 0.24);
+}
+
 .workout-card {
   border-color: rgba(121, 242, 181, 0.32);
 }

@@ -13,6 +13,7 @@
 
 - Keep public, account-free adapters separate from private account connectors.
 - Keep public GitHub Pages integrations limited to no-secret APIs and source links.
+- Build on the current source health card and dynamic daily signal.
 - Add source records with name, freshness, permission level, last refresh, and confidence.
 - Add a personal-only allowlist before connecting calendar, email, files, or app accounts.
 - Build a review queue before imported context can influence durable memory.
@@ -23,6 +24,8 @@
 ## Tasks And Review
 
 - Add inbox processing.
+- Promote local-storage captures into a real task model when a backend exists.
+- Add clear completed and reset-local-data controls.
 - Add today, upcoming, someday, and projects views.
 - Add recurring tasks.
 - Add weekly review completion state.

@@ -266,8 +266,14 @@ const seed = {
   ],
 };
 
+const storageKeys = {
+  captures: "ben-hq-captures-v1",
+  completed: "ben-hq-completed-tasks-v1",
+};
+
 let currentView = "today";
-let capturedItems = [...seed.inbox];
+let capturedItems = loadStoredItems();
+let completedTasks = loadStoredSet(storageKeys.completed);
 let selectedChessSquare = null;
 let chessSolved = false;
 let weatherState = {
@@ -294,6 +300,12 @@ let pokemonLiveState = {
   shiny: "--",
   nesting: "--",
   updated: "",
+};
+let sourceHealthState = {
+  weather: "loading",
+  pokemon: "loading",
+  lichess: "loading",
+  local: "live",
 };
 
 const chessPuzzle = {
@@ -410,6 +422,58 @@ function navigate(viewId) {
   }
 }
 
+function readJson(key, fallback) {
+  try {
+    const raw = window.localStorage?.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  try {
+    window.localStorage?.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    // Local storage is optional; the app still works without persistence.
+  }
+}
+
+function loadStoredItems() {
+  const stored = readJson(storageKeys.captures, null);
+  return Array.isArray(stored) ? stored : [...seed.inbox];
+}
+
+function loadStoredSet(key) {
+  const stored = readJson(key, []);
+  return new Set(Array.isArray(stored) ? stored : []);
+}
+
+function saveCapturedItems() {
+  writeJson(storageKeys.captures, capturedItems);
+}
+
+function saveCompletedTasks() {
+  writeJson(storageKeys.completed, [...completedTasks]);
+}
+
+function taskId(task) {
+  return `${task.type || "task"}:${task.title}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function taskKey(task) {
+  return encodeURIComponent(taskId(task));
+}
+
 function renderPriorities() {
   document.getElementById("priorityList").innerHTML = seed.priorities
     .map(
@@ -432,10 +496,10 @@ function renderTasks() {
       .map(
         (task) => `
           <li class="task-item">
-            <input class="task-check" type="checkbox" aria-label="Complete ${task.title}" />
+            <input class="task-check" type="checkbox" data-task-id="${taskKey(task)}" aria-label="Complete ${escapeHtml(task.title)}" ${completedTasks.has(taskId(task)) ? "checked" : ""} />
             <div>
-              <strong>${task.title}</strong>
-              <p class="task-meta">${task.type} - ${task.meta}</p>
+              <strong>${escapeHtml(task.title)}</strong>
+              <p class="task-meta">${escapeHtml(task.type)} - ${escapeHtml(task.meta)}</p>
             </div>
           </li>
         `,
@@ -446,10 +510,10 @@ function renderTasks() {
     .map(
       (task) => `
         <li class="task-item">
-          <input class="task-check" type="checkbox" aria-label="Complete ${task.title}" />
+          <input class="task-check" type="checkbox" data-task-id="${taskKey(task)}" aria-label="Complete ${escapeHtml(task.title)}" ${completedTasks.has(taskId(task)) ? "checked" : ""} />
           <div>
-            <strong>${task.title}</strong>
-            <p class="task-meta">${task.meta}</p>
+            <strong>${escapeHtml(task.title)}</strong>
+            <p class="task-meta">${escapeHtml(task.meta)}</p>
           </div>
         </li>
       `,
@@ -642,6 +706,126 @@ function renderWeather() {
   `;
 }
 
+function sourceStatusLabel(status) {
+  return status === "live" ? "Live" : status === "loading" ? "Checking" : "Offline";
+}
+
+function liveSourceCount() {
+  return ["weather", "pokemon", "lichess"].filter((key) => sourceHealthState[key] === "live").length;
+}
+
+function renderSourceHealth() {
+  const target = document.getElementById("sourceHealthCard");
+  if (!target) return;
+
+  const statuses = [
+    { label: "Weather", state: sourceHealthState.weather },
+    { label: "Pokemon GO", state: sourceHealthState.pokemon },
+    { label: "Lichess", state: sourceHealthState.lichess },
+    { label: "Local memory", state: sourceHealthState.local },
+  ];
+
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon ai-icon" aria-hidden="true">Src</span>
+      <p class="eyebrow">Source health</p>
+    </div>
+    <h3>${liveSourceCount()} of 3 public signals live</h3>
+    <p>Private sources stay gated; public signals refresh in-browser and local captures stay on this device.</p>
+    <div class="source-status-list">
+      ${statuses
+        .map(
+          (item) => `
+            <span class="source-status" data-state="${item.state}">
+              <strong>${sourceStatusLabel(item.state)}</strong>
+              ${item.label}
+            </span>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function buildRecommendation() {
+  const openToday = seed.todayTasks.filter((task) => !completedTasks.has(taskId(task))).length;
+  const openInbox = capturedItems.filter((task) => !completedTasks.has(taskId(task))).length;
+  const rainy = /\b(rain|showers|thunderstorm|drizzle)\b/i.test(weatherState.summary) || parseInt(weatherState.rain, 10) >= 45;
+
+  if (rainy) {
+    return {
+      title: "Protect the run window",
+      body: "Weather looks wet enough to plan a dry backup: mobility, core, or an earlier easy run if the window opens.",
+      reason: "Because weather is shaping today's training choice",
+    };
+  }
+
+  if (openToday > 1) {
+    return {
+      title: "Clear one small personal loop",
+      body: "Pick the easiest Today task and finish it before adding anything new. Momentum beats a bigger system right now.",
+      reason: `${openToday} today tasks still open`,
+    };
+  }
+
+  if (openInbox >= 4) {
+    return {
+      title: "Process the capture pile",
+      body: "Spend five minutes moving captured items into done, today, or later so the inbox stays light.",
+      reason: `${openInbox} captured items need triage`,
+    };
+  }
+
+  if (lichessState.status === "live") {
+    return {
+      title: "Take the chess rep",
+      body: "Do one puzzle while the friction is low. Keep it tiny: solve, note the pattern, move on.",
+      reason: "Lichess daily puzzle is available",
+    };
+  }
+
+  return {
+    title: "Do the smallest prep step",
+    body: "Pack running gear tonight if the weekend quality work is still the plan.",
+    reason: "Because weekend running matters",
+  };
+}
+
+function renderRecommendation() {
+  const target = document.getElementById("recommendationCard");
+  if (!target) return;
+  const recommendation = buildRecommendation();
+  target.innerHTML = `
+    <h3>${recommendation.title}</h3>
+    <p>${recommendation.body}</p>
+    <span class="reason-pill">${recommendation.reason}</span>
+  `;
+}
+
+function renderDailySignals() {
+  const completedToday = seed.todayTasks.filter((task) => completedTasks.has(taskId(task))).length;
+  const sourceCount = liveSourceCount();
+  const baseScore = 58 + sourceCount * 7 + completedToday * 5;
+  const cappedScore = Math.min(92, baseScore);
+  const weatherWord = weatherState.status === "live" ? weatherState.temp : "--";
+  const sourceWord = `${sourceCount}/3`;
+
+  document.getElementById("priorityCount").textContent = seed.priorities.length;
+  document.getElementById("weatherSignal").textContent = weatherWord;
+  document.getElementById("sourceSignal").textContent = sourceWord;
+  document.getElementById("dailySignalScore").textContent = cappedScore;
+  document.getElementById("dailyBrief").textContent =
+    sourceCount > 0
+      ? `Ben HQ has ${sourceCount} public signal${sourceCount === 1 ? "" : "s"} online. Keep the day useful: protect training, clear one personal loop, and use live data without overfitting the plan.`
+      : "Ben HQ is in local mode. Keep the day useful: protect training, clear one personal loop, and let live sources come back when they are reachable.";
+}
+
+function renderIntelligence() {
+  renderSourceHealth();
+  renderDailySignals();
+  renderRecommendation();
+}
+
 function renderSources() {
   const sourceGrid = document.getElementById("sourceGrid");
   if (!sourceGrid) return;
@@ -699,6 +883,7 @@ function formatShortTime() {
 }
 
 async function refreshLichessDaily() {
+  sourceHealthState.lichess = "loading";
   lichessState = {
     ...lichessState,
     status: "loading",
@@ -706,6 +891,7 @@ async function refreshLichessDaily() {
     updated: "",
   };
   renderLichessDaily();
+  renderIntelligence();
 
   try {
     const data = await sourceAdapters.lichessDaily.fetch();
@@ -720,6 +906,7 @@ async function refreshLichessDaily() {
       link: puzzle.id ? `https://lichess.org/training/${puzzle.id}` : "https://lichess.org/training/daily",
       updated: formatShortTime(),
     };
+    sourceHealthState.lichess = "live";
   } catch (error) {
     lichessState = {
       status: "offline",
@@ -729,18 +916,22 @@ async function refreshLichessDaily() {
       link: "https://lichess.org/training/daily",
       updated: "",
     };
+    sourceHealthState.lichess = "offline";
   }
 
   renderLichessDaily();
+  renderIntelligence();
 }
 
 async function refreshPokemonLiveData() {
+  sourceHealthState.pokemon = "loading";
   pokemonLiveState = {
     ...pokemonLiveState,
     status: "loading",
     updated: "",
   };
   renderPokemon();
+  renderIntelligence();
 
   try {
     const data = await sourceAdapters.pogo.fetch();
@@ -751,6 +942,7 @@ async function refreshPokemonLiveData() {
       nesting: objectCount(data.nesting),
       updated: formatShortTime(),
     };
+    sourceHealthState.pokemon = "live";
   } catch (error) {
     pokemonLiveState = {
       status: "offline",
@@ -759,12 +951,15 @@ async function refreshPokemonLiveData() {
       nesting: "--",
       updated: "",
     };
+    sourceHealthState.pokemon = "offline";
   }
 
   renderPokemon();
+  renderIntelligence();
 }
 
 async function refreshWeather() {
+  sourceHealthState.weather = "loading";
   weatherState = {
     ...weatherState,
     status: "loading",
@@ -772,6 +967,7 @@ async function refreshWeather() {
     updated: "",
   };
   renderWeather();
+  renderIntelligence();
 
   try {
     const data = await sourceAdapters.weather.fetch();
@@ -792,6 +988,7 @@ async function refreshWeather() {
       rain: `${rainChance ?? 0}%`,
       updated,
     };
+    sourceHealthState.weather = "live";
   } catch (error) {
     weatherState = {
       status: "offline",
@@ -803,9 +1000,11 @@ async function refreshWeather() {
       rain: "--",
       updated: "",
     };
+    sourceHealthState.weather = "offline";
   }
 
   renderWeather();
+  renderIntelligence();
 }
 
 function chessSquareName(fileIndex, rank) {
@@ -921,6 +1120,20 @@ function wireEvents() {
     }
   });
 
+  document.body.addEventListener("change", (event) => {
+    const taskCheck = event.target.closest("[data-task-id]");
+    if (!taskCheck) return;
+    const id = decodeURIComponent(taskCheck.dataset.taskId);
+
+    if (taskCheck.checked) {
+      completedTasks.add(id);
+    } else {
+      completedTasks.delete(id);
+    }
+    saveCompletedTasks();
+    renderIntelligence();
+  });
+
   document.getElementById("mobileMenuButton").addEventListener("click", () => {
     document.getElementById("mobileNavDrawer").classList.toggle("open");
   });
@@ -933,8 +1146,10 @@ function wireEvents() {
     if (!title) return;
 
     capturedItems = [{ title, type, meta: "Captured just now" }, ...capturedItems];
+    saveCapturedItems();
     input.value = "";
     renderTasks();
+    renderIntelligence();
     navigate("tasks");
   });
 
@@ -977,6 +1192,7 @@ function init() {
   renderLichessDaily();
   renderChessBoard();
   formatToday();
+  renderIntelligence();
   wireEvents();
   refreshWeather();
   refreshLichessDaily();
