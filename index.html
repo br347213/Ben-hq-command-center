@@ -258,8 +258,10 @@
                 <textarea id="contextBody" rows="5" placeholder="Paste a personal summary, exported note, workout recap, calendar context, or idea to review later."></textarea>
                 <div class="settings-actions">
                   <button class="secondary-button" type="submit">Save for review</button>
+                  <button class="secondary-button" data-action="import-context-file" type="button">Import file</button>
                   <button class="text-button" data-action="clear-context-intake" type="button">Clear</button>
                 </div>
+                <input class="hidden-file-input" id="contextFileInput" type="file" accept=".txt,.md,.json,text/plain,text/markdown,application/json" multiple />
               </form>
               <div class="context-review-list" id="contextReviewList" aria-live="polite"></div>
             </article>

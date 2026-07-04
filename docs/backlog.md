@@ -69,7 +69,7 @@
 
 ## Living Knowledge Vault
 
-- Add file upload and source labeling beyond the current paste-based intake lane.
+- Add richer file upload parsing beyond the current local text, Markdown, and JSON intake lane.
 - Expand current local data export/import and review queue into a fuller living-vault workflow.
 - Add personal context review and approval flow.
 - Add editable memory cards.

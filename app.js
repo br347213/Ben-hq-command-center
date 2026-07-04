@@ -278,6 +278,7 @@ const contextSourceTypes = {
   Calendar: "note",
   ChatGPT: "idea",
   Chess: "chess",
+  File: "note",
   Garmin: "training",
   Gmail: "note",
   Personal: "note",
@@ -1074,6 +1075,59 @@ function addContextImport(source, title, body) {
   return true;
 }
 
+function readTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => reject(new Error("File read failed")));
+    reader.readAsText(file);
+  });
+}
+
+function cleanImportedFileBody(file, text) {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  if (!/\.json$/i.test(file.name)) return trimmed;
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2);
+  } catch (error) {
+    return trimmed;
+  }
+}
+
+async function importContextFiles(files) {
+  const selectedFiles = [...files];
+  if (!selectedFiles.length) return;
+  const imported = [];
+  for (const file of selectedFiles) {
+    try {
+      const text = cleanImportedFileBody(file, await readTextFile(file));
+      if (text) {
+        imported.push(
+          normalizeContextImport({
+            id: makeContextId(),
+            source: "File",
+            title: file.name.replace(/\.[^.]+$/, ""),
+            body: text,
+            status: "review",
+            createdAt: new Date().toISOString(),
+          }),
+        );
+      }
+    } catch (error) {
+      // Skip unreadable files; the intake queue should keep working for the rest.
+    }
+  }
+  const validImports = imported.filter(Boolean);
+  if (!validImports.length) {
+    alert("No readable text was found in the selected file.");
+    return;
+  }
+  contextImports = [...validImports, ...contextImports];
+  saveContextImports();
+  refreshLocalSurfaces();
+}
+
 function findContextImport(id) {
   return contextImports.find((item) => item.id === id);
 }
@@ -1452,6 +1506,9 @@ function wireEvents() {
       document.getElementById("contextTitle").value = "";
       document.getElementById("contextBody").value = "";
     }
+    if (actionButton?.dataset.action === "import-context-file") {
+      document.getElementById("contextFileInput")?.click();
+    }
     if (actionButton?.dataset.action === "promote-context") {
       promoteContextImport(actionButton.dataset.contextId);
     }
@@ -1504,6 +1561,12 @@ function wireEvents() {
   document.body.addEventListener("change", (event) => {
     if (event.target.id !== "localImportInput") return;
     importLocalData(event.target.files?.[0]);
+    event.target.value = "";
+  });
+
+  document.body.addEventListener("change", (event) => {
+    if (event.target.id !== "contextFileInput") return;
+    importContextFiles(event.target.files || []);
     event.target.value = "";
   });
 
