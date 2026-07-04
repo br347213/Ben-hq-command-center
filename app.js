@@ -1094,7 +1094,7 @@ function importPacketFromLocationHash() {
 }
 
 function autoSyncPacketUrl() {
-  return new URL("private/ben-hq-latest.enc.json", window.location.href).toString();
+  return new URL("data/ben-hq-latest.enc.json", window.location.href).toString();
 }
 
 async function refreshEncryptedAutoSync() {
