@@ -4,6 +4,7 @@ const navItems = [
   { id: "calendar", label: "Calendar", icon: "C" },
   { id: "training", label: "Training", icon: "R" },
   { id: "pokemon", label: "Pokemon GO", icon: "P" },
+  { id: "chess", label: "Chess", icon: "Ch" },
   { id: "learn", label: "Learn", icon: "L" },
   { id: "prompts", label: "Prompts", icon: "A" },
   { id: "library", label: "Library", icon: "N" },
@@ -165,6 +166,30 @@ const seed = {
 
 let currentView = "today";
 let capturedItems = [...seed.inbox];
+let selectedChessSquare = null;
+let chessSolved = false;
+
+const chessPuzzle = {
+  expectedFrom: "h5",
+  expectedTo: "f7",
+  hint: "The bishop on c4 supports f7. Look for a queen check that leaves the king no escape.",
+  pieces: {
+    e8: { side: "black", label: "K" },
+    a8: { side: "black", label: "R" },
+    h8: { side: "black", label: "R" },
+    f7: { side: "black", label: "p" },
+    g7: { side: "black", label: "p" },
+    e7: { side: "black", label: "p" },
+    g1: { side: "white", label: "K" },
+    h5: { side: "white", label: "Q" },
+    c4: { side: "white", label: "B" },
+    f1: { side: "white", label: "R" },
+    a2: { side: "white", label: "p" },
+    f2: { side: "white", label: "p" },
+    g2: { side: "white", label: "p" },
+    h2: { side: "white", label: "p" },
+  },
+};
 
 function renderNav(targetId) {
   const target = document.getElementById(targetId);
@@ -188,6 +213,9 @@ function navigate(viewId) {
   document.getElementById("mobileNavDrawer").classList.remove("open");
   renderNav("desktopNav");
   renderNav("mobileNav");
+  if (viewId === "chess") {
+    renderChessBoard();
+  }
 }
 
 function renderPriorities() {
@@ -362,6 +390,88 @@ function renderReview() {
     .join("");
 }
 
+function chessSquareName(fileIndex, rank) {
+  return `${"abcdefgh"[fileIndex]}${rank}`;
+}
+
+function setChessFeedback(message, state = "") {
+  const feedback = document.getElementById("chessFeedback");
+  if (!feedback) return;
+  feedback.textContent = message;
+  feedback.dataset.state = state;
+}
+
+function renderChessBoard() {
+  const board = document.getElementById("chessBoard");
+  if (!board) return;
+
+  const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+  board.innerHTML = ranks
+    .map((rank) =>
+      Array.from({ length: 8 }, (_, fileIndex) => {
+        const square = chessSquareName(fileIndex, rank);
+        const piece = chessPuzzle.pieces[square];
+        const shade = (fileIndex + rank) % 2 === 0 ? "light" : "dark";
+        const selected = selectedChessSquare === square ? " selected" : "";
+        const solvedTarget = chessSolved && square === chessPuzzle.expectedTo ? " solved" : "";
+        const content = piece ? `<span class="piece ${piece.side}">${piece.label}</span>` : "";
+        return `
+          <button class="chess-square ${shade}${selected}${solvedTarget}" type="button" data-square="${square}" aria-label="${square}">
+            ${content}
+            <span class="square-label">${square}</span>
+          </button>
+        `;
+      }).join(""),
+    )
+    .join("");
+}
+
+function handleChessSquare(square) {
+  if (chessSolved) return;
+
+  const piece = chessPuzzle.pieces[square];
+  if (!selectedChessSquare) {
+    if (piece?.side === "white") {
+      selectedChessSquare = square;
+      setChessFeedback(`Selected ${square}. Choose the destination square.`, "");
+      renderChessBoard();
+      return;
+    }
+    setChessFeedback("Start by selecting a white piece.", "error");
+    return;
+  }
+
+  if (selectedChessSquare === square) {
+    selectedChessSquare = null;
+    setChessFeedback("Selection cleared. Choose the white queen to start.", "");
+    renderChessBoard();
+    return;
+  }
+
+  if (selectedChessSquare === chessPuzzle.expectedFrom && square === chessPuzzle.expectedTo) {
+    chessSolved = true;
+    chessPuzzle.pieces[chessPuzzle.expectedTo] = chessPuzzle.pieces[chessPuzzle.expectedFrom];
+    delete chessPuzzle.pieces[chessPuzzle.expectedFrom];
+    selectedChessSquare = null;
+    setChessFeedback("Correct: Qxf7# is checkmate. Nice pattern spot.", "success");
+    renderChessBoard();
+    return;
+  }
+
+  selectedChessSquare = null;
+  setChessFeedback("Not quite. Look for a forcing queen move on f7.", "error");
+  renderChessBoard();
+}
+
+function resetChessPuzzle() {
+  selectedChessSquare = null;
+  chessSolved = false;
+  chessPuzzle.pieces.h5 = { side: "white", label: "Q" };
+  chessPuzzle.pieces.f7 = { side: "black", label: "p" };
+  setChessFeedback("Select the white queen, then choose the mating square.", "");
+  renderChessBoard();
+}
+
 function wireEvents() {
   document.body.addEventListener("click", (event) => {
     const viewButton = event.target.closest("[data-view]");
@@ -375,6 +485,11 @@ function wireEvents() {
     }
     if (actionButton?.dataset.action === "open-review") {
       navigate("review");
+    }
+
+    const chessSquare = event.target.closest("[data-square]");
+    if (chessSquare) {
+      handleChessSquare(chessSquare.dataset.square);
     }
   });
 
@@ -397,6 +512,11 @@ function wireEvents() {
 
   document.getElementById("promptSearch").addEventListener("input", (event) => {
     renderPrompts(event.target.value);
+  });
+
+  document.getElementById("resetChessPuzzle")?.addEventListener("click", resetChessPuzzle);
+  document.getElementById("showChessHint")?.addEventListener("click", () => {
+    setChessFeedback(chessPuzzle.hint, "");
   });
 }
 
@@ -424,6 +544,7 @@ function init() {
   renderPrompts();
   renderLibrary();
   renderReview();
+  renderChessBoard();
   formatToday();
   wireEvents();
 }

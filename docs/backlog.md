@@ -41,6 +41,23 @@
 - Add learning queue statuses.
 - Add recommendation explanation controls.
 
+## Chess
+
+- Add a real chess engine such as chess.js for legal move validation.
+- Add daily puzzles with difficulty, themes, and completion history.
+- Add a puzzle review queue for missed tactics.
+- Add chess tips based on recurring mistakes.
+- Add lightweight study streaks without turning the app into a game.
+
+## Living Knowledge Vault
+
+- Add file upload and source labeling.
+- Add personal context review and approval flow.
+- Add editable memory cards.
+- Add source-backed recommendation explanations.
+- Add import adapters for selected ChatGPT exports, personal email summaries, calendar items, notes, and app data.
+- Add deletion and export controls for stored personal context.
+
 ## Later Integrations
 
 - Google Calendar read integration.

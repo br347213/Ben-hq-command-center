@@ -64,6 +64,7 @@
               <option value="reminder">Reminder</option>
               <option value="training">Training note</option>
               <option value="pokemon">Pokemon GO goal</option>
+              <option value="chess">Chess note</option>
             </select>
             <input id="captureInput" type="text" placeholder="Example: plan Saturday tempo route" autocomplete="off" />
             <button class="primary-button" type="submit">Add</button>
@@ -138,6 +139,15 @@
               <h3>Check weekend event prep</h3>
               <p>Confirm item space, raid passes, and a short play window with your son.</p>
               <span class="source-badge">Mock data - not live</span>
+            </article>
+            <article class="glass-card action-card module-chess">
+              <div class="module-header">
+                <span class="module-icon chess-icon" aria-hidden="true">64</span>
+                <p class="eyebrow">Chess puzzle</p>
+              </div>
+              <h3>Find the forcing move</h3>
+              <p>One short tactic today: white to move, spot the direct mate pattern, then check your answer.</p>
+              <button class="text-button" data-view="chess">Open puzzle</button>
             </article>
             <article class="glass-card action-card module-learning">
               <div class="module-header">
@@ -234,6 +244,54 @@
             <span class="freshness">Mock events - not live</span>
           </div>
           <div class="dashboard-grid" id="pokemonCards"></div>
+        </section>
+
+        <section class="page-view" id="view-chess">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Casual improvement</p>
+              <h2>Chess</h2>
+            </div>
+            <span class="freshness">Seeded puzzle</span>
+          </div>
+          <div class="chess-layout">
+            <article class="liquid-panel chess-summary module-chess">
+              <div class="module-header">
+                <span class="module-icon chess-icon" aria-hidden="true">64</span>
+                <p class="eyebrow">Puzzle of the day</p>
+              </div>
+              <h3>White to move: mate in one</h3>
+              <p>
+                This is a pattern-recognition rep. Look for the forcing queen move supported by the bishop.
+              </p>
+              <div class="chess-feedback" id="chessFeedback">Select the white queen, then choose the mating square.</div>
+              <div class="button-row">
+                <button class="secondary-button" id="resetChessPuzzle" type="button">Reset</button>
+                <button class="text-button" id="showChessHint" type="button">Hint</button>
+              </div>
+            </article>
+            <article class="glass-panel">
+              <div class="chess-board-wrap">
+                <div class="chess-board" id="chessBoard" aria-label="Interactive chess puzzle board"></div>
+              </div>
+            </article>
+            <article class="glass-card action-card module-chess">
+              <div class="module-header">
+                <span class="module-icon chess-icon" aria-hidden="true">Tip</span>
+                <p class="eyebrow">Chess tip</p>
+              </div>
+              <h3>Checks, captures, threats</h3>
+              <p>Before choosing a move, scan forcing moves in that order. It is a simple habit that catches a lot of tactics.</p>
+            </article>
+            <article class="glass-card action-card module-learning">
+              <div class="module-header">
+                <span class="module-icon learning-icon" aria-hidden="true">Plan</span>
+                <p class="eyebrow">Study rhythm</p>
+              </div>
+              <h3>Keep it tiny</h3>
+              <p>One puzzle and one reviewed mistake beats a long session you never repeat.</p>
+            </article>
+          </div>
         </section>
 
         <section class="page-view" id="view-learn">
