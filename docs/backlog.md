@@ -35,8 +35,7 @@
 
 - Add athlete profile.
 - Add rule-based plan generator.
-- Add workout detail pages.
-- Add completion feedback.
+- Add completion feedback and weekly progress history.
 - Add unit tests for schedule constraints.
 
 ## Pokemon GO

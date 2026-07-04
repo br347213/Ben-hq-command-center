@@ -26,7 +26,7 @@ The current machine path does not have Node or npm available, so the first build
 - Local data export, import, and reset controls for browser-stored context
 - Tasks inbox and today focus
 - Calendar preview
-- Training hub preview
+- Training hub with visible workout prescriptions, fallback options, and readiness rules
 - Pokemon GO public data pulse through PoGoAPI
 - Manual, source-labeled Pokemon GO event brief for Sobble Community Day and the 10th Anniversary Party
 - Chess module with a polished interactive puzzle board and Lichess daily puzzle metadata

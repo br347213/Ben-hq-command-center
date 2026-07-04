@@ -25,6 +25,7 @@ Ben HQ is a private personal daily command center. It should reduce recurring de
 - Calendar preview
 - Weekly review
 - Training hub
+- Workout cards should show prescriptions and fallbacks without requiring detail-page navigation.
 - Pokemon GO planner
 - Chess improvement companion
 - Learning queue

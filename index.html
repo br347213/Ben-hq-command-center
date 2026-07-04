@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#080b10" />
     <title>Ben HQ</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260704-chess-polish-2" />
+    <link rel="stylesheet" href="styles.css?v=20260704-training-brief-1" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -142,9 +142,10 @@
               </div>
               <h3>Easy run or mobility reset</h3>
               <p>3-4 easy miles if legs feel normal. If fatigue is high, do 20 minutes of mobility and core.</p>
-              <div class="button-row">
-                <button class="secondary-button">Complete</button>
-                <button class="text-button">Modify</button>
+              <div class="mini-fact-grid">
+                <span><strong>25-40</strong> min</span>
+                <span><strong>RPE 3</strong> easy</span>
+                <span><strong>Fallback</strong> mobility</span>
               </div>
             </article>
             <article class="glass-card action-card module-pokemon today-pokemon-card" id="todayPokemonCard">
@@ -314,7 +315,7 @@
             <span class="freshness">Generated from constraints</span>
           </div>
           <div class="training-layout">
-            <article class="liquid-panel training-summary">
+            <article class="liquid-panel training-summary" id="trainingSummaryCard">
               <p class="eyebrow">This week</p>
               <h3>Sustainable base week</h3>
               <p>
@@ -326,6 +327,7 @@
                 <span><strong>1</strong> quality day</span>
               </div>
             </article>
+            <article class="glass-panel training-readiness" id="trainingReadinessCard"></article>
             <div class="workout-stack" id="workoutStack"></div>
           </div>
         </section>
@@ -481,6 +483,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260704-chess-polish-2"></script>
+    <script src="app.js?v=20260704-training-brief-1"></script>
   </body>
 </html>

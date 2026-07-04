@@ -84,26 +84,69 @@ const seed = {
     { day: "Sat", events: ["Quality run - tempo", "Pokemon event check"] },
     { day: "Sun", events: ["Long run - 6 mi", "Weekly review"] },
   ],
+  training: {
+    title: "Sustainable base week",
+    summary:
+      "Keep the week boring on purpose: one quality run, one long run, two strength sessions, and easy work that does not steal from recovery.",
+    metrics: [
+      { value: "22", label: "target miles" },
+      { value: "2", label: "strength days" },
+      { value: "1", label: "quality run" },
+    ],
+    readiness: [
+      {
+        label: "Today",
+        value: "Easy",
+        detail: "Use conversational effort. If legs are flat, choose mobility without guilt.",
+      },
+      {
+        label: "Watch",
+        value: "Heat + schedule",
+        detail: "Move the run earlier if weather or Pokemon event timing crowds the afternoon.",
+      },
+      {
+        label: "Rule",
+        value: "No hero reps",
+        detail: "Leave every workout feeling like you could have done a little more.",
+      },
+    ],
+  },
   workouts: [
+    {
+      title: "Today: easy run or mobility reset",
+      meta: "25-40 min - RPE 3-4",
+      tag: "Today",
+      purpose: "Preserve the rhythm without borrowing energy from the weekend.",
+      steps: ["3-4 easy miles at conversational effort", "Keep cadence relaxed; no pace target", "Finish with 5 minutes calves, hips, and hamstrings"],
+      fallback: "If sleep, heat, or legs feel off: skip mileage and do 20 minutes mobility plus dead bugs, side planks, and glute bridges.",
+      checklist: ["Shoes ready", "Hydrate before heading out", "Stop while it still feels easy"],
+    },
     {
       title: "Upper strength / physique",
       meta: "45 min - push, pull, shoulders, arms",
-      reason: "Keeps strength progress moving without loading legs before weekend running.",
-    },
-    {
-      title: "Full-body support",
-      meta: "50 min - posterior chain, unilateral legs, trunk",
-      reason: "Builds running durability while keeping soreness controlled.",
+      tag: "Strength",
+      purpose: "Keep strength progress moving without loading legs before weekend running.",
+      steps: ["DB press 3x8-10", "Chest-supported row 3x10", "Lateral raise 3x12-15", "Curl + triceps superset 2-3 rounds"],
+      fallback: "If time is tight: press, row, lateral raise. Leave accessories for later.",
+      checklist: ["2 reps in reserve", "No grinder sets", "Log top set"],
     },
     {
       title: "Saturday tempo",
       meta: "Warmup, 18-24 min steady, cooldown",
-      reason: "One quality day per week keeps fitness sharp without crowding recovery.",
+      tag: "Quality",
+      purpose: "One controlled quality day keeps fitness sharp without crowding recovery.",
+      steps: ["10 min warmup easy", "18-24 min steady tempo, not a race", "8-10 min cooldown", "Optional 4 relaxed strides if fresh"],
+      fallback: "If heat or life timing interferes: 30-35 minutes easy with 6 x 20 second pickups.",
+      checklist: ["Route picked", "Effort smooth", "Finish controlled"],
     },
     {
       title: "Sunday long run",
       meta: "6 miles easy",
-      reason: "Preserves the aerobic base and keeps the weekly rhythm simple.",
+      tag: "Long",
+      purpose: "Preserve the aerobic base and keep the weekly rhythm simple.",
+      steps: ["6 miles easy", "First mile deliberately slow", "Stay relaxed on hills", "Walk 2-3 minutes after finishing"],
+      fallback: "If the week runs long: cap at 45 minutes and keep the streak alive.",
+      checklist: ["Start easy", "Bring water if hot", "No fast finish needed"],
     },
   ],
   pokemon: [
@@ -743,20 +786,76 @@ function renderCalendar() {
     .join("");
 }
 
+function renderTrainingOverview() {
+  const summary = document.getElementById("trainingSummaryCard");
+  if (summary) {
+    summary.innerHTML = `
+      <p class="eyebrow">This week</p>
+      <h3>${escapeHtml(seed.training.title)}</h3>
+      <p>${escapeHtml(seed.training.summary)}</p>
+      <div class="metric-row">
+        ${seed.training.metrics
+          .map((metric) => `<span><strong>${escapeHtml(metric.value)}</strong> ${escapeHtml(metric.label)}</span>`)
+          .join("")}
+      </div>
+    `;
+  }
+
+  const readiness = document.getElementById("trainingReadinessCard");
+  if (readiness) {
+    readiness.innerHTML = `
+      <div class="module-header">
+        <span class="module-icon training-icon" aria-hidden="true">Fit</span>
+        <p class="eyebrow">Readiness rules</p>
+      </div>
+      <h3>Choose the version that protects tomorrow.</h3>
+      <div class="training-rule-list">
+        ${seed.training.readiness
+          .map(
+            (item) => `
+              <div class="training-rule">
+                <span>${escapeHtml(item.label)}</span>
+                <div>
+                  <strong>${escapeHtml(item.value)}</strong>
+                  <p>${escapeHtml(item.detail)}</p>
+                </div>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+  }
+}
+
 function renderWorkouts() {
   document.getElementById("workoutStack").innerHTML = seed.workouts
     .map(
       (workout) => `
-        <article class="glass-card action-card">
+        <article class="glass-card workout-detail-card module-training">
           <div class="module-header">
             <span class="module-icon training-icon" aria-hidden="true">Run</span>
-            <p class="eyebrow">${workout.meta}</p>
+            <p class="eyebrow">${escapeHtml(workout.tag)} - ${escapeHtml(workout.meta)}</p>
           </div>
-          <h3>${workout.title}</h3>
-          <p>${workout.reason}</p>
-          <div class="button-row">
-            <button class="secondary-button">Open</button>
-            <button class="text-button">Adjust</button>
+          <div class="workout-detail-head">
+            <h3>${escapeHtml(workout.title)}</h3>
+            <span class="source-badge">${escapeHtml(workout.meta)}</span>
+          </div>
+          <p>${escapeHtml(workout.purpose)}</p>
+          <div class="workout-prescription">
+            <div>
+              <strong>Do this</strong>
+              <ol>
+                ${workout.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
+              </ol>
+            </div>
+            <div>
+              <strong>If tired</strong>
+              <p>${escapeHtml(workout.fallback)}</p>
+            </div>
+          </div>
+          <div class="tag-row">
+            ${workout.checklist.map((item) => `<span class="tag-pill">${escapeHtml(item)}</span>`).join("")}
           </div>
         </article>
       `,
@@ -1706,6 +1805,7 @@ function init() {
   renderTodayAgenda();
   renderTasks();
   renderCalendar();
+  renderTrainingOverview();
   renderWorkouts();
   renderPokemon();
   renderLearning();
