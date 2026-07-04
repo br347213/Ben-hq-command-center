@@ -18,14 +18,14 @@
 - Add a personal-only allowlist before connecting calendar, email, files, or app accounts.
 - Build a review queue before imported context can influence durable memory.
 - Add connector health states: connected, loading, offline, permission needed, and paused.
-- Add visible deletion/export controls for stored personal context.
+- Keep visible local export, import, and reset controls for browser-stored personal context.
 - Exclude direct finance account connectors unless the scope changes later.
 
 ## Tasks And Review
 
 - Add inbox processing.
 - Promote local-storage captures into a real task model when a backend exists.
-- Add clear completed and reset-local-data controls.
+- Add clear completed controls.
 - Add today, upcoming, someday, and projects views.
 - Add recurring tasks.
 - Add weekly review completion state.
@@ -70,6 +70,7 @@
 ## Living Knowledge Vault
 
 - Add file upload and source labeling.
+- Expand current local data export/import into a fuller living-vault workflow.
 - Add personal context review and approval flow.
 - Add editable memory cards.
 - Add source-backed recommendation explanations.

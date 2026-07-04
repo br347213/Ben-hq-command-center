@@ -948,6 +948,56 @@ h3 {
   border-color: rgba(255, 209, 102, 0.24);
 }
 
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.danger-text {
+  color: #ffb4c7;
+}
+
+.danger-text:hover {
+  color: #ffd2dd;
+}
+
+.hidden-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.local-data-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.local-data-metrics span {
+  min-height: 54px;
+  display: grid;
+  align-content: center;
+  padding: 8px;
+  border: 1px solid rgba(224, 244, 255, 0.13);
+  border-radius: var(--radius);
+  color: var(--muted);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.local-data-metrics strong {
+  color: var(--text);
+  font-family: var(--display-font);
+  font-size: 1.1rem;
+}
+
 .workout-card {
   border-color: rgba(121, 242, 181, 0.32);
 }

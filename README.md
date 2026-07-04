@@ -20,6 +20,7 @@ The current machine path does not have Node or npm available, so the first build
 - Sources view for integration status and privacy guardrails
 - Quick capture with local in-memory task insertion
 - Local-device persistence for captures and task checkmarks
+- Local data export, import, and reset controls for browser-stored context
 - Tasks inbox and today focus
 - Calendar preview
 - Training hub preview
@@ -91,6 +92,7 @@ src/
 ## Known Limits
 
 - Seed data remains in the prototype, but captures and task checkmarks persist in this browser's local storage.
+- Local browser data can be exported from Settings before clearing browser data or switching devices.
 - Weather depends on the public Open-Meteo API being reachable from the browser.
 - Pokemon GO public counts depend on PoGoAPI being reachable from the browser.
 - Lichess daily puzzle metadata depends on the public Lichess API being reachable from the browser.

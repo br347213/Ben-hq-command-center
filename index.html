@@ -395,7 +395,7 @@
               <p class="eyebrow">Personal knowledge</p>
               <h2>Library</h2>
             </div>
-            <span class="freshness">Notes preview</span>
+            <span class="freshness" id="libraryFreshness">Local vault</span>
           </div>
           <div class="two-column" id="libraryList"></div>
         </section>
@@ -431,6 +431,16 @@
             <article class="glass-panel">
               <h3>Future integrations</h3>
               <p>Weather, Pokemon GO public data, and Lichess can run on GitHub Pages. Gmail, Calendar, Drive, ChatGPT, Notes, Garmin, and Apple Health need exports or a private bridge. Direct finance accounts are intentionally skipped.</p>
+            </article>
+            <article class="glass-panel" id="localDataCard">
+              <h3>Local data</h3>
+              <p>Captures and checkmarks stay in this browser only.</p>
+              <div class="settings-actions">
+                <button class="secondary-button" data-action="export-local-data" type="button">Export</button>
+                <button class="secondary-button" data-action="import-local-data" type="button">Import</button>
+                <button class="text-button danger-text" data-action="reset-local-data" type="button">Reset</button>
+              </div>
+              <input class="hidden-file-input" id="localImportInput" type="file" accept="application/json" />
             </article>
           </div>
         </section>

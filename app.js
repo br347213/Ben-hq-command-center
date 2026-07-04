@@ -270,6 +270,7 @@ const storageKeys = {
   captures: "ben-hq-captures-v1",
   completed: "ben-hq-completed-tasks-v1",
 };
+const memoryTypes = new Set(["note", "idea", "training", "pokemon", "chess"]);
 
 let currentView = "today";
 let capturedItems = loadStoredItems();
@@ -457,6 +458,48 @@ function saveCompletedTasks() {
   writeJson(storageKeys.completed, [...completedTasks]);
 }
 
+function removeStoredItem(key) {
+  try {
+    window.localStorage?.removeItem(key);
+  } catch (error) {
+    // Local storage is optional; reset can still update the in-memory app state.
+  }
+}
+
+function localMemoryItems() {
+  return capturedItems.filter((item) => memoryTypes.has(item.type));
+}
+
+function normalizeCapturedItem(item) {
+  if (!item || typeof item.title !== "string") return null;
+  const title = item.title.trim();
+  if (!title) return null;
+  const type = memoryTypes.has(item.type) || item.type === "task" ? item.type : "note";
+  const meta = typeof item.meta === "string" && item.meta.trim() ? item.meta : "Imported";
+  return {
+    title,
+    type,
+    meta,
+  };
+}
+
+function localDataSnapshot() {
+  return {
+    app: "Ben HQ",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    captures: capturedItems,
+    completedTasks: [...completedTasks],
+  };
+}
+
+function refreshLocalSurfaces() {
+  renderTasks();
+  renderLibrary();
+  renderLocalDataSettings();
+  renderIntelligence();
+}
+
 function taskId(task) {
   return `${task.type || "task"}:${task.title}`;
 }
@@ -640,16 +683,39 @@ function renderPrompts(filter = "") {
 }
 
 function renderLibrary() {
-  document.getElementById("libraryList").innerHTML = seed.library
-    .map(
-      (note) => `
-        <article class="glass-panel">
-          <h3>${note.title}</h3>
-          <p class="summary-text">${note.body}</p>
-        </article>
-      `,
-    )
-    .join("");
+  const localItems = localMemoryItems();
+  const seedCards = seed.library.map(
+    (note) => `
+      <article class="glass-panel">
+        <div class="module-header">
+          <span class="module-icon learning-icon" aria-hidden="true">Base</span>
+          <p class="eyebrow">Seed memory</p>
+        </div>
+        <h3>${escapeHtml(note.title)}</h3>
+        <p class="summary-text">${escapeHtml(note.body)}</p>
+      </article>
+    `,
+  );
+  const localCards = localItems.map(
+    (item) => {
+      const type = typeof item.type === "string" ? item.type : "note";
+      const meta = typeof item.meta === "string" ? item.meta : "Imported";
+      return `
+      <article class="glass-panel module-ai">
+        <div class="module-header">
+          <span class="module-icon ai-icon" aria-hidden="true">${escapeHtml(type.slice(0, 4))}</span>
+          <p class="eyebrow">Captured ${escapeHtml(meta.toLowerCase())}</p>
+        </div>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p class="summary-text">Local ${escapeHtml(type)} saved from quick capture.</p>
+      </article>
+    `;
+    },
+  );
+
+  document.getElementById("libraryList").innerHTML = [...localCards, ...seedCards].join("");
+  document.getElementById("libraryFreshness").textContent =
+    localItems.length > 0 ? `${localItems.length} local memory ${localItems.length === 1 ? "card" : "cards"}` : "Local vault ready";
 }
 
 function renderReview() {
@@ -846,6 +912,70 @@ function renderSources() {
       `,
     )
     .join("");
+}
+
+function renderLocalDataSettings() {
+  const target = document.getElementById("localDataCard");
+  if (!target) return;
+  const memoryCount = localMemoryItems().length;
+  const completedCount = completedTasks.size;
+  target.innerHTML = `
+    <h3>Local data</h3>
+    <p>Captures and checkmarks stay in this browser only. Export before clearing browser data or switching devices.</p>
+    <div class="local-data-metrics">
+      <span><strong>${capturedItems.length}</strong> captures</span>
+      <span><strong>${memoryCount}</strong> memory</span>
+      <span><strong>${completedCount}</strong> done</span>
+    </div>
+    <div class="settings-actions">
+      <button class="secondary-button" data-action="export-local-data" type="button">Export</button>
+      <button class="secondary-button" data-action="import-local-data" type="button">Import</button>
+      <button class="text-button danger-text" data-action="reset-local-data" type="button">Reset</button>
+    </div>
+    <input class="hidden-file-input" id="localImportInput" type="file" accept="application/json" />
+  `;
+}
+
+function exportLocalData() {
+  const blob = new Blob([JSON.stringify(localDataSnapshot(), null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `ben-hq-local-data-${date}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function importLocalData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const payload = JSON.parse(String(reader.result || "{}"));
+      if (!Array.isArray(payload.captures) || !Array.isArray(payload.completedTasks)) {
+        throw new Error("Invalid Ben HQ export");
+      }
+      capturedItems = payload.captures.map(normalizeCapturedItem).filter(Boolean);
+      completedTasks = new Set(payload.completedTasks.filter((item) => typeof item === "string"));
+      saveCapturedItems();
+      saveCompletedTasks();
+      refreshLocalSurfaces();
+      navigate("library");
+    } catch (error) {
+      alert("That file does not look like a Ben HQ local data export.");
+    }
+  });
+  reader.readAsText(file);
+}
+
+function resetLocalData() {
+  if (!confirm("Reset local Ben HQ captures and checkmarks on this device?")) return;
+  removeStoredItem(storageKeys.captures);
+  removeStoredItem(storageKeys.completed);
+  capturedItems = [...seed.inbox];
+  completedTasks = new Set();
+  refreshLocalSurfaces();
 }
 
 function renderLichessDaily() {
@@ -1113,6 +1243,15 @@ function wireEvents() {
     if (actionButton?.dataset.action === "refresh-pokemon") {
       refreshPokemonLiveData();
     }
+    if (actionButton?.dataset.action === "export-local-data") {
+      exportLocalData();
+    }
+    if (actionButton?.dataset.action === "import-local-data") {
+      document.getElementById("localImportInput")?.click();
+    }
+    if (actionButton?.dataset.action === "reset-local-data") {
+      resetLocalData();
+    }
 
     const chessSquare = event.target.closest("[data-square]");
     if (chessSquare) {
@@ -1131,6 +1270,7 @@ function wireEvents() {
       completedTasks.delete(id);
     }
     saveCompletedTasks();
+    renderLocalDataSettings();
     renderIntelligence();
   });
 
@@ -1148,9 +1288,14 @@ function wireEvents() {
     capturedItems = [{ title, type, meta: "Captured just now" }, ...capturedItems];
     saveCapturedItems();
     input.value = "";
-    renderTasks();
-    renderIntelligence();
+    refreshLocalSurfaces();
     navigate("tasks");
+  });
+
+  document.body.addEventListener("change", (event) => {
+    if (event.target.id !== "localImportInput") return;
+    importLocalData(event.target.files?.[0]);
+    event.target.value = "";
   });
 
   document.getElementById("promptSearch").addEventListener("input", (event) => {
@@ -1188,6 +1333,7 @@ function init() {
   renderLibrary();
   renderReview();
   renderSources();
+  renderLocalDataSettings();
   renderWeather();
   renderLichessDaily();
   renderChessBoard();

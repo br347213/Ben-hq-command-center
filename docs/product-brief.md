@@ -40,6 +40,7 @@ Near-term product ideas:
 - Public, account-free adapters first, starting with Open-Meteo weather for daily planning.
 - Public no-secret adapters for PoGoAPI and Lichess where browser CORS allows.
 - File and note uploads with source labels.
+- Local browser export/import/reset as the first private-device memory control.
 - Personal context cards that can be edited, archived, or promoted into durable memory.
 - A review queue for new imported knowledge before it influences recommendations.
 - Module-specific knowledge, such as training history, chess learning notes, Pokemon GO priorities, family planning preferences, and personal finance guardrails.
