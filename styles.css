@@ -610,6 +610,13 @@ h3 {
     rgba(124, 231, 255, 0.06);
 }
 
+.weather-icon {
+  border-color: rgba(124, 231, 255, 0.42);
+  background:
+    linear-gradient(145deg, rgba(124, 231, 255, 0.24), rgba(121, 242, 181, 0.06)),
+    rgba(124, 231, 255, 0.075);
+}
+
 .training-icon {
   border-color: rgba(121, 242, 181, 0.38);
   background:
@@ -855,8 +862,67 @@ h3 {
   color: #c5d3e3;
 }
 
+.weather-main {
+  display: grid;
+  gap: 3px;
+}
+
+.weather-main strong {
+  font-family: var(--display-font);
+  font-size: 2.45rem;
+  line-height: 1;
+}
+
+.weather-main span {
+  color: #c5d3e3;
+}
+
+.weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.weather-metrics span {
+  min-height: 54px;
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  padding: 8px;
+  border: 1px solid rgba(224, 244, 255, 0.13);
+  border-radius: var(--radius);
+  color: var(--muted);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.weather-metrics strong {
+  color: var(--text);
+  font-family: var(--display-font);
+  font-size: 1rem;
+}
+
+.source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .workout-card {
   border-color: rgba(121, 242, 181, 0.32);
+}
+
+.module-weather {
+  border-color: rgba(124, 231, 255, 0.28);
+}
+
+.module-weather::before {
+  background:
+    linear-gradient(145deg, rgba(124, 231, 255, 0.16), transparent 38%),
+    linear-gradient(315deg, rgba(121, 242, 181, 0.1), transparent 42%);
 }
 
 .workout-card::before,
@@ -914,6 +980,35 @@ h3 {
   background:
     linear-gradient(145deg, rgba(238, 245, 255, 0.12), transparent 38%),
     linear-gradient(315deg, rgba(124, 231, 255, 0.08), transparent 42%);
+}
+
+.source-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.7fr) minmax(0, 1.3fr);
+  gap: 16px;
+}
+
+.source-principles {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 340px;
+}
+
+.source-principles p:not(.eyebrow) {
+  color: #c8d8e8;
+}
+
+.source-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .two-column,
@@ -1197,6 +1292,7 @@ h3 {
   .hero-panel,
   .two-column,
   .training-layout,
+  .source-layout,
   .chess-layout {
     grid-template-columns: 1fr;
   }
@@ -1259,6 +1355,7 @@ h3 {
 
   .dashboard-grid,
   .prompt-grid,
+  .source-grid,
   .settings-grid,
   .review-board {
     grid-template-columns: 1fr;

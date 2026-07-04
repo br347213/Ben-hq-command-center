@@ -9,6 +9,7 @@ const navItems = [
   { id: "prompts", label: "Prompts", icon: "A" },
   { id: "library", label: "Library", icon: "N" },
   { id: "review", label: "Review", icon: "W" },
+  { id: "sources", label: "Sources", icon: "Src" },
   { id: "settings", label: "Settings", icon: "S" },
 ];
 
@@ -162,12 +163,78 @@ const seed = {
       items: ["Save one prompt", "Read one short item", "Write one useful note"],
     },
   ],
+  sources: [
+    {
+      title: "Arden weather",
+      status: "Connected",
+      tone: "weather",
+      icon: "Wx",
+      source: "Open-Meteo public API",
+      summary: "Live, account-free weather for daily planning, workouts, errands, and family outing decisions.",
+      next: "Add hourly windows and rain-aware workout suggestions.",
+    },
+    {
+      title: "Personal calendar",
+      status: "Planned",
+      tone: "calendar",
+      icon: "Cal",
+      source: "Read-only personal account later",
+      summary: "Future agenda awareness with explicit personal-account setup and no workplace calendar access.",
+      next: "Add OAuth permission screen and source freshness labels.",
+    },
+    {
+      title: "Personal email",
+      status: "Planned",
+      tone: "ai",
+      icon: "Mail",
+      source: "Selected personal inbox summaries later",
+      summary: "Future triage for life admin, receipts, appointments, and reminders after you approve the scope.",
+      next: "Build an allowlist and review queue before anything becomes memory.",
+    },
+    {
+      title: "ChatGPT context",
+      status: "Planned",
+      tone: "learning",
+      icon: "GPT",
+      source: "Export/import or approved summaries",
+      summary: "A way for Ben HQ to learn from your personal ChatGPT history without silently ingesting everything.",
+      next: "Create memory cards with approve, edit, ignore, and delete actions.",
+    },
+    {
+      title: "File uploads",
+      status: "Planned",
+      tone: "finance",
+      icon: "File",
+      source: "Manual personal uploads",
+      summary: "A living knowledge vault for notes, plans, PDFs, screenshots, and context files you choose.",
+      next: "Add source labels, confidence, and expiration dates.",
+    },
+    {
+      title: "Game and fitness sources",
+      status: "Planned",
+      tone: "chess",
+      icon: "Play",
+      source: "Manual first, live later",
+      summary: "Pokemon GO events, chess puzzles, and training signals can become real modules one source at a time.",
+      next: "Prefer stable public sources before account-based connectors.",
+    },
+  ],
 };
 
 let currentView = "today";
 let capturedItems = [...seed.inbox];
 let selectedChessSquare = null;
 let chessSolved = false;
+let weatherState = {
+  status: "loading",
+  source: "Open-Meteo",
+  summary: "Loading Arden weather...",
+  temp: "--",
+  feelsLike: "--",
+  wind: "--",
+  rain: "--",
+  updated: "",
+};
 
 const chessPuzzle = {
   expectedFrom: "h5",
@@ -188,6 +255,21 @@ const chessPuzzle = {
     f2: { side: "white", label: "p" },
     g2: { side: "white", label: "p" },
     h2: { side: "white", label: "p" },
+  },
+};
+
+const sourceAdapters = {
+  weather: {
+    name: "Open-Meteo",
+    url:
+      "https://api.open-meteo.com/v1/forecast?latitude=35.466&longitude=-82.516&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York",
+    async fetch() {
+      const response = await fetch(this.url);
+      if (!response.ok) {
+        throw new Error(`Weather request failed: ${response.status}`);
+      }
+      return response.json();
+    },
   },
 };
 
@@ -390,6 +472,111 @@ function renderReview() {
     .join("");
 }
 
+function weatherCodeLabel(code) {
+  if (code === 0) return "Clear";
+  if ([1, 2].includes(code)) return "Partly cloudy";
+  if (code === 3) return "Cloudy";
+  if ([45, 48].includes(code)) return "Fog";
+  if ([51, 53, 55].includes(code)) return "Drizzle";
+  if ([61, 63, 65, 66, 67].includes(code)) return "Rain";
+  if ([71, 73, 75, 77].includes(code)) return "Snow";
+  if ([80, 81, 82].includes(code)) return "Showers";
+  if ([95, 96, 99].includes(code)) return "Thunderstorm";
+  return "Weather";
+}
+
+function renderWeather() {
+  const weatherCard = document.getElementById("weatherCard");
+  if (!weatherCard) return;
+
+  weatherCard.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon weather-icon" aria-hidden="true">Wx</span>
+      <p class="eyebrow">Arden weather</p>
+    </div>
+    <div class="weather-main">
+      <strong>${weatherState.temp}</strong>
+      <span>${weatherState.summary}</span>
+    </div>
+    <div class="weather-metrics" aria-label="Weather details">
+      <span><strong>${weatherState.feelsLike}</strong> feels</span>
+      <span><strong>${weatherState.wind}</strong> wind</span>
+      <span><strong>${weatherState.rain}</strong> rain</span>
+    </div>
+    <div class="source-row">
+      <span class="source-badge">${weatherState.source} - ${weatherState.status}</span>
+      <button class="text-button" data-action="refresh-weather" type="button">Refresh</button>
+    </div>
+    ${weatherState.updated ? `<p class="item-meta">Updated ${weatherState.updated}</p>` : ""}
+  `;
+}
+
+function renderSources() {
+  const sourceGrid = document.getElementById("sourceGrid");
+  if (!sourceGrid) return;
+
+  sourceGrid.innerHTML = seed.sources
+    .map(
+      (source) => `
+        <article class="glass-card action-card module-${source.tone}">
+          <div class="module-header">
+            <span class="module-icon ${source.tone}-icon" aria-hidden="true">${source.icon}</span>
+            <p class="eyebrow">${source.status}</p>
+          </div>
+          <h3>${source.title}</h3>
+          <p>${source.summary}</p>
+          <span class="source-badge">${source.source}</span>
+          <p class="item-meta">${source.next}</p>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+async function refreshWeather() {
+  weatherState = {
+    ...weatherState,
+    status: "loading",
+    summary: "Refreshing Arden weather...",
+    updated: "",
+  };
+  renderWeather();
+
+  try {
+    const data = await sourceAdapters.weather.fetch();
+    const current = data.current;
+    const daily = data.daily;
+    const rainChance = daily?.precipitation_probability_max?.[0];
+    const high = daily?.temperature_2m_max?.[0];
+    const low = daily?.temperature_2m_min?.[0];
+    const updated = new Date(current.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+    weatherState = {
+      status: "live",
+      source: sourceAdapters.weather.name,
+      summary: `${weatherCodeLabel(current.weather_code)}. High ${Math.round(high)} / low ${Math.round(low)}.`,
+      temp: `${Math.round(current.temperature_2m)}F`,
+      feelsLike: `${Math.round(current.apparent_temperature)}F`,
+      wind: `${Math.round(current.wind_speed_10m)} mph`,
+      rain: `${rainChance ?? 0}%`,
+      updated,
+    };
+  } catch (error) {
+    weatherState = {
+      status: "offline",
+      source: sourceAdapters.weather.name,
+      summary: "Weather is temporarily unavailable. Keeping the last safe planning assumption.",
+      temp: "--",
+      feelsLike: "--",
+      wind: "--",
+      rain: "--",
+      updated: "",
+    };
+  }
+
+  renderWeather();
+}
+
 function chessSquareName(fileIndex, rank) {
   return `${"abcdefgh"[fileIndex]}${rank}`;
 }
@@ -486,6 +673,9 @@ function wireEvents() {
     if (actionButton?.dataset.action === "open-review") {
       navigate("review");
     }
+    if (actionButton?.dataset.action === "refresh-weather") {
+      refreshWeather();
+    }
 
     const chessSquare = event.target.closest("[data-square]");
     if (chessSquare) {
@@ -544,9 +734,12 @@ function init() {
   renderPrompts();
   renderLibrary();
   renderReview();
+  renderSources();
+  renderWeather();
   renderChessBoard();
   formatToday();
   wireEvents();
+  refreshWeather();
 }
 
 init();

@@ -1,8 +1,8 @@
 # Ben HQ
 
-Ben HQ is a private, personal daily command center for tasks, training, calendar planning, Pokemon GO priorities, learning queues, prompt workflows, and future read-only snapshots.
+Ben HQ is a private, personal daily command center for tasks, training, weather, calendar planning, Pokemon GO priorities, learning queues, prompt workflows, and future read-only snapshots.
 
-This first pass is a high-fidelity local design prototype with seeded data only. It does not connect to email, workplace resources, financial accounts, Google Calendar, Pokemon GO sources, or any external APIs.
+This first pass is a high-fidelity static prototype with one public live data source: account-free Arden weather from Open-Meteo. It does not connect to email, workplace resources, financial accounts, Google Calendar, Pokemon GO sources, or private account APIs.
 
 ## Open The Prototype
 
@@ -15,6 +15,8 @@ The current machine path does not have Node or npm available, so the first build
 - Liquid glass dark visual direction
 - Responsive desktop layout and mobile navigation
 - Today-first dashboard
+- Live Arden weather card using Open-Meteo
+- Sources view for integration status and privacy guardrails
 - Quick capture with local in-memory task insertion
 - Tasks inbox and today focus
 - Calendar preview
@@ -33,7 +35,7 @@ The first production version should prioritize:
 
 1. Next.js app shell with TypeScript
 2. Authentication and user settings
-3. Today dashboard with seeded data
+3. Today dashboard with public weather plus seeded personal modules
 4. Quick capture and task inbox persistence
 5. Calendar and weekly review
 6. Training profile and rule-based weekly plan generator
@@ -83,6 +85,7 @@ src/
 ## Known Limits
 
 - Data is seeded and resets on refresh.
+- Weather depends on the public Open-Meteo API being reachable from the browser.
 - No backend exists yet.
 - No authentication exists yet.
 - No tests can be run until Node or another project runtime is installed.

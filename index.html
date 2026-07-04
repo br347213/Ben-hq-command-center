@@ -24,8 +24,8 @@
         <div class="rail-status">
           <span class="status-dot"></span>
           <div>
-            <strong>Local design mode</strong>
-            <span>Seeded data only</span>
+            <strong>Integration mode</strong>
+            <span>Live weather + seeded data</span>
           </div>
         </div>
       </aside>
@@ -110,6 +110,22 @@
           </div>
 
           <div class="dashboard-grid">
+            <article class="glass-card action-card module-weather" id="weatherCard" aria-live="polite">
+              <div class="module-header">
+                <span class="module-icon weather-icon" aria-hidden="true">Wx</span>
+                <p class="eyebrow">Arden weather</p>
+              </div>
+              <div class="weather-main">
+                <strong>--</strong>
+                <span>Loading Arden weather...</span>
+              </div>
+              <div class="weather-metrics">
+                <span><strong>--</strong> feels</span>
+                <span><strong>--</strong> wind</span>
+                <span><strong>--</strong> rain</span>
+              </div>
+              <span class="source-badge">Open-Meteo - loading</span>
+            </article>
             <article class="glass-card action-card">
               <div class="module-header">
                 <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
@@ -176,6 +192,35 @@
               <p>Pack running gear tonight if Saturday quality work is still the plan.</p>
               <span class="reason-pill">Because weekend running matters</span>
             </article>
+          </div>
+        </section>
+
+        <section class="page-view" id="view-sources">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Personal-only integration layer</p>
+              <h2>Sources</h2>
+            </div>
+            <span class="freshness">1 live source</span>
+          </div>
+          <div class="source-layout">
+            <article class="liquid-panel source-principles module-ai">
+              <div class="module-header">
+                <span class="module-icon ai-icon" aria-hidden="true">AI</span>
+                <p class="eyebrow">Connection rules</p>
+              </div>
+              <h3>Every recommendation needs a source trail.</h3>
+              <p>
+                Ben HQ can grow into a living knowledge vault, but the rule is simple: connect personal sources only,
+                label where data came from, and keep review controls between raw imports and long-term memory.
+              </p>
+              <div class="source-pill-row">
+                <span class="reason-pill">No work accounts</span>
+                <span class="reason-pill">Read-only first</span>
+                <span class="reason-pill">Review before memory</span>
+              </div>
+            </article>
+            <div class="source-grid" id="sourceGrid"></div>
           </div>
         </section>
 
@@ -344,7 +389,7 @@
               <p class="eyebrow">Private by default</p>
               <h2>Settings</h2>
             </div>
-            <span class="freshness">No integrations connected</span>
+            <span class="freshness">Weather connected</span>
           </div>
           <div class="settings-grid">
             <article class="glass-panel">
@@ -357,7 +402,7 @@
             </article>
             <article class="glass-panel">
               <h3>Future integrations</h3>
-              <p>Calendar, training, Pokemon GO sources, learning sources, and finance snapshots will need explicit setup.</p>
+              <p>Weather is live through a public source. Calendar, personal email, ChatGPT context, files, games, and finance snapshots will need explicit setup.</p>
             </article>
           </div>
         </section>

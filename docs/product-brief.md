@@ -16,6 +16,7 @@ Ben HQ is a private personal daily command center. It should reduce recurring de
 ## Version One Modules
 
 - Today dashboard
+- Live weather signal
 - Quick capture
 - Tasks inbox
 - Calendar preview
@@ -34,6 +35,7 @@ Ben HQ should evolve into a living personal knowledge vault: a system that can a
 
 Near-term product ideas:
 
+- Public, account-free adapters first, starting with Open-Meteo weather for daily planning.
 - File and note uploads with source labels.
 - Personal context cards that can be edited, archived, or promoted into durable memory.
 - A review queue for new imported knowledge before it influences recommendations.
@@ -42,6 +44,7 @@ Near-term product ideas:
 
 Future integration ideas:
 
+- Hourly weather windows for training, errands, and family plans.
 - ChatGPT export/import or selected conversation summaries.
 - Personal email read-only triage with explicit account permission.
 - Calendar read integration for schedule-aware recommendations.

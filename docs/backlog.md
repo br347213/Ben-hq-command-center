@@ -9,6 +9,15 @@
 - Persist quick capture and tasks.
 - Add unit and smoke test setup.
 
+## Integration Foundation
+
+- Keep public, account-free adapters separate from private account connectors.
+- Add source records with name, freshness, permission level, last refresh, and confidence.
+- Add a personal-only allowlist before connecting calendar, email, files, or app accounts.
+- Build a review queue before imported context can influence durable memory.
+- Add connector health states: connected, loading, offline, permission needed, and paused.
+- Add visible deletion/export controls for stored personal context.
+
 ## Tasks And Review
 
 - Add inbox processing.
@@ -60,7 +69,11 @@
 
 ## Later Integrations
 
+- Open-Meteo hourly weather expansion.
 - Google Calendar read integration.
+- Personal email summary integration with explicit account permission.
+- ChatGPT export/import or approved personal summaries.
+- File upload parsing with source labels.
 - Selected content sources.
 - Pokemon GO public event sources with freshness labels.
 - Read-only finance snapshots.
