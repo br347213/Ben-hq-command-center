@@ -17,6 +17,8 @@ Ben HQ is a private personal daily command center. It should reduce recurring de
 
 - Today dashboard
 - Live weather signal
+- Live Pokemon GO public data pulse
+- Live Lichess daily puzzle signal
 - Quick capture
 - Tasks inbox
 - Calendar preview
@@ -27,7 +29,7 @@ Ben HQ is a private personal daily command center. It should reduce recurring de
 - Learning queue
 - Prompt library
 - Personal knowledge library
-- Settings and integration placeholders
+- Settings and source status center
 
 ## Living Knowledge Vault Direction
 
@@ -36,6 +38,7 @@ Ben HQ should evolve into a living personal knowledge vault: a system that can a
 Near-term product ideas:
 
 - Public, account-free adapters first, starting with Open-Meteo weather for daily planning.
+- Public no-secret adapters for PoGoAPI and Lichess where browser CORS allows.
 - File and note uploads with source labels.
 - Personal context cards that can be edited, archived, or promoted into durable memory.
 - A review queue for new imported knowledge before it influences recommendations.

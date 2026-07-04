@@ -25,7 +25,7 @@
           <span class="status-dot"></span>
           <div>
             <strong>Integration mode</strong>
-            <span>Live weather + seeded data</span>
+            <span>Public live signals</span>
           </div>
         </div>
       </aside>
@@ -153,8 +153,8 @@
                 <p class="eyebrow">Pokemon GO</p>
               </div>
               <h3>Check weekend event prep</h3>
-              <p>Confirm item space, raid passes, and a short play window with your son.</p>
-              <span class="source-badge">Mock data - not live</span>
+              <p>Use the live public data pulse in the Pokemon tab, then keep prep simple: space, passes, and one family-friendly play window.</p>
+              <button class="text-button" data-view="pokemon">Open Pokemon</button>
             </article>
             <article class="glass-card action-card module-chess">
               <div class="module-header">
@@ -287,7 +287,7 @@
               <p class="eyebrow">Planning companion</p>
               <h2>Pokemon GO</h2>
             </div>
-            <span class="freshness">Mock events - not live</span>
+            <span class="freshness">PoGoAPI public data</span>
           </div>
           <div class="dashboard-grid" id="pokemonCards"></div>
         </section>
@@ -335,6 +335,15 @@
               </div>
               <h3>Checks, captures, threats</h3>
               <p>Before choosing a move, scan forcing moves in that order. It is a simple habit that catches a lot of tactics.</p>
+            </article>
+            <article class="glass-card action-card module-chess" id="lichessDailyCard" aria-live="polite">
+              <div class="module-header">
+                <span class="module-icon chess-icon" aria-hidden="true">64</span>
+                <p class="eyebrow">Lichess - loading</p>
+              </div>
+              <h3>Daily puzzle loading...</h3>
+              <p>Daily public puzzle signal from Lichess.</p>
+              <span class="source-badge">Lichess - loading</span>
             </article>
             <article class="glass-card action-card module-learning">
               <div class="module-header">
@@ -410,7 +419,7 @@
             </article>
             <article class="glass-panel">
               <h3>Future integrations</h3>
-              <p>Weather is live through a public source. Calendar, Gmail, Drive, ChatGPT, Notes, Garmin, Apple Health, Lichess, and Pokemon calendar are approved but need private setup. Direct finance accounts are intentionally skipped.</p>
+              <p>Weather, Pokemon GO public data, and Lichess can run on GitHub Pages. Gmail, Calendar, Drive, ChatGPT, Notes, Garmin, and Apple Health need exports or a private bridge. Direct finance accounts are intentionally skipped.</p>
             </article>
           </div>
         </section>

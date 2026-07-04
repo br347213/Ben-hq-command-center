@@ -2,7 +2,7 @@
 
 Ben HQ is a private, personal daily command center for tasks, training, weather, calendar planning, Pokemon GO priorities, chess improvement, learning queues, prompt workflows, and approved personal-source integrations.
 
-This first pass is a high-fidelity static prototype with one public live data source: account-free Arden weather from Open-Meteo. It does not connect to email, workplace resources, financial accounts, Google Calendar, Google Drive, Pokemon GO sources, health accounts, or private account APIs.
+This first pass is a high-fidelity static prototype with public live data from account-free sources: Arden weather from Open-Meteo, Pokemon GO reference counts from PoGoAPI, and Lichess daily puzzle metadata. It does not connect to email, workplace resources, financial accounts, Google Calendar, Google Drive, health accounts, or private account APIs.
 
 ## Open The Prototype
 
@@ -21,8 +21,8 @@ The current machine path does not have Node or npm available, so the first build
 - Tasks inbox and today focus
 - Calendar preview
 - Training hub preview
-- Pokemon GO planning cards with mock-data freshness labels
-- Chess module with an interactive puzzle board
+- Pokemon GO public data pulse through PoGoAPI
+- Chess module with an interactive puzzle board and Lichess daily puzzle metadata
 - Learning queue
 - Prompt library with search
 - Personal knowledge library preview
@@ -36,7 +36,7 @@ The first production version should prioritize:
 
 1. Next.js app shell with TypeScript
 2. Authentication and user settings
-3. Today dashboard with public weather plus seeded personal modules
+3. Today dashboard with public weather, Pokemon GO, and chess signals plus seeded personal modules
 4. Quick capture and task inbox persistence
 5. Calendar and weekly review
 6. Training profile and rule-based weekly plan generator
@@ -90,7 +90,9 @@ src/
 
 - Data is seeded and resets on refresh.
 - Weather depends on the public Open-Meteo API being reachable from the browser.
+- Pokemon GO public counts depend on PoGoAPI being reachable from the browser.
+- Lichess daily puzzle metadata depends on the public Lichess API being reachable from the browser.
 - No backend exists yet.
 - No authentication exists yet.
 - No tests can be run until Node or another project runtime is installed.
-- Pokemon GO, Gmail, Calendar, Drive, ChatGPT, Notes, Garmin, Apple Health, and Lichess are approved future sources, but are not live in the public static app.
+- Gmail, Calendar, Drive, ChatGPT, Notes, Garmin, and Apple Health are approved future sources, but are not live in the public static app because they need private tokens, exports, or a private bridge.

@@ -12,6 +12,7 @@
 ## Integration Foundation
 
 - Keep public, account-free adapters separate from private account connectors.
+- Keep public GitHub Pages integrations limited to no-secret APIs and source links.
 - Add source records with name, freshness, permission level, last refresh, and confidence.
 - Add a personal-only allowlist before connecting calendar, email, files, or app accounts.
 - Build a review queue before imported context can influence durable memory.
@@ -39,6 +40,7 @@
 
 - Add manual event entry.
 - Add event freshness and source fields.
+- Expand PoGoAPI public data cards beyond counts when stable and useful.
 - Research pogocalendar.com, official Pokemon GO event pages, and calendar subscription options.
 - Add checklist completion.
 - Add countdown logic.
@@ -56,6 +58,7 @@
 
 - Add a real chess engine such as chess.js for legal move validation.
 - Add daily puzzles with difficulty, themes, and completion history.
+- Use Lichess daily puzzle metadata as the public no-secret feed.
 - Import or curate Lichess puzzle data with FEN, solution moves, ratings, themes, and popularity.
 - Add a puzzle review queue for missed tactics.
 - Add chess tips based on recurring mistakes.

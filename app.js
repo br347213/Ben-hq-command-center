@@ -71,9 +71,9 @@ const seed = {
   ],
   pokemon: [
     {
-      title: "Weekend event prep",
-      summary: "Make a short checklist before play time: item space, storage, and one target.",
-      source: "Mock card - source required later",
+      title: "Pokemon GO public data",
+      summary: "Live game-master style reference data from PoGoAPI will load here when reachable.",
+      source: "PoGoAPI - loading",
       actions: ["Clear 30 Pokemon slots", "Pick one raid target", "Plan a son-friendly play window"],
     },
     {
@@ -175,21 +175,21 @@ const seed = {
     },
     {
       title: "Google Calendar",
-      status: "Approved",
+      status: "Private bridge",
       tone: "calendar",
       icon: "Cal",
       source: "Read-only personal calendar",
-      summary: "Future agenda awareness with explicit personal-account setup and no workplace calendar access.",
-      next: "Private backend required before live events can appear safely.",
+      summary: "Approved for personal use, but cannot safely run from public GitHub Pages because OAuth tokens must stay private.",
+      next: "Use a private backend or manual calendar export before live events appear.",
     },
     {
       title: "Gmail",
-      status: "Approved",
+      status: "Private bridge",
       tone: "ai",
       icon: "Mail",
       source: "Personal inbox summaries",
-      summary: "Future triage for life admin, receipts, appointments, shipping, family notices, and reminders.",
-      next: "Use read-only summaries and a review queue before anything becomes memory.",
+      summary: "Approved for life-admin summaries, but Gmail tokens and restricted scopes cannot live in public browser code.",
+      next: "Prototype with local summaries or a private backend, storing summaries instead of full bodies.",
     },
     {
       title: "Google Drive",
@@ -211,7 +211,7 @@ const seed = {
     },
     {
       title: "Apple Notes",
-      status: "Approved",
+      status: "Import path",
       tone: "ai",
       icon: "Note",
       source: "iPhone Notes export or iCloud bridge",
@@ -220,16 +220,16 @@ const seed = {
     },
     {
       title: "Garmin",
-      status: "Approved",
+      status: "Import path",
       tone: "training",
       icon: "Gar",
       source: "Training and recovery signals",
-      summary: "Future source for runs, load, sleep, recovery, heart-rate trends, and workout consistency.",
-      next: "Use activity summaries first; avoid raw health exhaust unless it has a clear purpose.",
+      summary: "Approved, but best on public GitHub via exported activity summaries or a private Garmin bridge.",
+      next: "Start with exported activities or Apple Health as the hub before official API work.",
     },
     {
       title: "Apple Health",
-      status: "Approved",
+      status: "Import path",
       tone: "training",
       icon: "Hlth",
       source: "Health export or HealthKit bridge",
@@ -238,21 +238,21 @@ const seed = {
     },
     {
       title: "Lichess",
-      status: "Approved",
+      status: "Live public",
       tone: "chess",
       icon: "64",
       source: "Public puzzle database",
-      summary: "Future daily tactics from real puzzle positions, with rating, theme, streaks, and missed-pattern review.",
-      next: "Add a small curated puzzle set first, then wire in refreshable puzzle data.",
+      summary: "Daily puzzle metadata can load directly from Lichess without secrets.",
+      next: "Add a chess parser so Lichess puzzles can become fully playable in-app.",
     },
     {
       title: "Pokemon GO Calendar",
-      status: "Approved",
+      status: "Live public",
       tone: "pokemon",
       icon: "GO",
-      source: "PogoCalendar or public event feeds",
-      summary: "Future source for spotlight hours, raid days, community days, and family-friendly play windows.",
-      next: "Confirm source format and add freshness labels before recommending event prep.",
+      source: "PoGoAPI plus official event pages",
+      summary: "Public Pokemon GO reference data can load directly; event calendar links stay source-labeled.",
+      next: "Add vetted event-feed parsing once a stable calendar format is confirmed.",
     },
     {
       title: "Direct finance accounts",
@@ -278,6 +278,21 @@ let weatherState = {
   feelsLike: "--",
   wind: "--",
   rain: "--",
+  updated: "",
+};
+let lichessState = {
+  status: "loading",
+  title: "Daily puzzle loading...",
+  rating: "--",
+  themes: "themes loading",
+  link: "https://lichess.org/training/daily",
+  updated: "",
+};
+let pokemonLiveState = {
+  status: "loading",
+  released: "--",
+  shiny: "--",
+  nesting: "--",
   updated: "",
 };
 
@@ -333,6 +348,37 @@ const sourceAdapters = {
         throw new Error(`Weather request failed: ${response.status}`);
       }
       return response.json();
+    },
+  },
+  lichessDaily: {
+    name: "Lichess",
+    url: "https://lichess.org/api/puzzle/daily",
+    async fetch() {
+      const response = await fetch(this.url, { headers: { Accept: "application/json" } });
+      if (!response.ok) {
+        throw new Error(`Lichess request failed: ${response.status}`);
+      }
+      return response.json();
+    },
+  },
+  pogo: {
+    name: "PoGoAPI",
+    endpoints: {
+      released: "https://pogoapi.net/api/v1/released_pokemon.json",
+      shiny: "https://pogoapi.net/api/v1/shiny_pokemon.json",
+      nesting: "https://pogoapi.net/api/v1/nesting_pokemon.json",
+    },
+    async fetch() {
+      const [released, shiny, nesting] = await Promise.all(
+        Object.values(this.endpoints).map(async (url) => {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`PoGoAPI request failed: ${response.status}`);
+          }
+          return response.json();
+        }),
+      );
+      return { released, shiny, nesting };
     },
   },
 };
@@ -446,9 +492,29 @@ function renderWorkouts() {
 }
 
 function renderPokemon() {
-  document.getElementById("pokemonCards").innerHTML = seed.pokemon
-    .map(
-      (card) => `
+  const liveCard = `
+        <article class="glass-card action-card module-pokemon">
+          <div class="module-header">
+            <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
+            <p class="eyebrow">PoGoAPI - ${pokemonLiveState.status}</p>
+          </div>
+          <h3>Pokemon GO live data pulse</h3>
+          <p>Public reference data for released Pokemon, shiny availability, and nesting species.</p>
+          <div class="weather-metrics source-metrics" aria-label="Pokemon GO public data">
+            <span><strong>${pokemonLiveState.released}</strong> released</span>
+            <span><strong>${pokemonLiveState.shiny}</strong> shiny</span>
+            <span><strong>${pokemonLiveState.nesting}</strong> nesting</span>
+          </div>
+          <div class="source-row">
+            <span class="source-badge">PoGoAPI - ${pokemonLiveState.status}</span>
+            <button class="text-button" data-action="refresh-pokemon" type="button">Refresh</button>
+          </div>
+          ${pokemonLiveState.updated ? `<p class="item-meta">Updated ${pokemonLiveState.updated}</p>` : ""}
+        </article>
+  `;
+
+  const planningCards = seed.pokemon.slice(1).map(
+    (card) => `
         <article class="glass-card action-card module-pokemon">
           <div class="module-header">
             <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
@@ -461,8 +527,9 @@ function renderPokemon() {
           </ul>
         </article>
       `,
-    )
-    .join("");
+  );
+
+  document.getElementById("pokemonCards").innerHTML = [liveCard, ...planningCards].join("");
 }
 
 function renderLearning() {
@@ -595,6 +662,106 @@ function renderSources() {
       `,
     )
     .join("");
+}
+
+function renderLichessDaily() {
+  const target = document.getElementById("lichessDailyCard");
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon chess-icon" aria-hidden="true">64</span>
+      <p class="eyebrow">Lichess - ${lichessState.status}</p>
+    </div>
+    <h3>${lichessState.title}</h3>
+    <p>Daily public puzzle signal from Lichess. The playable in-app board stays curated until we add a real chess parser.</p>
+    <div class="weather-metrics source-metrics" aria-label="Lichess daily puzzle">
+      <span><strong>${lichessState.rating}</strong> rating</span>
+      <span><strong>${lichessState.themes}</strong> themes</span>
+      <span><strong>${lichessState.status}</strong> status</span>
+    </div>
+    <div class="source-row">
+      <a class="text-button" href="${lichessState.link}" target="_blank" rel="noreferrer">Open on Lichess</a>
+      <button class="text-button" data-action="refresh-lichess" type="button">Refresh</button>
+    </div>
+    ${lichessState.updated ? `<p class="item-meta">Updated ${lichessState.updated}</p>` : ""}
+  `;
+}
+
+function objectCount(value) {
+  if (Array.isArray(value)) return value.length;
+  if (value && typeof value === "object") return Object.keys(value).length;
+  return 0;
+}
+
+function formatShortTime() {
+  return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+async function refreshLichessDaily() {
+  lichessState = {
+    ...lichessState,
+    status: "loading",
+    title: "Daily puzzle loading...",
+    updated: "",
+  };
+  renderLichessDaily();
+
+  try {
+    const data = await sourceAdapters.lichessDaily.fetch();
+    const puzzle = data.puzzle || {};
+    const themes = Array.isArray(puzzle.themes) ? puzzle.themes.slice(0, 2).join(", ") : "daily";
+
+    lichessState = {
+      status: "live",
+      title: data.game?.players ? "Lichess daily puzzle" : "Daily puzzle ready",
+      rating: puzzle.rating || "--",
+      themes: themes || "daily",
+      link: puzzle.id ? `https://lichess.org/training/${puzzle.id}` : "https://lichess.org/training/daily",
+      updated: formatShortTime(),
+    };
+  } catch (error) {
+    lichessState = {
+      status: "offline",
+      title: "Lichess daily puzzle unavailable",
+      rating: "--",
+      themes: "try later",
+      link: "https://lichess.org/training/daily",
+      updated: "",
+    };
+  }
+
+  renderLichessDaily();
+}
+
+async function refreshPokemonLiveData() {
+  pokemonLiveState = {
+    ...pokemonLiveState,
+    status: "loading",
+    updated: "",
+  };
+  renderPokemon();
+
+  try {
+    const data = await sourceAdapters.pogo.fetch();
+    pokemonLiveState = {
+      status: "live",
+      released: objectCount(data.released),
+      shiny: objectCount(data.shiny),
+      nesting: objectCount(data.nesting),
+      updated: formatShortTime(),
+    };
+  } catch (error) {
+    pokemonLiveState = {
+      status: "offline",
+      released: "--",
+      shiny: "--",
+      nesting: "--",
+      updated: "",
+    };
+  }
+
+  renderPokemon();
 }
 
 async function refreshWeather() {
@@ -741,6 +908,12 @@ function wireEvents() {
     if (actionButton?.dataset.action === "refresh-weather") {
       refreshWeather();
     }
+    if (actionButton?.dataset.action === "refresh-lichess") {
+      refreshLichessDaily();
+    }
+    if (actionButton?.dataset.action === "refresh-pokemon") {
+      refreshPokemonLiveData();
+    }
 
     const chessSquare = event.target.closest("[data-square]");
     if (chessSquare) {
@@ -801,10 +974,13 @@ function init() {
   renderReview();
   renderSources();
   renderWeather();
+  renderLichessDaily();
   renderChessBoard();
   formatToday();
   wireEvents();
   refreshWeather();
+  refreshLichessDaily();
+  refreshPokemonLiveData();
 }
 
 init();
