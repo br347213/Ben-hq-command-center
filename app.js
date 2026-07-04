@@ -174,26 +174,35 @@ const seed = {
       next: "Add hourly windows and rain-aware workout suggestions.",
     },
     {
-      title: "Personal calendar",
-      status: "Planned",
+      title: "Google Calendar",
+      status: "Approved",
       tone: "calendar",
       icon: "Cal",
-      source: "Read-only personal account later",
+      source: "Read-only personal calendar",
       summary: "Future agenda awareness with explicit personal-account setup and no workplace calendar access.",
-      next: "Add OAuth permission screen and source freshness labels.",
+      next: "Private backend required before live events can appear safely.",
     },
     {
-      title: "Personal email",
-      status: "Planned",
+      title: "Gmail",
+      status: "Approved",
       tone: "ai",
       icon: "Mail",
-      source: "Selected personal inbox summaries later",
-      summary: "Future triage for life admin, receipts, appointments, and reminders after you approve the scope.",
-      next: "Build an allowlist and review queue before anything becomes memory.",
+      source: "Personal inbox summaries",
+      summary: "Future triage for life admin, receipts, appointments, shipping, family notices, and reminders.",
+      next: "Use read-only summaries and a review queue before anything becomes memory.",
+    },
+    {
+      title: "Google Drive",
+      status: "Approved",
+      tone: "learning",
+      icon: "Drive",
+      source: "Selected personal files",
+      summary: "Future source for notes, PDFs, planning docs, exports, and reference files you explicitly choose.",
+      next: "Start with manual file picks instead of broad Drive indexing.",
     },
     {
       title: "ChatGPT context",
-      status: "Planned",
+      status: "Approved",
       tone: "learning",
       icon: "GPT",
       source: "Export/import or approved summaries",
@@ -201,22 +210,58 @@ const seed = {
       next: "Create memory cards with approve, edit, ignore, and delete actions.",
     },
     {
-      title: "File uploads",
-      status: "Planned",
-      tone: "finance",
-      icon: "File",
-      source: "Manual personal uploads",
-      summary: "A living knowledge vault for notes, plans, PDFs, screenshots, and context files you choose.",
-      next: "Add source labels, confidence, and expiration dates.",
+      title: "Apple Notes",
+      status: "Approved",
+      tone: "ai",
+      icon: "Note",
+      source: "iPhone Notes export or iCloud bridge",
+      summary: "Future import path for personal notes that should become searchable memory cards.",
+      next: "Likely needs export/share-sheet workflow before a deeper iCloud integration.",
     },
     {
-      title: "Game and fitness sources",
-      status: "Planned",
+      title: "Garmin",
+      status: "Approved",
+      tone: "training",
+      icon: "Gar",
+      source: "Training and recovery signals",
+      summary: "Future source for runs, load, sleep, recovery, heart-rate trends, and workout consistency.",
+      next: "Use activity summaries first; avoid raw health exhaust unless it has a clear purpose.",
+    },
+    {
+      title: "Apple Health",
+      status: "Approved",
+      tone: "training",
+      icon: "Hlth",
+      source: "Health export or HealthKit bridge",
+      summary: "Future source for steps, sleep, workouts, heart rate, and recovery context from iPhone.",
+      next: "Static web cannot read HealthKit directly; use export/import or a companion app later.",
+    },
+    {
+      title: "Lichess",
+      status: "Approved",
       tone: "chess",
-      icon: "Play",
-      source: "Manual first, live later",
-      summary: "Pokemon GO events, chess puzzles, and training signals can become real modules one source at a time.",
-      next: "Prefer stable public sources before account-based connectors.",
+      icon: "64",
+      source: "Public puzzle database",
+      summary: "Future daily tactics from real puzzle positions, with rating, theme, streaks, and missed-pattern review.",
+      next: "Add a small curated puzzle set first, then wire in refreshable puzzle data.",
+    },
+    {
+      title: "Pokemon GO Calendar",
+      status: "Approved",
+      tone: "pokemon",
+      icon: "GO",
+      source: "PogoCalendar or public event feeds",
+      summary: "Future source for spotlight hours, raid days, community days, and family-friendly play windows.",
+      next: "Confirm source format and add freshness labels before recommending event prep.",
+    },
+    {
+      title: "Direct finance accounts",
+      status: "Skipped",
+      tone: "calendar",
+      icon: "Off",
+      source: "Not in scope",
+      summary: "Direct finance connections are intentionally excluded from Ben HQ for now.",
+      next: "Manual notes or high-level reminders only if useful later.",
     },
   ],
 };
@@ -255,6 +300,25 @@ const chessPuzzle = {
     f2: { side: "white", label: "p" },
     g2: { side: "white", label: "p" },
     h2: { side: "white", label: "p" },
+  },
+};
+
+const chessPieceGlyphs = {
+  white: {
+    K: "&#9812;",
+    Q: "&#9813;",
+    R: "&#9814;",
+    B: "&#9815;",
+    N: "&#9816;",
+    p: "&#9817;",
+  },
+  black: {
+    K: "&#9818;",
+    Q: "&#9819;",
+    R: "&#9820;",
+    B: "&#9821;",
+    N: "&#9822;",
+    p: "&#9823;",
   },
 };
 
@@ -601,7 +665,8 @@ function renderChessBoard() {
         const shade = (fileIndex + rank) % 2 === 0 ? "light" : "dark";
         const selected = selectedChessSquare === square ? " selected" : "";
         const solvedTarget = chessSolved && square === chessPuzzle.expectedTo ? " solved" : "";
-        const content = piece ? `<span class="piece ${piece.side}">${piece.label}</span>` : "";
+        const icon = piece ? chessPieceGlyphs[piece.side][piece.label] : "";
+        const content = piece ? `<span class="piece ${piece.side}" aria-hidden="true">${icon}</span>` : "";
         return `
           <button class="chess-square ${shade}${selected}${solvedTarget}" type="button" data-square="${square}" aria-label="${square}">
             ${content}

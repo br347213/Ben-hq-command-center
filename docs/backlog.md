@@ -17,6 +17,7 @@
 - Build a review queue before imported context can influence durable memory.
 - Add connector health states: connected, loading, offline, permission needed, and paused.
 - Add visible deletion/export controls for stored personal context.
+- Exclude direct finance account connectors unless the scope changes later.
 
 ## Tasks And Review
 
@@ -38,6 +39,7 @@
 
 - Add manual event entry.
 - Add event freshness and source fields.
+- Research pogocalendar.com, official Pokemon GO event pages, and calendar subscription options.
 - Add checklist completion.
 - Add countdown logic.
 - Add goal tracker for raids, PvP, evolutions, trades, and TMs.
@@ -54,6 +56,7 @@
 
 - Add a real chess engine such as chess.js for legal move validation.
 - Add daily puzzles with difficulty, themes, and completion history.
+- Import or curate Lichess puzzle data with FEN, solution moves, ratings, themes, and popularity.
 - Add a puzzle review queue for missed tactics.
 - Add chess tips based on recurring mistakes.
 - Add lightweight study streaks without turning the app into a game.
@@ -66,14 +69,21 @@
 - Add source-backed recommendation explanations.
 - Add import adapters for selected ChatGPT exports, personal email summaries, calendar items, notes, and app data.
 - Add deletion and export controls for stored personal context.
+- Add Google Drive selected-file import for personal docs and exports.
+- Add Apple Notes import path through export/share workflow or a future iCloud bridge.
+- Add Garmin and Apple Health summary imports for training and recovery context.
 
 ## Later Integrations
 
 - Open-Meteo hourly weather expansion.
 - Google Calendar read integration.
 - Personal email summary integration with explicit account permission.
+- Google Drive selected-file integration.
 - ChatGPT export/import or approved personal summaries.
 - File upload parsing with source labels.
+- Apple Notes export/import.
+- Garmin activity summary integration.
+- Apple Health export/import or companion bridge.
+- Lichess puzzle integration.
 - Selected content sources.
 - Pokemon GO public event sources with freshness labels.
-- Read-only finance snapshots.

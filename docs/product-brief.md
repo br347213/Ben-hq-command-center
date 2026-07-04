@@ -48,6 +48,11 @@ Future integration ideas:
 - ChatGPT export/import or selected conversation summaries.
 - Personal email read-only triage with explicit account permission.
 - Calendar read integration for schedule-aware recommendations.
+- Google Drive file selection for personal docs, exports, PDFs, and notes.
+- Apple Notes imports through export/share workflow or a future iCloud bridge.
+- Garmin and Apple Health summaries for training, sleep, recovery, and consistency signals.
+- Lichess puzzle imports for real tactics and missed-pattern review.
+- Pokemon GO event imports from official event pages, public calendars, or vetted community calendars.
 - App adapters for tasks, notes, learning queues, and selected health or fitness summaries.
 - Background refresh jobs that show freshness, source, and confidence.
 
@@ -58,6 +63,7 @@ Guardrails:
 - Require approval before writing to external systems.
 - Do not let imported context silently become permanent memory without review.
 - Make it easy to delete, export, and inspect stored personal context.
+- Skip direct finance account connections for now.
 
 ## Personal-Only Constraint
 

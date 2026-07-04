@@ -1,8 +1,8 @@
 # Ben HQ
 
-Ben HQ is a private, personal daily command center for tasks, training, weather, calendar planning, Pokemon GO priorities, learning queues, prompt workflows, and future read-only snapshots.
+Ben HQ is a private, personal daily command center for tasks, training, weather, calendar planning, Pokemon GO priorities, chess improvement, learning queues, prompt workflows, and approved personal-source integrations.
 
-This first pass is a high-fidelity static prototype with one public live data source: account-free Arden weather from Open-Meteo. It does not connect to email, workplace resources, financial accounts, Google Calendar, Pokemon GO sources, or private account APIs.
+This first pass is a high-fidelity static prototype with one public live data source: account-free Arden weather from Open-Meteo. It does not connect to email, workplace resources, financial accounts, Google Calendar, Google Drive, Pokemon GO sources, health accounts, or private account APIs.
 
 ## Open The Prototype
 
@@ -22,6 +22,7 @@ The current machine path does not have Node or npm available, so the first build
 - Calendar preview
 - Training hub preview
 - Pokemon GO planning cards with mock-data freshness labels
+- Chess module with an interactive puzzle board
 - Learning queue
 - Prompt library with search
 - Personal knowledge library preview
@@ -41,10 +42,11 @@ The first production version should prioritize:
 6. Training profile and rule-based weekly plan generator
 7. Prompt and learning libraries
 8. Pokemon GO planner with manually entered events before live integrations
+9. Private integration bridge for approved personal sources: Gmail, Google Calendar, Google Drive, ChatGPT exports, Apple Notes, Garmin, Apple Health, Lichess, and Pokemon GO calendars
 
 ## Privacy Boundaries
 
-This is a personal-only project. It should not access workplace files, workplace email, workplace applications, or workplace systems. Future integrations should be opt-in, read-only first, and clearly labeled with source and freshness.
+This is a personal-only project. It should not access workplace files, workplace email, workplace applications, or workplace systems. Future integrations should be opt-in, read-only first, and clearly labeled with source and freshness. Direct finance account connections are intentionally skipped.
 
 ## Future Next.js Structure
 
@@ -56,6 +58,7 @@ src/
     calendar/
     training/
     pokemon/
+    chess/
     learn/
     prompts/
     library/
@@ -71,6 +74,7 @@ src/
     calendar/
     training/
     pokemon/
+    chess/
     prompts/
     learning/
     notes/
@@ -89,4 +93,4 @@ src/
 - No backend exists yet.
 - No authentication exists yet.
 - No tests can be run until Node or another project runtime is installed.
-- Pokemon GO and finance cards are explicitly placeholders, not live information.
+- Pokemon GO, Gmail, Calendar, Drive, ChatGPT, Notes, Garmin, Apple Health, and Lichess are approved future sources, but are not live in the public static app.

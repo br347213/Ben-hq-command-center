@@ -176,12 +176,12 @@
             </article>
             <article class="glass-card action-card module-finance">
               <div class="module-header">
-                <span class="module-icon finance-icon" aria-hidden="true">$</span>
-                <p class="eyebrow">Finance pulse</p>
+                <span class="module-icon finance-icon" aria-hidden="true">Src</span>
+                <p class="eyebrow">Sources pulse</p>
               </div>
-              <h3>Read-only placeholder</h3>
-              <p>Later: show freshness-labeled YNAB-style summary, debt payoff, and upcoming large bills.</p>
-              <span class="source-badge">Not connected</span>
+              <h3>Personal sources approved</h3>
+              <p>Calendar, Gmail, Drive, ChatGPT, Notes, Garmin, Apple Health, Lichess, and Pokemon calendar are queued behind privacy gates.</p>
+              <button class="text-button" data-view="sources">View sources</button>
             </article>
             <article class="glass-card action-card module-ai">
               <div class="module-header">
@@ -201,7 +201,7 @@
               <p class="eyebrow">Personal-only integration layer</p>
               <h2>Sources</h2>
             </div>
-            <span class="freshness">1 live source</span>
+            <span class="freshness">1 live source + approved queue</span>
           </div>
           <div class="source-layout">
             <article class="liquid-panel source-principles module-ai">
@@ -218,6 +218,7 @@
                 <span class="reason-pill">No work accounts</span>
                 <span class="reason-pill">Read-only first</span>
                 <span class="reason-pill">Review before memory</span>
+                <span class="reason-pill">No direct finance</span>
               </div>
             </article>
             <div class="source-grid" id="sourceGrid"></div>
@@ -317,7 +318,14 @@
             </article>
             <article class="glass-panel">
               <div class="chess-board-wrap">
+                <div class="chess-board-meta">
+                  <span>White to move</span>
+                  <span>Mate in one</span>
+                </div>
                 <div class="chess-board" id="chessBoard" aria-label="Interactive chess puzzle board"></div>
+                <div class="chess-files" aria-hidden="true">
+                  <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+                </div>
               </div>
             </article>
             <article class="glass-card action-card module-chess">
@@ -402,7 +410,7 @@
             </article>
             <article class="glass-panel">
               <h3>Future integrations</h3>
-              <p>Weather is live through a public source. Calendar, personal email, ChatGPT context, files, games, and finance snapshots will need explicit setup.</p>
+              <p>Weather is live through a public source. Calendar, Gmail, Drive, ChatGPT, Notes, Garmin, Apple Health, Lichess, and Pokemon calendar are approved but need private setup. Direct finance accounts are intentionally skipped.</p>
             </article>
           </div>
         </section>
