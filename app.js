@@ -255,7 +255,10 @@ function renderWorkouts() {
     .map(
       (workout) => `
         <article class="glass-card action-card">
-          <p class="eyebrow">${workout.meta}</p>
+          <div class="module-header">
+            <span class="module-icon training-icon" aria-hidden="true">Run</span>
+            <p class="eyebrow">${workout.meta}</p>
+          </div>
           <h3>${workout.title}</h3>
           <p>${workout.reason}</p>
           <div class="button-row">
@@ -272,8 +275,11 @@ function renderPokemon() {
   document.getElementById("pokemonCards").innerHTML = seed.pokemon
     .map(
       (card) => `
-        <article class="glass-card action-card">
-          <p class="eyebrow">${card.source}</p>
+        <article class="glass-card action-card module-pokemon">
+          <div class="module-header">
+            <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
+            <p class="eyebrow">${card.source}</p>
+          </div>
           <h3>${card.title}</h3>
           <p>${card.summary}</p>
           <ul class="check-list">
@@ -289,8 +295,11 @@ function renderLearning() {
   document.getElementById("learningCards").innerHTML = seed.learning
     .map(
       (item) => `
-        <article class="glass-card action-card">
-          <p class="eyebrow">${item.type} - ${item.length}</p>
+        <article class="glass-card action-card module-learning">
+          <div class="module-header">
+            <span class="module-icon learning-icon" aria-hidden="true">Read</span>
+            <p class="eyebrow">${item.type} - ${item.length}</p>
+          </div>
           <h3>${item.title}</h3>
           <p>${item.reason}</p>
           <button class="text-button">Save for later</button>
@@ -308,8 +317,11 @@ function renderPrompts(filter = "") {
   document.getElementById("promptGrid").innerHTML = prompts
     .map(
       (prompt) => `
-        <article class="glass-card prompt-card">
-          <p class="eyebrow">${prompt.category}</p>
+        <article class="glass-card prompt-card module-ai">
+          <div class="module-header">
+            <span class="module-icon ai-icon" aria-hidden="true">AI</span>
+            <p class="eyebrow">${prompt.category}</p>
+          </div>
           <h3>${prompt.title}</h3>
           <p class="prompt-body">${prompt.body}</p>
           <div class="tag-row">

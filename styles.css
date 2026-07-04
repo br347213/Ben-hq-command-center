@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+
 :root {
   color-scheme: dark;
   --bg: #06090d;
@@ -19,7 +21,8 @@
   --shadow: 0 26px 80px rgba(0, 0, 0, 0.46);
   --shadow-tight: 0 14px 38px rgba(0, 0, 0, 0.32);
   --radius: 8px;
-  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: "Space Grotesk", "Manrope", ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -160,6 +163,7 @@ select {
     inset 0 -16px 30px rgba(0, 0, 0, 0.22),
     0 18px 42px rgba(0, 0, 0, 0.3);
   font-weight: 780;
+  font-family: var(--display-font);
 }
 
 .brand-mark::after {
@@ -180,16 +184,19 @@ p {
 }
 
 h1 {
+  font-family: var(--display-font);
   font-size: 1.08rem;
 }
 
 h2 {
+  font-family: var(--display-font);
   font-size: 2.15rem;
   line-height: 1.06;
   letter-spacing: 0;
 }
 
 h3 {
+  font-family: var(--display-font);
   font-size: 1.04rem;
   line-height: 1.22;
 }
@@ -568,6 +575,76 @@ h3 {
   letter-spacing: 0;
 }
 
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 31px;
+}
+
+.module-icon {
+  width: 34px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgba(224, 244, 255, 0.16);
+  border-radius: var(--radius);
+  color: var(--text);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.035)),
+    rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 22px rgba(0, 0, 0, 0.2);
+  font-family: var(--display-font);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.calendar-icon {
+  border-color: rgba(124, 231, 255, 0.34);
+  background:
+    linear-gradient(145deg, rgba(124, 231, 255, 0.2), rgba(255, 255, 255, 0.035)),
+    rgba(124, 231, 255, 0.06);
+}
+
+.training-icon {
+  border-color: rgba(121, 242, 181, 0.38);
+  background:
+    linear-gradient(145deg, rgba(121, 242, 181, 0.22), rgba(255, 255, 255, 0.035)),
+    rgba(121, 242, 181, 0.06);
+}
+
+.pokemon-icon {
+  border-color: rgba(255, 209, 102, 0.42);
+  background:
+    linear-gradient(145deg, rgba(255, 209, 102, 0.22), rgba(255, 255, 255, 0.035)),
+    rgba(255, 209, 102, 0.06);
+}
+
+.learning-icon {
+  border-color: rgba(185, 167, 255, 0.42);
+  background:
+    linear-gradient(145deg, rgba(185, 167, 255, 0.22), rgba(255, 255, 255, 0.035)),
+    rgba(185, 167, 255, 0.06);
+}
+
+.finance-icon {
+  border-color: rgba(111, 214, 255, 0.38);
+  background:
+    linear-gradient(145deg, rgba(111, 214, 255, 0.2), rgba(255, 255, 255, 0.035)),
+    rgba(111, 214, 255, 0.06);
+}
+
+.ai-icon {
+  border-color: rgba(255, 142, 179, 0.4);
+  background:
+    linear-gradient(145deg, rgba(255, 142, 179, 0.2), rgba(255, 255, 255, 0.035)),
+    rgba(255, 142, 179, 0.06);
+}
+
 .summary-text {
   max-width: 640px;
   margin-top: 16px;
@@ -775,9 +852,50 @@ h3 {
   border-color: rgba(121, 242, 181, 0.32);
 }
 
-.workout-card::before {
+.workout-card::before,
+.module-training::before {
   background:
     linear-gradient(145deg, rgba(121, 242, 181, 0.15), transparent 38%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.12), transparent 42%);
+}
+
+.module-pokemon {
+  border-color: rgba(255, 209, 102, 0.26);
+}
+
+.module-pokemon::before {
+  background:
+    linear-gradient(145deg, rgba(255, 209, 102, 0.14), transparent 38%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.12), transparent 42%);
+}
+
+.module-learning {
+  border-color: rgba(185, 167, 255, 0.26);
+}
+
+.module-learning::before {
+  background:
+    linear-gradient(145deg, rgba(185, 167, 255, 0.14), transparent 38%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.12), transparent 42%);
+}
+
+.module-finance {
+  border-color: rgba(111, 214, 255, 0.24);
+}
+
+.module-finance::before {
+  background:
+    linear-gradient(145deg, rgba(111, 214, 255, 0.12), transparent 38%),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.12), transparent 42%);
+}
+
+.module-ai {
+  border-color: rgba(255, 142, 179, 0.24);
+}
+
+.module-ai::before {
+  background:
+    linear-gradient(145deg, rgba(255, 142, 179, 0.12), transparent 38%),
     linear-gradient(315deg, rgba(255, 255, 255, 0.12), transparent 42%);
 }
 
@@ -1028,6 +1146,11 @@ h3 {
   .section-heading {
     align-items: start;
     flex-direction: column;
+  }
+
+  .module-icon {
+    width: 38px;
+    height: 32px;
   }
 
   .metric-row {
