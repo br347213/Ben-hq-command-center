@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#080b10" />
     <title>Ben HQ</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260704-packet-link-1" />
+    <link rel="stylesheet" href="styles.css?v=20260704-auto-sync-1" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -243,40 +243,39 @@
             <article class="glass-panel bridge-panel module-ai" id="bridgePanel">
               <div class="module-header">
                 <span class="module-icon ai-icon" aria-hidden="true">Link</span>
-                <p class="eyebrow">Private daily bridge</p>
+                <p class="eyebrow">Auto Sync</p>
               </div>
               <div class="bridge-panel-copy">
-                <h3>Connect personal summaries without putting secrets in GitHub.</h3>
+                <h3>Private context updates automatically when you open Ben HQ.</h3>
                 <p class="summary-text">
-                  Save a private bridge URL or import a daily packet from iPhone Shortcuts, Google Apps Script, ChatGPT exports, Gmail summaries, Calendar, Drive, Notes, Garmin, or Apple Health. The data stays in this browser unless you export it.
+                  Ben HQ can load encrypted daily packets from the public site, but only your phone can decrypt them after a one-time setup link. This keeps private summaries out of GitHub while removing manual refresh steps.
                 </p>
               </div>
               <div class="bridge-helper">
                 <div class="bridge-step">
                   <strong>1</strong>
                   <div>
-                    <h4>Use the starter packet first.</h4>
-                    <p>This fills the app with realistic private-source structure so Today, Training, Agenda, and Recommendations come alive immediately.</p>
+                    <h4>One-time phone setup.</h4>
+                    <p>Open the private setup link once. Ben HQ stores the sync key on this phone and removes it from the address bar.</p>
                   </div>
                 </div>
                 <div class="bridge-step">
                   <strong>2</strong>
                   <div>
-                    <h4>Then create the Google bridge.</h4>
-                    <p>Copy the script, paste it into Google Apps Script, deploy it, then paste the Web App URL below.</p>
+                    <h4>Automatic encrypted updates.</h4>
+                    <p>A scheduled assistant refresh can publish encrypted daily context. The public site only sees unreadable encrypted data.</p>
                   </div>
                 </div>
                 <div class="bridge-step">
                   <strong>3</strong>
                   <div>
-                    <h4>Phone health and notes use packets.</h4>
-                    <p>Apple Health, Garmin, and Notes need an iPhone Shortcut or export that matches the packet template.</p>
+                    <h4>Account approvals are one-time.</h4>
+                    <p>Google can run through connected assistant access. Apple Health and Garmin need a separate authorization path before they can be truly automatic.</p>
                   </div>
                 </div>
                 <div class="settings-actions bridge-helper-actions">
                   <button class="secondary-button" data-action="load-starter-packet" type="button">Load starter packet</button>
-                  <button class="secondary-button" data-action="copy-google-bridge-script" type="button">Copy Google script</button>
-                  <button class="secondary-button" data-action="copy-packet-template" type="button">Copy packet template</button>
+                  <button class="secondary-button" data-action="clear-auto-sync" type="button">Reset auto sync</button>
                 </div>
               </div>
               <form class="bridge-form" id="bridgeSettingsForm">
@@ -545,6 +544,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260704-packet-link-1"></script>
+    <script src="app.js?v=20260704-auto-sync-1"></script>
   </body>
 </html>
