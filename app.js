@@ -954,6 +954,34 @@ function privateDailyFreshness() {
   return `Synced ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
+function decodePacketHashValue(value) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function importPacketFromLocationHash() {
+  const hash = window.location.hash ? window.location.hash.slice(1) : "";
+  if (!hash) return false;
+  const params = new URLSearchParams(hash);
+  const packetValue = params.get("packet") || params.get("ben-hq-packet");
+  if (!packetValue) return false;
+
+  try {
+    const payload = JSON.parse(decodePacketHashValue(packetValue));
+    const loaded = applyPrivateDailyPacket(payload, "link");
+    if (loaded && window.history?.replaceState) {
+      window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+    }
+    return loaded;
+  } catch (error) {
+    alert("That Ben HQ packet link could not be read.");
+    return false;
+  }
+}
+
 function normalizeCapturedItem(item) {
   if (!item || typeof item.title !== "string") return null;
   const title = item.title.trim();
@@ -2597,8 +2625,12 @@ function init() {
   renderLichessDaily();
   renderChessBoard();
   formatToday();
+  const importedFromLink = importPacketFromLocationHash();
   renderIntelligence();
   wireEvents();
+  if (importedFromLink) {
+    navigate("today");
+  }
   refreshWeather();
   refreshLichessDaily();
   refreshPokemonLiveData();
