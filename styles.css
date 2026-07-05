@@ -937,6 +937,50 @@ h3 {
   border-color: rgba(255, 209, 102, 0.42);
 }
 
+.hq-brief-card {
+  grid-column: span 2;
+  border-color: rgba(255, 142, 179, 0.3);
+}
+
+.brief-action-list {
+  display: grid;
+  gap: 8px;
+}
+
+.brief-action {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(224, 244, 255, 0.13);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.024)),
+    rgba(255, 255, 255, 0.03);
+}
+
+.brief-action > span {
+  color: var(--pink);
+  font-family: var(--display-font);
+  font-size: 0.76rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.brief-action p {
+  margin-top: 3px;
+  color: #c5d3e3;
+  font-size: 0.85rem;
+}
+
+.brief-action em {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-style: normal;
+}
+
 .weather-main {
   display: grid;
   gap: 3px;
@@ -1995,6 +2039,7 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .hq-brief-card,
   .pokemon-brief-card {
     grid-column: 1 / -1;
   }
@@ -2106,6 +2151,10 @@ h3 {
   }
 
   .pokemon-decision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brief-action {
     grid-template-columns: 1fr;
   }
 

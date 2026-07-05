@@ -18,12 +18,14 @@ The current machine path does not have Node or npm available, so the first build
 - At-a-glance daily briefing with explicit event windows, agenda, and action facts
 - Live Arden weather card using Open-Meteo
 - Dynamic daily signal, source health, and recommendation card
+- Proactive HQ Brief with next best actions, watch items, and memory suggestions
 - Sources view for integration status and privacy guardrails
 - Private daily bridge settings stored only in the browser
 - Daily packet import for iPhone Shortcuts, Google Apps Script, ChatGPT summaries, health summaries, and manual JSON exports
 - Personal Pulse card that surfaces Gmail, Calendar, Drive, Notes, and health/training summaries without digging
 - Manual private context intake with local review before memory or task promotion
-- Local text, Markdown, and JSON file import into the private review queue
+- Local text, Markdown, JSON, and ChatGPT `conversations.json` import into the private review queue
+- ChatGPT export distillation into reviewable insight cards instead of raw transcript dumps
 - Quick capture with local in-memory task insertion
 - Local-device persistence for captures and task checkmarks
 - Local data export, import, and reset controls for browser-stored context
@@ -107,6 +109,7 @@ src/
 - Seed data remains in the prototype, but captures and task checkmarks persist in this browser's local storage.
 - Local browser data can be exported from Settings before clearing browser data or switching devices.
 - Private-source context can be pasted into Sources for local review without adding account tokens to GitHub Pages.
+- ChatGPT exports can be imported locally from `conversations.json`; Ben HQ creates review cards and keeps raw files out of GitHub.
 - Private daily packets can be imported from JSON or synced from a saved bridge URL. The bridge URL and passcode stay in browser local storage and are not included in normal exports.
 - Text, Markdown, and JSON files can be read locally into the review queue; binary documents still need a future parser.
 - Weather depends on the public Open-Meteo API being reachable from the browser.

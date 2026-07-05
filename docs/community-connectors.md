@@ -8,6 +8,7 @@ Ben HQ should prefer zero-dollar, local-first, community-supported connectors wh
 - Private account data must be summarized locally first, then encrypted into `data/ben-hq-latest.enc.json`.
 - Raw credentials, OAuth tokens, email bodies, Garmin files, Apple Health exports, and personal notes must stay out of GitHub.
 - If a community feed is stale, Ben HQ should label it and fall back to curated planning data instead of showing old facts as current.
+- The first screen should be proactive: turn source data into next actions, watch items, and memory suggestions without making Ben dig.
 
 ## Current Connectors
 
@@ -16,6 +17,7 @@ Ben HQ should prefer zero-dollar, local-first, community-supported connectors wh
 - Chess: Lichess public daily puzzle metadata.
 - Garmin: GarminDB local sync wrapper, with credentials and raw databases under `.ben-hq-private/garmin`.
 - Apple Health: planned export/import path through an Apple Health export parser such as `healthkit-to-sqlite`.
+- ChatGPT: local `conversations.json` import, distilled into reviewable insight cards before anything becomes memory.
 
 ## Daily Packet Shape
 
