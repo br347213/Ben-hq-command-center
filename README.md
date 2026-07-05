@@ -116,7 +116,7 @@ src/
 - Text, Markdown, and JSON files can be read locally into the review queue; binary documents still need a future parser.
 - Weather depends on the public Open-Meteo API being reachable from the browser.
 - Pokemon GO public counts depend on PoGoAPI being reachable from the browser. Event and raid data can use community JSON feeds when current; stale feeds are labeled and ignored for Today.
-- News depends on public feeds being reachable from the browser. Rate-limited or blocked sources are labeled and skipped; YouTube currently uses source links/search lanes until specific channel feeds are chosen.
+- News depends on public feeds being reachable from the browser. Rate-limited or blocked sources are skipped in the product UI; YouTube currently uses source links/search lanes until specific channel feeds are chosen.
 - Lichess daily puzzle metadata depends on the public Lichess API being reachable from the browser.
 - No backend exists yet.
 - No authentication exists yet.

@@ -14,7 +14,7 @@ Ben HQ should prefer zero-dollar, local-first, community-supported connectors wh
 
 - Weather: Open-Meteo public API.
 - Pokemon GO: PoGoAPI for reference counts and `ccev/pogoinfo` public JSON for events and raids when current.
-- Current news: TechCrunch WordPress JSON, Hacker News Algolia search, and best-effort VentureBeat/BBC public feeds. The UI must show partial success instead of hiding source failures.
+- Current news: TechCrunch WordPress JSON, Hacker News Algolia search, and best-effort VentureBeat/BBC public feeds. The product UI should quietly use sources that respond and hide source failures from the main experience.
 - YouTube: current zero-dollar path is recency-sorted interest-lane links. True automatic ingestion should use chosen channel RSS feeds or an approved API key later.
 - Chess: Lichess public daily puzzle metadata.
 - Garmin: GarminDB local sync wrapper, with credentials and raw databases under `.ben-hq-private/garmin`.
