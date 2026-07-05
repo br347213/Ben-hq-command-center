@@ -1452,6 +1452,105 @@ function contextPreview(body) {
   return body.length > 180 ? `${body.slice(0, 177)}...` : body;
 }
 
+function messageTextFromChatGptNode(node) {
+  const message = node?.message;
+  if (!message || typeof message !== "object") return "";
+  const content = message.content || {};
+  const parts = asArray(content.parts)
+    .map((part) => {
+      if (typeof part === "string") return part;
+      if (part && typeof part === "object") return compactText(part.text || part.content || part.value);
+      return "";
+    })
+    .filter(Boolean);
+  return parts.join("\n").trim();
+}
+
+function chatGptConversationMessages(conversation) {
+  const nodes = Object.values(conversation?.mapping || {});
+  return nodes
+    .map((node) => ({
+      role: node?.message?.author?.role || "",
+      text: messageTextFromChatGptNode(node),
+    }))
+    .filter((item) => item.text && ["user", "assistant"].includes(item.role));
+}
+
+function classifyChatGptConversation(title, text) {
+  const haystack = `${title} ${text}`.toLowerCase();
+  const tags = [];
+  if (/run|running|workout|strength|garmin|health|sleep|fitness/.test(haystack)) tags.push("training");
+  if (/pokemon|community day|raid|go fest|sobble|inteleon/.test(haystack)) tags.push("pokemon");
+  if (/task|todo|plan|schedule|routine|weekly|daily/.test(haystack)) tags.push("planning");
+  if (/home|family|kid|birthday|weekend/.test(haystack)) tags.push("family");
+  if (/prompt|chatgpt|ai|automation|workflow|codex/.test(haystack)) tags.push("ai workflow");
+  if (/chess|lichess|puzzle|tactic/.test(haystack)) tags.push("chess");
+  return tags.length ? tags.slice(0, 4) : ["personal context"];
+}
+
+function chatGptSuggestedAction(tags, title) {
+  if (tags.includes("training")) return "Add this to training rules or today's readiness context.";
+  if (tags.includes("pokemon")) return "Use this to update Pokemon GO event rules or family play planning.";
+  if (tags.includes("planning")) return "Convert the clearest next step into a task.";
+  if (tags.includes("family")) return "Save the useful part into the family activity bank.";
+  if (tags.includes("ai workflow")) return "Promote the reusable pattern into the prompt or workflow library.";
+  if (tags.includes("chess")) return "Keep the concept as a chess learning note.";
+  return `Review whether "${title}" contains a reusable Ben preference or action.`;
+}
+
+function summarizeChatGptConversation(conversation) {
+  if (!conversation || typeof conversation !== "object") return null;
+  const title = compactText(conversation.title, "ChatGPT conversation");
+  const messages = chatGptConversationMessages(conversation);
+  if (!messages.length) return null;
+  const userMessages = messages.filter((item) => item.role === "user").map((item) => item.text);
+  const assistantMessages = messages.filter((item) => item.role === "assistant").map((item) => item.text);
+  const lastUser = userMessages[userMessages.length - 1] || userMessages[0] || "";
+  const lastAssistant = assistantMessages[assistantMessages.length - 1] || assistantMessages[0] || "";
+  const combined = `${lastUser}\n${lastAssistant}`;
+  const tags = classifyChatGptConversation(title, combined);
+  const updatedAtSeconds = conversation.update_time || conversation.create_time;
+  const createdAt = updatedAtSeconds ? new Date(updatedAtSeconds * 1000).toISOString() : new Date().toISOString();
+  const body = [
+    `Pattern: ${tags.join(", ")}`,
+    `User context: ${contextPreview(lastUser)}`,
+    lastAssistant ? `Useful answer: ${contextPreview(lastAssistant)}` : "",
+    `Suggested action: ${chatGptSuggestedAction(tags, title)}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return normalizeContextImport({
+    id: makeContextId(),
+    source: "ChatGPT",
+    title: `ChatGPT: ${title}`,
+    body,
+    status: "review",
+    createdAt,
+  });
+}
+
+function extractChatGptExportInsights(payload, fileName = "") {
+  const conversations = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.conversations)
+      ? payload.conversations
+      : Array.isArray(payload?.items)
+        ? payload.items
+        : [];
+  if (!conversations.length) return [];
+  const looksLikeChatGpt =
+    /conversations|chatgpt|openai/i.test(fileName) ||
+    conversations.some((item) => item && typeof item === "object" && item.mapping && item.title);
+  if (!looksLikeChatGpt) return [];
+  return conversations
+    .slice()
+    .sort((a, b) => (b.update_time || b.create_time || 0) - (a.update_time || a.create_time || 0))
+    .map(summarizeChatGptConversation)
+    .filter(Boolean)
+    .slice(0, 18);
+}
+
 function localDataSnapshot() {
   return {
     app: "Ben HQ",
@@ -1496,6 +1595,48 @@ function escapeHtml(value) {
 function safeModuleTone(value) {
   const tone = compactText(value, "calendar").toLowerCase().replace(/[^a-z-]/g, "");
   return ["weather", "calendar", "training", "pokemon", "chess", "learning", "finance", "ai"].includes(tone) ? tone : "calendar";
+}
+
+function buildProactiveBrief() {
+  const recommendation = buildRecommendation();
+  const trainingDecision = buildTrainingIntelligence();
+  const pokemonEvent = primaryPokemonEvent();
+  const pendingImports = pendingContextImports();
+  const nextMemory = pendingImports.find((item) => /chatgpt|note|personal|file/i.test(item.source)) || pendingImports[0];
+  const privateSourceCount = privateDaily.sources.length;
+  const weatherWatch =
+    weatherState.status === "live" && parseInt(weatherState.rain, 10) >= 40
+      ? `Rain chance is ${weatherState.rain}; keep a dry training option ready.`
+      : "";
+
+  const items = [
+    {
+      label: "Do",
+      title: recommendation.title,
+      detail: recommendation.body,
+      source: recommendation.reason,
+    },
+    {
+      label: "Watch",
+      title: trainingDecision.readiness === "Low" ? "Recovery is the constraint" : pokemonEvent?.title || "Today window",
+      detail:
+        weatherWatch ||
+        (pokemonEvent ? `${pokemonEvent.window}: ${summarizePokemonEvent(pokemonEvent)}` : trainingDecision.detail),
+      source: pokemonEvent?.source || trainingDecision.source,
+    },
+    {
+      label: "Learn",
+      title: nextMemory ? `Review ${nextMemory.title}` : privateSourceCount ? "Use the private packet" : "Import ChatGPT context",
+      detail: nextMemory
+        ? contextPreview(nextMemory.body)
+        : privateSourceCount
+          ? `${privateSourceCount} private sources are available for recommendations.`
+          : "Drop in a ChatGPT export or personal summary so Ben HQ can start finding patterns.",
+      source: nextMemory?.source || (privateSourceCount ? privateDailyFreshness() : "Local-only intake"),
+    },
+  ];
+
+  return items;
 }
 
 function taskKey(task) {
@@ -2224,6 +2365,35 @@ function renderRecommendation() {
   `;
 }
 
+function renderProactiveBrief() {
+  const target = document.getElementById("proactiveBriefCard");
+  if (!target) return;
+  const items = buildProactiveBrief();
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon ai-icon" aria-hidden="true">HQ</span>
+      <p class="eyebrow">HQ brief</p>
+    </div>
+    <h3>Next best moves</h3>
+    <div class="brief-action-list">
+      ${items
+        .map(
+          (item) => `
+            <div class="brief-action">
+              <span>${escapeHtml(item.label)}</span>
+              <div>
+                <strong>${escapeHtml(item.title)}</strong>
+                <p>${escapeHtml(item.detail)}</p>
+                <em>${escapeHtml(item.source)}</em>
+              </div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function renderDailySignals() {
   const completedToday = seed.todayTasks.filter((task) => completedTasks.has(taskId(task))).length;
   const sourceCount = liveSourceCount();
@@ -2250,6 +2420,7 @@ function renderIntelligence() {
   renderSourceHealth();
   renderDailySignals();
   renderRecommendation();
+  renderProactiveBrief();
 }
 
 function renderSources() {
@@ -2400,12 +2571,25 @@ async function importContextFiles(files) {
   const imported = [];
   for (const file of selectedFiles) {
     try {
-      const text = cleanImportedFileBody(file, await readTextFile(file));
+      const rawText = await readTextFile(file);
+      if (/\.json$/i.test(file.name)) {
+        try {
+          const parsed = JSON.parse(rawText);
+          const chatGptInsights = extractChatGptExportInsights(parsed, file.name);
+          if (chatGptInsights.length) {
+            imported.push(...chatGptInsights);
+            continue;
+          }
+        } catch (error) {
+          // Fall through to ordinary text import when JSON parsing fails.
+        }
+      }
+      const text = cleanImportedFileBody(file, rawText);
       if (text) {
         imported.push(
           normalizeContextImport({
             id: makeContextId(),
-            source: "File",
+            source: /chatgpt|openai|conversation/i.test(file.name) ? "ChatGPT" : "File",
             title: file.name.replace(/\.[^.]+$/, ""),
             body: text,
             status: "review",
@@ -2425,6 +2609,9 @@ async function importContextFiles(files) {
   contextImports = [...validImports, ...contextImports];
   saveContextImports();
   refreshLocalSurfaces();
+  if (validImports.some((item) => item.source === "ChatGPT")) {
+    alert(`${validImports.filter((item) => item.source === "ChatGPT").length} ChatGPT insight cards are ready for review.`);
+  }
 }
 
 function findContextImport(id) {
