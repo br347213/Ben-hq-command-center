@@ -412,6 +412,10 @@ let pokemonLiveState = {
   released: "--",
   shiny: "--",
   nesting: "--",
+  raids: "--",
+  activeEvents: [],
+  featuredEvent: null,
+  sourceNote: "Loading public event feeds...",
   updated: "",
 };
 let sourceHealthState = {
@@ -682,23 +686,25 @@ const sourceAdapters = {
     },
   },
   pogo: {
-    name: "PoGoAPI",
+    name: "PoGoAPI + PogoInfo",
     endpoints: {
       released: "https://pogoapi.net/api/v1/released_pokemon.json",
       shiny: "https://pogoapi.net/api/v1/shiny_pokemon.json",
       nesting: "https://pogoapi.net/api/v1/nesting_pokemon.json",
+      raids: "https://raw.githubusercontent.com/ccev/pogoinfo/v2/active/raids.json",
+      events: "https://raw.githubusercontent.com/ccev/pogoinfo/v2/active/events.json",
     },
     async fetch() {
-      const [released, shiny, nesting] = await Promise.all(
-        Object.values(this.endpoints).map(async (url) => {
+      const [released, shiny, nesting, raids, events] = await Promise.all(
+        [this.endpoints.released, this.endpoints.shiny, this.endpoints.nesting, this.endpoints.raids, this.endpoints.events].map(async (url) => {
           const response = await fetch(url);
           if (!response.ok) {
-            throw new Error(`PoGoAPI request failed: ${response.status}`);
+            throw new Error(`Pokemon GO public data request failed: ${response.status}`);
           }
           return response.json();
         }),
       );
-      return { released, shiny, nesting };
+      return { released, shiny, nesting, raids, events };
     },
   },
 };
@@ -851,6 +857,19 @@ function compactText(value, fallback = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
+function firstText(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return "";
+}
+
+function formatInteger(value, fallback = "--") {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString() : fallback;
+}
+
 function normalizeSourceList(value) {
   return asArray(value)
     .map((item) => {
@@ -968,6 +987,242 @@ function privateDailyFreshness() {
   const date = new Date(privateDaily.generatedAt || privateDaily.importedAt);
   if (Number.isNaN(date.getTime())) return "Private packet loaded";
   return `Synced ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+}
+
+function parseLocalEventDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const text = String(value).trim();
+  const normalized = text.includes("T") ? text : text.replace(" ", "T");
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatEventWindow(start, end) {
+  const startDate = parseLocalEventDate(start);
+  const endDate = parseLocalEventDate(end);
+  if (!startDate && !endDate) return "Timing TBD";
+  const dateOptions = { month: "short", day: "numeric" };
+  const timeOptions = { hour: "numeric", minute: "2-digit" };
+  if (startDate && endDate && startDate.toDateString() === endDate.toDateString()) {
+    return `${startDate.toLocaleDateString(undefined, dateOptions)} ${startDate.toLocaleTimeString([], timeOptions)}-${endDate.toLocaleTimeString([], timeOptions)}`;
+  }
+  if (startDate && endDate) {
+    return `${startDate.toLocaleDateString(undefined, dateOptions)}-${endDate.toLocaleDateString(undefined, dateOptions)}`;
+  }
+  return (startDate || endDate).toLocaleDateString(undefined, dateOptions);
+}
+
+function pokemonNameFromTemplate(value) {
+  if (!value) return "";
+  return String(value)
+    .replace(/_NORMAL$/i, "")
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function describePokemonList(list, fallback = "") {
+  const names = asArray(list)
+    .map((item) => firstText(item.name, item.pokemon_name, pokemonNameFromTemplate(item.template), item.text))
+    .filter(Boolean);
+  return names.length ? names.slice(0, 5).join(", ") : fallback;
+}
+
+function eventBonuses(event) {
+  return asArray(event?.bonuses || event?.bonus)
+    .map((bonus) => compactText(bonus.text || bonus.name || bonus.summary))
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function fallbackPokemonEvents(today = new Date()) {
+  const events = [
+    {
+      name: "Sobble Community Day",
+      type: "community-day",
+      start: "2026-07-04 14:00",
+      end: "2026-07-04 17:00",
+      source: "Curated event fallback",
+      spawns: [{ name: "Sobble" }],
+      shinies: [{ name: "Sobble" }],
+      bonuses: [
+        { text: "2x Catch Candy" },
+        { text: "1/4 Hatch Distance" },
+        { text: "Evolve Drizzile for Hydro Cannon Inteleon" },
+      ],
+      actions: ["Clear 80+ storage", "Mega Evolve a Water type", "Evolve best Drizzile before the move window closes"],
+    },
+    {
+      name: "10th Anniversary Party",
+      type: "event",
+      start: "2026-07-04 10:00",
+      end: "2026-07-06 20:00",
+      source: "Curated event fallback",
+      bonuses: [{ text: "Check event research" }, { text: "Use as a light bonus layer" }],
+      actions: ["Check event research once", "Claim easy rewards", "Keep one family-friendly play window"],
+    },
+  ];
+  return events.filter((event) => isPokemonEventRelevant(event, today));
+}
+
+function normalizePokemonEvent(event, today = new Date()) {
+  if (!event || typeof event !== "object") return null;
+  const title = compactText(event.name || event.title);
+  if (!title) return null;
+  const startDate = parseLocalEventDate(event.start || event.start_time || event.date);
+  const endDate = parseLocalEventDate(event.end || event.end_time);
+  const bonuses = eventBonuses(event);
+  const spawns = describePokemonList(event.spawns || event.featured_pokemon);
+  const raids = describePokemonList(event.raids);
+  const shiny = describePokemonList(event.shinies);
+  const actions = asArray(event.actions).map((action) => compactText(action)).filter(Boolean);
+
+  return {
+    title,
+    type: compactText(event.type, "event"),
+    start: startDate,
+    end: endDate,
+    window: formatEventWindow(startDate, endDate),
+    source: compactText(event.source, "PogoInfo public JSON"),
+    summary: [spawns && `Spawns: ${spawns}`, raids && `Raids: ${raids}`, shiny && `Shiny checks: ${shiny}`, bonuses[0]].filter(Boolean).join(". "),
+    bonuses,
+    actions,
+    isActive: startDate && endDate ? startDate <= today && endDate >= today : false,
+  };
+}
+
+function isPokemonEventRelevant(event, today = new Date()) {
+  const start = parseLocalEventDate(event.start || event.start_time || event.date);
+  const end = parseLocalEventDate(event.end || event.end_time);
+  if (!start && !end) return false;
+  const startWindow = new Date(today.getTime() + 1000 * 60 * 60 * 24 * 7);
+  const endWindow = new Date(today.getTime() - 1000 * 60 * 60 * 24);
+  return (!end || end >= endWindow) && (!start || start <= startWindow);
+}
+
+function normalizePokemonEvents(events, today = new Date()) {
+  return asArray(events)
+    .filter((event) => isPokemonEventRelevant(event, today))
+    .map((event) => normalizePokemonEvent(event, today))
+    .filter(Boolean)
+    .sort(sortPokemonEvents);
+}
+
+function sortPokemonEvents(a, b) {
+  if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+  return (a.start?.getTime() || 0) - (b.start?.getTime() || 0);
+}
+
+function currentPokemonEvents() {
+  const events = pokemonLiveState.activeEvents.length ? pokemonLiveState.activeEvents : fallbackPokemonEvents().map((event) => normalizePokemonEvent(event)).filter(Boolean);
+  return [...events].sort(sortPokemonEvents);
+}
+
+function primaryPokemonEvent() {
+  return currentPokemonEvents()[0] || normalizePokemonEvent(seed.pokemon[0]);
+}
+
+function pokemonActionPlan(event) {
+  const directActions = asArray(event?.actions).map((action) => compactText(action)).filter(Boolean);
+  if (directActions.length) return directActions.slice(0, 4);
+  const title = `${event?.title || ""} ${event?.type || ""}`.toLowerCase();
+  if (title.includes("community")) {
+    return ["Clear storage before the window", "Mega Evolve a matching type", "Check shiny/high-IV candidates", "Evolve the best candidate during the move window"];
+  }
+  if (title.includes("raid")) {
+    return ["Check whether the boss improves your teams", "Use free passes first", "Avoid impulse remote raids"];
+  }
+  return ["Check event research", "Claim easy rewards", "Set one short play window"];
+}
+
+function summarizePokemonEvent(event) {
+  const bonuses = asArray(event?.bonuses).slice(0, 3);
+  const summary = compactText(event?.summary);
+  if (summary) return summary;
+  if (bonuses.length) return bonuses.join(". ");
+  return "Public event data is available, but details are limited. Keep the plan simple and source-labeled.";
+}
+
+function parseMetricNumber(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+  const match = value.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+
+function classifyReadiness(health = {}, training = {}) {
+  const explicit = compactText(health.readiness || training.readiness || training.status);
+  const sleep = parseMetricNumber(health.sleepHours || health.sleep || training.sleep);
+  const stress = parseMetricNumber(health.stress || training.stress);
+  const restingHr = parseMetricNumber(health.restingHr || health.restingHeartRate || training.restingHr);
+  const load = parseMetricNumber(training.load || training.trainingLoad);
+
+  if (/low|tired|poor|red|strained|sick/i.test(explicit)) return "Low";
+  if (/high|green|ready|fresh|good/i.test(explicit)) return "Good";
+  if (sleep !== null && sleep < 6) return "Low";
+  if (stress !== null && stress >= 70) return "Low";
+  if (load !== null && load >= 8) return "Caution";
+  if (restingHr !== null && restingHr >= 70) return "Caution";
+  return explicit || "Normal";
+}
+
+function buildTrainingIntelligence() {
+  const training = privateDaily.training || {};
+  const health = privateDaily.health || {};
+  const readiness = classifyReadiness(health, training);
+  const sleep = firstText(health.sleepHours, health.sleep, training.sleep, "--");
+  const steps = firstText(health.steps, training.steps, "--");
+  const lastWorkout = firstText(training.lastWorkout, health.lastWorkout, training.lastActivity, "No recent import");
+  const source = hasPrivateDailyData() && (Object.keys(training).length || Object.keys(health).length) ? "Private health packet" : "Training rules";
+  const recommended = training.recommendedWorkout || training.today || training.recommendation || {};
+  const recommendedObject = typeof recommended === "object" && recommended ? recommended : { title: recommended };
+
+  let title = compactText(recommendedObject.title, "Easy run or mobility reset");
+  let detail = compactText(
+    recommendedObject.detail || recommendedObject.summary || training.summary || health.readinessNote,
+    "Keep the work useful but recoverable. The goal is consistency, not proving fitness today.",
+  );
+  let fallback = compactText(recommendedObject.fallback || training.fallback || health.recoveryNote, "20 minutes mobility and core");
+
+  if (readiness === "Low") {
+    title = "Mobility reset or very easy walk";
+    detail = "Recovery signal is low. Preserve the habit, skip strain, and make tomorrow easier.";
+    fallback = "Rest without guilt";
+  } else if (readiness === "Caution") {
+    title = compactText(recommendedObject.title, "Short easy run");
+    detail = "Keep the planned work capped. No pace target, no fast finish, stop while it still feels easy.";
+    fallback = "Cut volume by 30-50%";
+  }
+
+  return {
+    readiness,
+    sleep,
+    steps,
+    lastWorkout,
+    source,
+    title,
+    detail,
+    duration: firstText(recommendedObject.duration, training.duration, readiness === "Low" ? "10-25 min" : "25-40 min"),
+    fallback,
+    rules: [
+      {
+        label: "Readiness",
+        value: readiness,
+        detail: compactText(health.readinessNote || training.readinessNote, detail),
+      },
+      {
+        label: "Last",
+        value: lastWorkout,
+        detail: compactText(training.lastWorkoutDetail || health.lastWorkoutDetail, "Use recent activity context before adding more load."),
+      },
+      {
+        label: "Rule",
+        value: readiness === "Good" ? "Build gently" : "Protect recovery",
+        detail: fallback,
+      },
+    ],
+  };
 }
 
 function decodePacketHashValue(value) {
@@ -1210,9 +1465,11 @@ function localDataSnapshot() {
 }
 
 function refreshLocalSurfaces() {
+  renderTodayInsights();
   renderTasks();
   renderTodayAgenda();
   renderTodayWorkout();
+  renderTodayPokemon();
   renderCalendar();
   renderTrainingOverview();
   renderPrivatePulse();
@@ -1264,7 +1521,20 @@ function renderPriorities() {
 function renderTodayInsights() {
   const target = document.getElementById("todayInsightGrid");
   if (!target) return;
-  target.innerHTML = seed.todayInsights
+  const event = primaryPokemonEvent();
+  const insights = [
+    ...(event
+      ? [
+          {
+            label: "Pokemon",
+            value: event.isActive ? "Active" : "Next",
+            detail: `${event.title} - ${event.window}`,
+          },
+        ]
+      : []),
+    ...seed.todayInsights,
+  ].slice(0, 3);
+  target.innerHTML = insights
     .map(
       (item) => `
         <span>
@@ -1311,32 +1581,48 @@ function renderTodayAgenda() {
 function renderTodayWorkout() {
   const target = document.getElementById("todayWorkoutCard");
   if (!target) return;
-  const training = privateDaily.training || {};
-  const health = privateDaily.health || {};
-  const recommendation = training.recommendedWorkout || training.today || training.recommendation;
-  const workout = typeof recommendation === "object" && recommendation ? recommendation : {};
-  const title = compactText(workout.title || recommendation, seed.workouts[0].title.replace(/^Today:\s*/i, ""));
-  const detail = compactText(
-    workout.detail || workout.summary || training.summary || health.readinessNote,
-    seed.workouts[0].purpose,
-  );
-  const duration = compactText(workout.duration || training.duration, "25-40 min");
-  const readiness = compactText(health.readiness || training.readiness || training.status, "RPE 3");
-  const fallback = compactText(workout.fallback || training.fallback, "mobility");
-  const source = hasPrivateDailyData() ? "Private packet" : "Training rules";
+  const decision = buildTrainingIntelligence();
 
   target.innerHTML = `
     <div class="module-header">
       <span class="module-icon training-icon" aria-hidden="true">Run</span>
       <p class="eyebrow">Today's workout</p>
     </div>
-    <h3>${escapeHtml(title)}</h3>
-    <p>${escapeHtml(detail)}</p>
+    <h3>${escapeHtml(decision.title)}</h3>
+    <p>${escapeHtml(decision.detail)}</p>
     <div class="mini-fact-grid">
-      <span><strong>${escapeHtml(duration)}</strong> plan</span>
-      <span><strong>${escapeHtml(readiness)}</strong> readiness</span>
-      <span><strong>${escapeHtml(fallback)}</strong> fallback</span>
+      <span><strong>${escapeHtml(decision.duration)}</strong> plan</span>
+      <span><strong>${escapeHtml(decision.readiness)}</strong> readiness</span>
+      <span><strong>${escapeHtml(decision.fallback)}</strong> fallback</span>
     </div>
+    <span class="source-badge">${escapeHtml(decision.source)}</span>
+  `;
+}
+
+function renderTodayPokemon() {
+  const target = document.getElementById("todayPokemonCard");
+  if (!target) return;
+  const event = primaryPokemonEvent();
+  const actions = pokemonActionPlan(event).slice(0, 3);
+  const source = compactText(event?.source, pokemonLiveState.sourceNote || "Public event plan");
+  const summary = summarizePokemonEvent(event);
+  const windowText = compactText(event?.window, "Check event timing");
+
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
+      <p class="eyebrow">${escapeHtml(event?.isActive ? "Pokemon GO - active now" : "Pokemon GO")}</p>
+    </div>
+    <h3>${escapeHtml(event?.title || "Pokemon GO plan")}</h3>
+    <p>${escapeHtml(summary)}</p>
+    <div class="mini-fact-grid">
+      <span><strong>${escapeHtml(event?.isActive ? "Now" : "Next")}</strong> status</span>
+      <span><strong>${escapeHtml(windowText)}</strong> window</span>
+      <span><strong>${escapeHtml(pokemonLiveState.raids)}</strong> raids</span>
+    </div>
+    <ul class="compact-action-list">
+      ${actions.map((action) => `<li>${escapeHtml(action)}</li>`).join("")}
+    </ul>
     <span class="source-badge">${escapeHtml(source)}</span>
   `;
 }
@@ -1402,42 +1688,30 @@ function renderTrainingOverview() {
   const hasPrivateTraining = hasPrivateDailyData() && (Object.keys(privateDaily.training || {}).length || Object.keys(privateDaily.health || {}).length);
   const training = privateDaily.training || {};
   const health = privateDaily.health || {};
+  const decision = buildTrainingIntelligence();
   const title = hasPrivateTraining ? compactText(training.title || health.title, seed.training.title) : seed.training.title;
   const summaryText = hasPrivateTraining
     ? compactText(training.summary || health.summary || health.readinessNote, seed.training.summary)
     : seed.training.summary;
   const metrics = hasPrivateTraining
     ? [
-        { value: compactText(health.sleepHours || health.sleep || training.sleep, "--"), label: "sleep" },
-        { value: compactText(health.steps || training.steps, "--"), label: "steps" },
-        { value: compactText(health.readiness || training.readiness || training.status, "check"), label: "readiness" },
+        { value: compactText(decision.sleep, "--"), label: "sleep" },
+        { value: compactText(decision.steps, "--"), label: "steps" },
+        { value: compactText(decision.readiness, "check"), label: "readiness" },
       ]
     : seed.training.metrics;
-  const readinessItems = hasPrivateTraining
-    ? [
-        {
-          label: "Today",
-          value: compactText(health.readiness || training.readiness || "Check"),
-          detail: compactText(health.readinessNote || training.readinessNote || training.summary, seed.training.readiness[0].detail),
-        },
-        {
-          label: "Last",
-          value: compactText(training.lastWorkout || health.lastWorkout || "No import"),
-          detail: compactText(training.lastWorkoutDetail || health.lastWorkoutDetail, "Use recent activity context before adding more load."),
-        },
-        {
-          label: "Rule",
-          value: compactText(training.rule || "Protect recovery"),
-          detail: compactText(training.fallback || health.recoveryNote, seed.training.readiness[2].detail),
-        },
-      ]
-    : seed.training.readiness;
+  const readinessItems = hasPrivateTraining ? decision.rules : seed.training.readiness;
   const summaryCard = document.getElementById("trainingSummaryCard");
   if (summaryCard) {
     summaryCard.innerHTML = `
       <p class="eyebrow">This week</p>
       <h3>${escapeHtml(title)}</h3>
       <p>${escapeHtml(summaryText)}</p>
+      <div class="training-decision">
+        <span>Today</span>
+        <strong>${escapeHtml(decision.title)}</strong>
+        <p>${escapeHtml(decision.detail)}</p>
+      </div>
       <div class="metric-row">
         ${metrics
           .map((metric) => `<span><strong>${escapeHtml(metric.value)}</strong> ${escapeHtml(metric.label)}</span>`)
@@ -1511,21 +1785,64 @@ function renderWorkouts() {
 }
 
 function renderPokemon() {
+  const activeEvents = currentPokemonEvents();
+  const featuredEvent = primaryPokemonEvent();
+  const eventCards = activeEvents.slice(0, 4).map((event) => {
+    const actions = pokemonActionPlan(event);
+    const bonuses = asArray(event.bonuses).slice(0, 3);
+    return `
+        <article class="glass-card action-card module-pokemon pokemon-event-card ${event.isActive ? "is-active" : ""}">
+          <div class="module-header">
+            <span class="module-icon pokemon-icon" aria-hidden="true">${event.isActive ? "Now" : "GO"}</span>
+            <p class="eyebrow">${escapeHtml(event.type)} - ${escapeHtml(event.window)}</p>
+          </div>
+          <h3>${escapeHtml(event.title)}</h3>
+          <p>${escapeHtml(summarizePokemonEvent(event))}</p>
+          ${
+            bonuses.length
+              ? `<div class="tag-row">${bonuses.map((bonus) => `<span class="tag-pill">${escapeHtml(bonus)}</span>`).join("")}</div>`
+              : ""
+          }
+          <ul class="check-list">
+            ${actions.map((action) => `<li class="check-item"><span class="task-check"></span><span>${escapeHtml(action)}</span></li>`).join("")}
+          </ul>
+          <span class="source-badge">${escapeHtml(event.source)}</span>
+        </article>
+      `;
+  });
+
+  const todayBrief = `
+        <article class="liquid-panel action-card module-pokemon pokemon-brief-card">
+          <div class="module-header">
+            <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
+            <p class="eyebrow">Today's Pokemon plan</p>
+          </div>
+          <h3>${escapeHtml(featuredEvent?.title || "Pokemon GO")}</h3>
+          <p>${escapeHtml(summarizePokemonEvent(featuredEvent))}</p>
+          <div class="pokemon-decision-grid">
+            <span><strong>${escapeHtml(featuredEvent?.isActive ? "Play" : "Prep")}</strong> decision</span>
+            <span><strong>${escapeHtml(featuredEvent?.window || "Timing TBD")}</strong> window</span>
+            <span><strong>${escapeHtml(pokemonLiveState.sourceNote)}</strong> source</span>
+          </div>
+        </article>
+  `;
+
   const liveCard = `
         <article class="glass-card action-card module-pokemon">
           <div class="module-header">
             <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
-            <p class="eyebrow">PoGoAPI - ${pokemonLiveState.status}</p>
+            <p class="eyebrow">${escapeHtml(pokemonLiveState.status)} public pulse</p>
           </div>
-          <h3>Pokemon GO live data pulse</h3>
-          <p>Public reference data for released Pokemon, shiny availability, and nesting species.</p>
+          <h3>Live reference data</h3>
+          <p>Account-free public data for released Pokemon, shiny availability, nesting species, raid tiers, and current-event checks.</p>
           <div class="weather-metrics source-metrics" aria-label="Pokemon GO public data">
             <span><strong>${pokemonLiveState.released}</strong> released</span>
             <span><strong>${pokemonLiveState.shiny}</strong> shiny</span>
             <span><strong>${pokemonLiveState.nesting}</strong> nesting</span>
+            <span><strong>${pokemonLiveState.raids}</strong> raid slots</span>
           </div>
           <div class="source-row">
-            <span class="source-badge">PoGoAPI - ${pokemonLiveState.status}</span>
+            <span class="source-badge">${escapeHtml(pokemonLiveState.sourceNote)}</span>
             <button class="text-button" data-action="refresh-pokemon" type="button">Refresh</button>
           </div>
           ${pokemonLiveState.updated ? `<p class="item-meta">Updated ${pokemonLiveState.updated}</p>` : ""}
@@ -1548,7 +1865,7 @@ function renderPokemon() {
       `,
   );
 
-  document.getElementById("pokemonCards").innerHTML = [liveCard, ...planningCards].join("");
+  document.getElementById("pokemonCards").innerHTML = [todayBrief, liveCard, ...eventCards, ...planningCards.slice(2)].join("");
 }
 
 function renderLearning() {
@@ -1821,12 +2138,30 @@ function buildRecommendation() {
   const openToday = seed.todayTasks.filter((task) => !completedTasks.has(taskId(task))).length;
   const openInbox = capturedItems.filter((task) => !completedTasks.has(taskId(task))).length;
   const rainy = /\b(rain|showers|thunderstorm|drizzle)\b/i.test(weatherState.summary) || parseInt(weatherState.rain, 10) >= 45;
+  const pokemonEvent = primaryPokemonEvent();
+  const trainingDecision = buildTrainingIntelligence();
 
   if (rainy) {
     return {
       title: "Protect the run window",
       body: "Weather looks wet enough to plan a dry backup: mobility, core, or an earlier easy run if the window opens.",
       reason: "Because weather is shaping today's training choice",
+    };
+  }
+
+  if (pokemonEvent?.isActive) {
+    return {
+      title: `Use the ${pokemonEvent.title} window deliberately`,
+      body: pokemonActionPlan(pokemonEvent).slice(0, 2).join(" Then ") || summarizePokemonEvent(pokemonEvent),
+      reason: `${pokemonEvent.window} is active`,
+    };
+  }
+
+  if (trainingDecision.readiness === "Low") {
+    return {
+      title: "Take the recovery version",
+      body: trainingDecision.detail,
+      reason: "Health/training signal says keep load low",
     };
   }
 
@@ -1896,6 +2231,11 @@ function renderDailySignals() {
   const cappedScore = Math.min(92, baseScore);
   const weatherWord = weatherState.status === "live" ? weatherState.temp : "--";
   const sourceWord = `${sourceCount}/4`;
+  const pokemonEvent = primaryPokemonEvent();
+  const eventBrief = pokemonEvent
+    ? `${pokemonEvent.title}: ${summarizePokemonEvent(pokemonEvent)}`
+    : "Pokemon GO events will appear here when the public feed or curated fallback has a current window.";
+  const trainingDecision = buildTrainingIntelligence();
 
   document.getElementById("priorityCount").textContent = seed.priorities.length;
   document.getElementById("weatherSignal").textContent = weatherWord;
@@ -1903,7 +2243,7 @@ function renderDailySignals() {
   document.getElementById("dailySignalScore").textContent = cappedScore;
   document.getElementById("dailyBrief").textContent =
     privateDaily.summary ||
-    "Today has a real afternoon anchor: Sobble Community Day from 2-5 PM, layered with the 10th Anniversary Party running July 4-6. Keep the morning light, prep storage and battery, then use the event window deliberately.";
+    `${eventBrief} Training: ${trainingDecision.title}. Keep the day concrete: one useful workout choice, one event plan, and one small personal loop.`;
 }
 
 function renderIntelligence() {
@@ -2393,6 +2733,12 @@ function objectCount(value) {
   return 0;
 }
 
+function raidSlotCount(value) {
+  if (!value || typeof value !== "object") return 0;
+  if (Array.isArray(value)) return value.length;
+  return Object.values(value).reduce((sum, tier) => sum + asArray(tier).filter((item) => item && item.template !== "UNSET").length, 0);
+}
+
 function formatShortTime() {
   return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
@@ -2443,32 +2789,48 @@ async function refreshPokemonLiveData() {
   pokemonLiveState = {
     ...pokemonLiveState,
     status: "loading",
+    sourceNote: "Refreshing Pokemon GO public data...",
     updated: "",
   };
+  renderTodayPokemon();
   renderPokemon();
   renderIntelligence();
 
   try {
     const data = await sourceAdapters.pogo.fetch();
+    const activeEvents = normalizePokemonEvents(data.events);
+    const fallbackEvents = fallbackPokemonEvents().map((event) => normalizePokemonEvent(event)).filter(Boolean).sort(sortPokemonEvents);
+    const usableEvents = (activeEvents.length ? activeEvents : fallbackEvents).sort(sortPokemonEvents);
     pokemonLiveState = {
       status: "live",
-      released: objectCount(data.released),
-      shiny: objectCount(data.shiny),
-      nesting: objectCount(data.nesting),
+      released: formatInteger(objectCount(data.released)),
+      shiny: formatInteger(objectCount(data.shiny)),
+      nesting: formatInteger(objectCount(data.nesting)),
+      raids: formatInteger(raidSlotCount(data.raids)),
+      activeEvents: usableEvents,
+      featuredEvent: usableEvents[0] || null,
+      sourceNote: activeEvents.length ? "PogoInfo current event feed" : "Curated fallback; public event feed stale",
       updated: formatShortTime(),
     };
     sourceHealthState.pokemon = "live";
   } catch (error) {
+    const fallbackEvents = fallbackPokemonEvents().map((event) => normalizePokemonEvent(event)).filter(Boolean).sort(sortPokemonEvents);
     pokemonLiveState = {
       status: "offline",
       released: "--",
       shiny: "--",
       nesting: "--",
+      raids: "--",
+      activeEvents: fallbackEvents,
+      featuredEvent: fallbackEvents[0] || null,
+      sourceNote: "Curated fallback; public Pokemon feeds unavailable",
       updated: "",
     };
     sourceHealthState.pokemon = "offline";
   }
 
+  renderTodayInsights();
+  renderTodayPokemon();
   renderPokemon();
   renderIntelligence();
 }
@@ -2785,6 +3147,7 @@ function init() {
   renderTodayInsights();
   renderTodayAgenda();
   renderTodayWorkout();
+  renderTodayPokemon();
   renderTasks();
   renderCalendar();
   renderTrainingOverview();
