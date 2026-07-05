@@ -1275,12 +1275,19 @@ function normalizeWordPressNews(posts, source) {
       const title = stripHtml(post.title?.rendered || post.title);
       const summary = compactSentence(post.excerpt?.rendered || post.content?.rendered || "");
       const url = compactText(post.link || post.guid?.rendered);
+      const media = post._embedded?.["wp:featuredmedia"]?.[0];
+      const image =
+        compactText(media?.media_details?.sizes?.large?.source_url) ||
+        compactText(media?.media_details?.sizes?.medium_large?.source_url) ||
+        compactText(media?.media_details?.sizes?.medium?.source_url) ||
+        compactText(media?.source_url);
       if (!title || !url) return null;
       return {
         id: `${source}:${url}`,
         title,
         summary,
         url,
+        image,
         source,
         sourceKey: source.toLowerCase().replace(/\s+/g, "-"),
         publishedAt: post.date_gmt || post.date,
@@ -1302,6 +1309,7 @@ function normalizeHackerNewsNews(payload) {
           ? `${story.points} points on Hacker News. Use this as a tech-community pulse, not a definitive source.`
           : "Recent Hacker News discussion signal.",
         url,
+        image: "",
         source: "Hacker News",
         sourceKey: "hacker-news",
         publishedAt: story.created_at,
@@ -1322,6 +1330,7 @@ function normalizeGdeltNews(payload) {
         title,
         summary: compactSentence(article.seendate ? `BBC-linked coverage seen ${article.seendate}.` : "BBC-linked technology coverage."),
         url,
+        image: compactText(article.socialimage),
         source: "BBC / GDELT",
         sourceKey: "bbc",
         publishedAt: parseCompactNewsDate(article.seendate),
@@ -1414,6 +1423,12 @@ function buildNewsOverview(items = newsState.items) {
   return `${topTags.join(", ")} are the strongest briefing lanes right now. Top stories: ${topStories.join(" / ")}.`;
 }
 
+function buildCompactNewsOverview(items = newsState.items) {
+  if (!items.length) return "Fresh stories will appear automatically.";
+  const topTags = [...new Set(items.flatMap((item) => item.tags || []))].slice(0, 3);
+  return `${topTags.join(", ")} are active lanes. Top story: ${items[0].title}.`;
+}
+
 function fallbackNewsItems() {
   const now = new Date().toISOString();
   return seed.news.map((item, index) => ({
@@ -1423,10 +1438,70 @@ function fallbackNewsItems() {
     url: index === 0 ? "https://techcrunch.com/" : "https://www.youtube.com/results?search_query=AI+tools+productivity+workflow&sp=CAISAhAB",
     source: item.source,
     sourceKey: "fallback",
+    image: "",
     publishedAt: now,
     tags: item.tags,
     score: 5,
   }));
+}
+
+function newsVisualClass(item) {
+  const tags = item?.tags || [];
+  if (tags.includes("AI")) return "is-ai";
+  if (tags.includes("Startups")) return "is-startups";
+  if (tags.includes("Personal tech")) return "is-tech";
+  if (tags.includes("Security")) return "is-security";
+  if (tags.includes("Gaming")) return "is-gaming";
+  return "is-briefing";
+}
+
+function newsVisualLabel(item) {
+  const tags = item?.tags || [];
+  if (tags.includes("AI")) return "AI";
+  if (tags.includes("Startups")) return "VC";
+  if (tags.includes("Personal tech")) return "UX";
+  if (tags.includes("Security")) return "SEC";
+  if (tags.includes("Gaming")) return "PLAY";
+  return "NEWS";
+}
+
+function renderNewsMedia(item, compact = false) {
+  const label = newsVisualLabel(item);
+  if (item?.image) {
+    return `
+      <div class="news-media ${compact ? "is-compact" : ""}">
+        <img src="${escapeHtml(item.image)}" alt="" loading="lazy" />
+        <span>${escapeHtml(label)}</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="news-media generated-news-media ${newsVisualClass(item)} ${compact ? "is-compact" : ""}">
+      <span>${escapeHtml(label)}</span>
+      <i></i>
+      <b></b>
+    </div>
+  `;
+}
+
+function pokemonArtworkForEvent(event) {
+  const title = `${event?.title || ""} ${event?.summary || ""}`.toLowerCase();
+  if (title.includes("sobble")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/816.png";
+  if (title.includes("anniversary") || title.includes("pikachu")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png";
+  if (title.includes("lucario")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png";
+  if (title.includes("articuno")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/144.png";
+  if (title.includes("zapdos")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/145.png";
+  if (title.includes("moltres")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/146.png";
+  return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png";
+}
+
+function weatherVisualClass() {
+  const text = `${weatherState.summary} ${weatherState.rain}`.toLowerCase();
+  if (/thunder|storm/.test(text)) return "storm";
+  if (/rain|showers|drizzle/.test(text) || parseInt(weatherState.rain, 10) >= 45) return "rain";
+  if (/cloud|overcast/.test(text)) return "cloud";
+  if (/snow/.test(text)) return "snow";
+  return "sun";
 }
 
 function primaryPokemonEvent() {
@@ -2109,12 +2184,17 @@ function renderTodayWorkout() {
   const decision = buildTrainingIntelligence();
 
   target.innerHTML = `
+    <div class="training-visual" aria-hidden="true">
+      <div class="route-line"></div>
+      <span class="route-dot dot-one"></span>
+      <span class="route-dot dot-two"></span>
+      <span class="route-stat">${escapeHtml(decision.duration)}</span>
+    </div>
     <div class="module-header">
       <span class="module-icon training-icon" aria-hidden="true">Run</span>
       <p class="eyebrow">Today's workout</p>
     </div>
     <h3>${escapeHtml(decision.title)}</h3>
-    <p>${escapeHtml(decision.detail)}</p>
     <div class="mini-fact-grid">
       <span><strong>${escapeHtml(decision.duration)}</strong> plan</span>
       <span><strong>${escapeHtml(decision.readiness)}</strong> readiness</span>
@@ -2128,18 +2208,21 @@ function renderTodayPokemon() {
   const target = document.getElementById("todayPokemonCard");
   if (!target) return;
   const event = primaryPokemonEvent();
-  const actions = pokemonActionPlan(event).slice(0, 3);
+  const actions = pokemonActionPlan(event).slice(0, 2);
   const source = compactText(event?.source, pokemonLiveState.sourceNote || "Public event plan");
-  const summary = summarizePokemonEvent(event);
   const windowText = compactText(event?.window, "Check event timing");
+  const artwork = pokemonArtworkForEvent(event);
 
   target.innerHTML = `
+    <div class="pokemon-visual" aria-hidden="true">
+      <img src="${escapeHtml(artwork)}" alt="" loading="lazy" />
+      <span>${escapeHtml(event?.isActive ? "Live" : "Plan")}</span>
+    </div>
     <div class="module-header">
       <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
       <p class="eyebrow">${escapeHtml(event?.isActive ? "Pokemon GO - active now" : "Pokemon GO")}</p>
     </div>
     <h3>${escapeHtml(event?.title || "Pokemon GO plan")}</h3>
-    <p>${escapeHtml(summary)}</p>
     <div class="mini-fact-grid">
       <span><strong>${escapeHtml(event?.isActive ? "Now" : "Next")}</strong> status</span>
       <span><strong>${escapeHtml(windowText)}</strong> window</span>
@@ -2155,27 +2238,16 @@ function renderTodayPokemon() {
 function renderTodayNews() {
   const target = document.getElementById("todayNewsCard");
   if (!target) return;
-  const items = newsState.items.length ? newsState.items.slice(0, 3) : fallbackNewsItems().slice(0, 2);
+  const items = newsState.items.length ? newsState.items.slice(0, 2) : fallbackNewsItems().slice(0, 2);
   const freshness = newsState.updated ? `Updated ${newsState.updated}` : "Current briefing";
   target.innerHTML = `
+    ${renderNewsMedia(items[0], true)}
     <div class="module-header">
       <span class="module-icon news-icon" aria-hidden="true">Nw</span>
       <p class="eyebrow">Current news</p>
     </div>
     <h3>${escapeHtml(items[0]?.title || "Current briefing loading")}</h3>
-    <p>${escapeHtml(newsState.overview)}</p>
-    <div class="news-mini-list">
-      ${items
-        .map(
-          (item) => `
-            <a class="news-mini-item" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
-              <strong>${escapeHtml(item.title)}</strong>
-              <span>${escapeHtml(item.source)} - ${escapeHtml(relativeTime(item.publishedAt))}</span>
-            </a>
-          `,
-        )
-        .join("")}
-    </div>
+    <p>${escapeHtml(buildCompactNewsOverview(items))}</p>
     <div class="source-row">
       <span class="source-badge">${escapeHtml(freshness)}</span>
       <button class="text-button" data-view="news" type="button">News room</button>
@@ -2346,8 +2418,13 @@ function renderPokemon() {
   const eventCards = activeEvents.slice(0, 4).map((event) => {
     const actions = pokemonActionPlan(event);
     const bonuses = asArray(event.bonuses).slice(0, 3);
+    const artwork = pokemonArtworkForEvent(event);
     return `
         <article class="glass-card action-card module-pokemon pokemon-event-card ${event.isActive ? "is-active" : ""}">
+          <div class="pokemon-card-art" aria-hidden="true">
+            <img src="${escapeHtml(artwork)}" alt="" loading="lazy" />
+            <span>${escapeHtml(event.isActive ? "Now" : "Soon")}</span>
+          </div>
           <div class="module-header">
             <span class="module-icon pokemon-icon" aria-hidden="true">${event.isActive ? "Now" : "GO"}</span>
             <p class="eyebrow">${escapeHtml(event.type)} - ${escapeHtml(event.window)}</p>
@@ -2369,6 +2446,10 @@ function renderPokemon() {
 
   const todayBrief = `
         <article class="liquid-panel action-card module-pokemon pokemon-brief-card">
+          <div class="pokemon-brief-art" aria-hidden="true">
+            <img src="${escapeHtml(pokemonArtworkForEvent(featuredEvent))}" alt="" loading="lazy" />
+            <span></span>
+          </div>
           <div class="module-header">
             <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
             <p class="eyebrow">Today's Pokemon plan</p>
@@ -2435,6 +2516,9 @@ function renderNews() {
 
   const overviewCard = `
     <article class="liquid-panel action-card module-news news-brief-card">
+      <div class="news-hero-strip">
+        ${items.slice(0, 3).map((item) => renderNewsMedia(item, true)).join("")}
+      </div>
       <div class="module-header">
         <span class="module-icon news-icon" aria-hidden="true">Nw</span>
         <p class="eyebrow">Briefing</p>
@@ -2451,6 +2535,7 @@ function renderNews() {
   const storyCards = items.slice(0, 8).map(
     (item) => `
       <article class="glass-card action-card module-news news-story-card">
+        ${renderNewsMedia(item)}
         <div class="module-header">
           <span class="module-icon news-icon" aria-hidden="true">${escapeHtml(item.sourceKey === "hacker-news" ? "HN" : item.sourceKey === "bbc" ? "BBC" : "Nw")}</span>
           <p class="eyebrow">${escapeHtml(item.source)} - ${escapeHtml(relativeTime(item.publishedAt))}</p>
@@ -2648,6 +2733,13 @@ function renderWeather() {
   if (!weatherCard) return;
 
   weatherCard.innerHTML = `
+    <div class="weather-visual ${weatherVisualClass()}" aria-hidden="true">
+      <span class="weather-sun"></span>
+      <span class="weather-cloud cloud-one"></span>
+      <span class="weather-cloud cloud-two"></span>
+      <span class="weather-rain rain-one"></span>
+      <span class="weather-rain rain-two"></span>
+    </div>
     <div class="module-header">
       <span class="module-icon weather-icon" aria-hidden="true">Wx</span>
       <p class="eyebrow">Arden weather</p>
