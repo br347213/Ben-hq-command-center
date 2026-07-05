@@ -2,7 +2,7 @@
 
 Ben HQ is a private, personal daily command center for tasks, training, weather, calendar planning, Pokemon GO priorities, chess improvement, learning queues, prompt workflows, and approved personal-source integrations.
 
-This first pass is a high-fidelity static prototype with public live data from account-free sources: Arden weather from Open-Meteo, Pokemon GO reference counts from PoGoAPI, and Lichess daily puzzle metadata. It also includes a no-secret private bridge intake for personal summaries from Gmail, Google Calendar, Google Drive, Notes, Garmin, Apple Health, and ChatGPT exports. It does not connect to workplace resources, financial accounts, or private APIs directly from public GitHub code.
+This first pass is a high-fidelity static prototype with public live data from account-free sources: Arden weather from Open-Meteo, Pokemon GO reference counts from PoGoAPI, Pokemon GO community event/raid JSON when current, and Lichess daily puzzle metadata. It also includes a no-secret private bridge intake for personal summaries from Gmail, Google Calendar, Google Drive, Notes, Garmin, Apple Health, and ChatGPT exports. It does not connect to workplace resources, financial accounts, or private APIs directly from public GitHub code.
 
 ## Open The Prototype
 
@@ -29,9 +29,9 @@ The current machine path does not have Node or npm available, so the first build
 - Local data export, import, and reset controls for browser-stored context
 - Tasks inbox and today focus
 - Calendar preview
-- Training hub with visible workout prescriptions, fallback options, and readiness rules
-- Pokemon GO public data pulse through PoGoAPI
-- Manual, source-labeled Pokemon GO event brief for Sobble Community Day and the 10th Anniversary Party
+- Training hub with visible workout prescriptions, fallback options, readiness rules, and a health-aware Today decision layer
+- Pokemon GO public data pulse through PoGoAPI plus community event/raid JSON when usable
+- Source-labeled Pokemon GO event brief with stale-feed detection and curated fallback for current event windows
 - Chess module with a polished interactive puzzle board and Lichess daily puzzle metadata
 - Learning queue
 - Prompt library with search
@@ -44,6 +44,7 @@ The current machine path does not have Node or npm available, so the first build
 - Daily packet sample in `samples/ben-hq-daily-packet.sample.json`
 - Private bridge setup notes in `docs/private-bridge.md`
 - Garmin auto-sync notes in `docs/garmin-auto-sync.md`
+- Community connector strategy in `docs/community-connectors.md`
 
 ## Version One Direction
 
@@ -109,7 +110,7 @@ src/
 - Private daily packets can be imported from JSON or synced from a saved bridge URL. The bridge URL and passcode stay in browser local storage and are not included in normal exports.
 - Text, Markdown, and JSON files can be read locally into the review queue; binary documents still need a future parser.
 - Weather depends on the public Open-Meteo API being reachable from the browser.
-- Pokemon GO public counts depend on PoGoAPI being reachable from the browser.
+- Pokemon GO public counts depend on PoGoAPI being reachable from the browser. Event and raid data can use community JSON feeds when current; stale feeds are labeled and ignored for Today.
 - Lichess daily puzzle metadata depends on the public Lichess API being reachable from the browser.
 - No backend exists yet.
 - No authentication exists yet.

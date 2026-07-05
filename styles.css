@@ -958,6 +958,10 @@ h3 {
   gap: 8px;
 }
 
+.source-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+}
+
 .weather-metrics span {
   min-height: 54px;
   display: grid;
@@ -1102,6 +1106,63 @@ h3 {
   background:
     linear-gradient(145deg, rgba(255, 209, 102, 0.14), transparent 38%),
     linear-gradient(315deg, rgba(255, 255, 255, 0.12), transparent 42%);
+}
+
+.compact-action-list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compact-action-list li {
+  padding: 7px 9px;
+  border: 1px solid rgba(224, 244, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #dbe8f5;
+  font-size: 0.84rem;
+}
+
+.pokemon-brief-card {
+  grid-column: span 2;
+  min-height: 260px;
+}
+
+.pokemon-event-card.is-active {
+  border-color: rgba(255, 209, 102, 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 18px 54px rgba(255, 209, 102, 0.08);
+}
+
+.pokemon-decision-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pokemon-decision-grid span {
+  min-height: 62px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid rgba(255, 209, 102, 0.18);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(255, 209, 102, 0.12), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.pokemon-decision-grid strong {
+  color: var(--text);
+  font-family: var(--display-font);
+  font-size: 0.92rem;
 }
 
 .module-learning {
@@ -1683,6 +1744,37 @@ h3 {
   color: #c8d8e8;
 }
 
+.training-decision {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid rgba(121, 242, 181, 0.18);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(121, 242, 181, 0.11), rgba(255, 255, 255, 0.024)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.training-decision span {
+  color: var(--green);
+  font-family: var(--display-font);
+  font-size: 0.74rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.training-decision strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.training-decision p {
+  margin: 0;
+  color: #c5d3e3;
+  font-size: 0.87rem;
+}
+
 .metric-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1902,6 +1994,10 @@ h3 {
   .calendar-grid {
     grid-template-columns: 1fr;
   }
+
+  .pokemon-brief-card {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2006,6 +2102,10 @@ h3 {
   }
 
   .metric-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pokemon-decision-grid {
     grid-template-columns: 1fr;
   }
 
