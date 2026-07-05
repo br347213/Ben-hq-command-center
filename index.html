@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#080b10" />
     <title>Ben HQ</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260704-auto-sync-1" />
+    <link rel="stylesheet" href="styles.css?v=20260705-news-1" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -63,7 +63,7 @@
                 <div class="hero-stat-row" aria-label="Today signals">
                   <span><strong id="priorityCount">3</strong> priorities</span>
                   <span><strong id="weatherSignal">--</strong> weather</span>
-                <span><strong id="sourceSignal">0/4</strong> live sources</span>
+                <span><strong id="sourceSignal">0/5</strong> live sources</span>
                 </div>
                 <div class="today-insight-grid" id="todayInsightGrid" aria-label="Today quick facts"></div>
               </div>
@@ -141,6 +141,15 @@
               </div>
               <span class="source-badge">Public event schedule - checked Jul 4</span>
               <button class="text-button" data-view="pokemon">Open Pokemon</button>
+            </article>
+            <article class="glass-card action-card module-news today-news-card" id="todayNewsCard" aria-live="polite">
+              <div class="module-header">
+                <span class="module-icon news-icon" aria-hidden="true">Nw</span>
+                <p class="eyebrow">Current news</p>
+              </div>
+              <h3>Loading current briefing</h3>
+              <p>Ben HQ is checking public tech and world-news sources for stories that match your interests.</p>
+              <span class="source-badge">Checking sources</span>
             </article>
             <article class="glass-card action-card module-chess">
               <div class="module-header">
@@ -365,6 +374,17 @@
             <span class="freshness">PoGoAPI public data</span>
           </div>
           <div class="dashboard-grid" id="pokemonCards"></div>
+        </section>
+
+        <section class="page-view" id="view-news">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Public-source briefing</p>
+              <h2>Current News</h2>
+            </div>
+            <span class="freshness" id="newsFreshness">Checking sources</span>
+          </div>
+          <div class="dashboard-grid" id="newsCards"></div>
         </section>
 
         <section class="page-view" id="view-chess">

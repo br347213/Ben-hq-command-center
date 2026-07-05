@@ -4,6 +4,7 @@ const navItems = [
   { id: "calendar", label: "Calendar", icon: "C" },
   { id: "training", label: "Training", icon: "R" },
   { id: "pokemon", label: "Pokemon GO", icon: "P" },
+  { id: "news", label: "News", icon: "Nw" },
   { id: "chess", label: "Chess", icon: "Ch" },
   { id: "learn", label: "Learn", icon: "L" },
   { id: "prompts", label: "Prompts", icon: "A" },
@@ -181,6 +182,22 @@ const seed = {
       actions: ["Review favorites", "Tag maybe candidates", "Transfer obvious duplicates"],
     },
   ],
+  news: [
+    {
+      title: "AI, startups, personal tech, and useful internet shifts",
+      source: "Ben HQ relevance model",
+      summary:
+        "The news surface should answer: what changed, why Ben might care, and whether it deserves attention today.",
+      tags: ["AI", "Startups", "Tools", "YouTube"],
+    },
+    {
+      title: "Avoid infinite-scroll news",
+      source: "Personal product rule",
+      summary:
+        "Default to a short briefing. Show enough context to decide, then link out only when the story is worth a deeper read.",
+      tags: ["Signal", "Focus"],
+    },
+  ],
   learning: [
     {
       title: "Running strength progression",
@@ -347,6 +364,15 @@ const seed = {
       next: "Add vetted event-feed parsing once a stable calendar format is confirmed.",
     },
     {
+      title: "Current news",
+      status: "Live public",
+      tone: "news",
+      icon: "Nw",
+      source: "TechCrunch, VentureBeat, BBC via GDELT, Hacker News, YouTube links",
+      summary: "A public-source briefing for AI, startups, useful personal tech, platforms, gaming, and internet shifts worth noticing.",
+      next: "Add saved interests and YouTube channel feeds once Ben HQ has a stronger personal profile.",
+    },
+    {
       title: "Direct finance accounts",
       status: "Skipped",
       tone: "calendar",
@@ -418,9 +444,18 @@ let pokemonLiveState = {
   sourceNote: "Loading public event feeds...",
   updated: "",
 };
+let newsState = {
+  status: "loading",
+  updated: "",
+  overview: "Loading a focused public news briefing...",
+  items: [],
+  sources: [],
+  sourceNote: "Checking TechCrunch, VentureBeat, BBC, Hacker News, and YouTube radar.",
+};
 let sourceHealthState = {
   weather: "loading",
   pokemon: "loading",
+  news: "loading",
   lichess: "loading",
   private: hasPrivateDailyData(privateDaily) ? "live" : "offline",
   local: "live",
@@ -707,6 +742,35 @@ const sourceAdapters = {
       return { released, shiny, nesting, raids, events };
     },
   },
+  news: {
+    name: "Public news feeds",
+    endpoints: {
+      techcrunch: "https://techcrunch.com/wp-json/wp/v2/posts?per_page=10&_embed=1",
+      venturebeat: "https://venturebeat.com/wp-json/wp/v2/posts?per_page=10&_embed=1",
+      hackerNews: "https://hn.algolia.com/api/v1/search_by_date?query=AI&tags=story&hitsPerPage=20",
+      bbc:
+        "https://api.gdeltproject.org/api/v2/doc/doc?query=domain:bbc.com%20technology&mode=artlist&format=json&maxrecords=10&sort=hybridrel",
+    },
+    async fetch() {
+      const fetchJson = async (name, url) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6500);
+        const response = await fetch(url, { headers: { Accept: "application/json" }, signal: controller.signal }).finally(() => clearTimeout(timeoutId));
+        if (!response.ok) {
+          throw new Error(`${name} request failed: ${response.status}`);
+        }
+        return response.json();
+      };
+      const entries = Object.entries(this.endpoints);
+      const settled = await Promise.allSettled(entries.map(([name, url]) => fetchJson(name, url)));
+      return entries.map(([name], index) => ({
+        name,
+        status: settled[index].status,
+        value: settled[index].status === "fulfilled" ? settled[index].value : null,
+        error: settled[index].status === "rejected" ? settled[index].reason?.message || "Unavailable" : "",
+      }));
+    },
+  },
 };
 
 function renderNav(targetId) {
@@ -868,6 +932,50 @@ function firstText(...values) {
 function formatInteger(value, fallback = "--") {
   const number = Number(value);
   return Number.isFinite(number) ? number.toLocaleString() : fallback;
+}
+
+function decodeHtml(value) {
+  const text = String(value || "");
+  if (!text) return "";
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
+function stripHtml(value) {
+  return decodeHtml(String(value || "").replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
+}
+
+function toTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function relativeTime(value) {
+  const time = toTime(value);
+  if (!time) return "recent";
+  const diffMinutes = Math.max(1, Math.round((Date.now() - time) / 60000));
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 48) return `${diffHours}h ago`;
+  return new Date(time).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function parseCompactNewsDate(value) {
+  const text = String(value || "");
+  const match = text.match(/^(\d{4})(\d{2})(\d{2})(\d{2})?(\d{2})?(\d{2})?/);
+  if (!match) return value;
+  const [, year, month, day, hour = "00", minute = "00", second = "00"] = match;
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+}
+
+function compactSentence(value, maxLength = 170) {
+  const text = stripHtml(value);
+  if (text.length <= maxLength) return text;
+  const clipped = text.slice(0, maxLength - 1);
+  const sentenceEnd = Math.max(clipped.lastIndexOf("."), clipped.lastIndexOf("!"), clipped.lastIndexOf("?"));
+  const safeEnd = sentenceEnd > 80 ? sentenceEnd + 1 : clipped.lastIndexOf(" ");
+  return `${clipped.slice(0, safeEnd > 60 ? safeEnd : maxLength - 1).trim()}...`;
 }
 
 function normalizeSourceList(value) {
@@ -1117,6 +1225,193 @@ function sortPokemonEvents(a, b) {
 function currentPokemonEvents() {
   const events = pokemonLiveState.activeEvents.length ? pokemonLiveState.activeEvents : fallbackPokemonEvents().map((event) => normalizePokemonEvent(event)).filter(Boolean);
   return [...events].sort(sortPokemonEvents);
+}
+
+const newsInterestRules = [
+  { tag: "AI", score: 9, pattern: /\b(ai|artificial intelligence|openai|chatgpt|claude|gemini|llm|agent|model|codex)\b/i },
+  { tag: "Startups", score: 7, pattern: /\b(startup|founder|funding|venture|vc|seed|series [abc]|unicorn|acquire|ipo)\b/i },
+  { tag: "Personal tech", score: 6, pattern: /\b(apple|iphone|ios|android|google|chrome|mac|windows|device|app|wearable|garmin)\b/i },
+  { tag: "Productivity", score: 6, pattern: /\b(productivity|workflow|automation|calendar|notes|email|gmail|tool|desk|browser)\b/i },
+  { tag: "YouTube", score: 5, pattern: /\b(youtube|creator|video|streaming|shorts)\b/i },
+  { tag: "Gaming", score: 5, pattern: /\b(game|gaming|pokemon|nintendo|xbox|playstation|steam|chess|lichess)\b/i },
+  { tag: "Health tech", score: 4, pattern: /\b(health|fitness|running|sleep|heart rate|wearable|strava|garmin)\b/i },
+  { tag: "Security", score: 4, pattern: /\b(security|privacy|hack|breach|password|scam|malware|ransomware)\b/i },
+];
+
+const youtubeRadarLinks = [
+  {
+    title: "AI tools and personal workflow",
+    url: "https://www.youtube.com/results?search_query=AI+tools+productivity+workflow&sp=CAISAhAB",
+    detail: "Sorted toward recent uploads. Useful for spotting tools that may be worth testing in Ben HQ.",
+  },
+  {
+    title: "Startup and tech analysis",
+    url: "https://www.youtube.com/results?search_query=startup+tech+news+AI&sp=CAISAhAB",
+    detail: "Good for fast context when a story is more about momentum than the article headline shows.",
+  },
+  {
+    title: "Chess improvement videos",
+    url: "https://www.youtube.com/results?search_query=chess+puzzle+training+beginner+intermediate&sp=CAISAhAB",
+    detail: "Short tactics and pattern videos for the chess module once channel preferences are known.",
+  },
+];
+
+function newsTagsForText(text) {
+  return newsInterestRules.filter((rule) => rule.pattern.test(text)).map((rule) => rule.tag);
+}
+
+function newsScoreForItem(item) {
+  const haystack = `${item.title} ${item.summary} ${item.source}`.toLowerCase();
+  const interestScore = newsInterestRules.reduce((sum, rule) => sum + (rule.pattern.test(haystack) ? rule.score : 0), 0);
+  const ageHours = item.publishedAt ? Math.max(0, (Date.now() - toTime(item.publishedAt)) / 3600000) : 24;
+  const freshnessScore = Math.max(0, 9 - Math.floor(ageHours / 8));
+  const socialScore = item.points ? Math.min(5, Math.floor(item.points / 80)) : 0;
+  return interestScore + freshnessScore + socialScore;
+}
+
+function normalizeWordPressNews(posts, source) {
+  return asArray(posts)
+    .map((post) => {
+      const title = stripHtml(post.title?.rendered || post.title);
+      const summary = compactSentence(post.excerpt?.rendered || post.content?.rendered || "");
+      const url = compactText(post.link || post.guid?.rendered);
+      if (!title || !url) return null;
+      return {
+        id: `${source}:${url}`,
+        title,
+        summary,
+        url,
+        source,
+        sourceKey: source.toLowerCase().replace(/\s+/g, "-"),
+        publishedAt: post.date_gmt || post.date,
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeHackerNewsNews(payload) {
+  return asArray(payload?.hits)
+    .map((story) => {
+      const title = stripHtml(story.title || story.story_title);
+      const url = compactText(story.url || story.story_url || (story.objectID ? `https://news.ycombinator.com/item?id=${story.objectID}` : ""));
+      if (!title || !url) return null;
+      return {
+        id: `Hacker News:${story.objectID || url}`,
+        title,
+        summary: story.points
+          ? `${story.points} points on Hacker News. Use this as a tech-community pulse, not a definitive source.`
+          : "Recent Hacker News discussion signal.",
+        url,
+        source: "Hacker News",
+        sourceKey: "hacker-news",
+        publishedAt: story.created_at,
+        points: Number(story.points) || 0,
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeGdeltNews(payload) {
+  return asArray(payload?.articles)
+    .map((article) => {
+      const title = stripHtml(article.title);
+      const url = compactText(article.url);
+      if (!title || !url) return null;
+      return {
+        id: `BBC:${url}`,
+        title,
+        summary: compactSentence(article.seendate ? `BBC-linked coverage seen ${article.seendate}.` : "BBC-linked technology coverage."),
+        url,
+        source: "BBC / GDELT",
+        sourceKey: "bbc",
+        publishedAt: parseCompactNewsDate(article.seendate),
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeNewsResults(results) {
+  const items = [];
+  const sources = [];
+  for (const result of results) {
+    const label =
+      result.name === "techcrunch"
+        ? "TechCrunch"
+        : result.name === "venturebeat"
+          ? "VentureBeat"
+          : result.name === "hackerNews"
+            ? "Hacker News"
+            : "BBC / GDELT";
+    const normalized =
+      result.name === "hackerNews"
+        ? normalizeHackerNewsNews(result.value)
+        : result.name === "bbc"
+          ? normalizeGdeltNews(result.value)
+          : normalizeWordPressNews(result.value, label);
+    sources.push({
+      label,
+      status: result.status === "fulfilled" && normalized.length ? "live" : "offline",
+      count: normalized.length,
+      error: result.error,
+    });
+    items.push(...normalized);
+  }
+
+  const seen = new Set();
+  return {
+    items: items
+      .map((item) => {
+        const tags = newsTagsForText(`${item.title} ${item.summary}`);
+        return {
+          ...item,
+          tags: tags.length ? tags.slice(0, 3) : ["Tech"],
+          score: newsScoreForItem({ ...item, tags }),
+        };
+      })
+      .filter((item) => {
+        if (seen.has(item.url)) return false;
+        seen.add(item.url);
+        return item.score >= 4;
+      })
+      .sort((a, b) => b.score - a.score || toTime(b.publishedAt) - toTime(a.publishedAt))
+      .slice(0, 12),
+    sources,
+  };
+}
+
+function newsWhyItMatters(item) {
+  const tags = item.tags || [];
+  if (tags.includes("AI")) return "AI/tooling is one of Ben HQ's core interest lanes; this may affect workflows, apps, or how personal automation evolves.";
+  if (tags.includes("Startups")) return "Startup movement is useful signal for where products, funding, and consumer tools may be heading next.";
+  if (tags.includes("Personal tech")) return "This could matter for the devices and apps that shape day-to-day personal systems.";
+  if (tags.includes("Security")) return "Security/privacy stories can become practical account, device, or family-tech actions.";
+  if (tags.includes("Gaming")) return "Gaming stories are relevant when they touch Pokemon, chess, Nintendo, or family-friendly play.";
+  return "Worth a quick scan if the headline connects to your current interests; otherwise safe to ignore.";
+}
+
+function buildNewsOverview(items = newsState.items) {
+  if (!items.length) {
+    return "No live news signal yet. Ben HQ will fill this with public-source stories when the feeds respond.";
+  }
+  const topTags = [...new Set(items.flatMap((item) => item.tags || []))].slice(0, 4);
+  const topSources = [...new Set(items.slice(0, 6).map((item) => item.source))].slice(0, 3);
+  const lead = items[0];
+  return `${topTags.join(", ")} are the strongest live lanes right now. Lead story: ${lead.title}. Sources in play: ${topSources.join(", ")}.`;
+}
+
+function fallbackNewsItems() {
+  const now = new Date().toISOString();
+  return seed.news.map((item, index) => ({
+    id: `fallback-news-${index}`,
+    title: item.title,
+    summary: item.summary,
+    url: index === 0 ? "https://techcrunch.com/" : "https://www.youtube.com/results?search_query=AI+tools+productivity+workflow&sp=CAISAhAB",
+    source: item.source,
+    sourceKey: "fallback",
+    publishedAt: now,
+    tags: item.tags,
+    score: 5,
+  }));
 }
 
 function primaryPokemonEvent() {
@@ -1569,6 +1864,7 @@ function refreshLocalSurfaces() {
   renderTodayAgenda();
   renderTodayWorkout();
   renderTodayPokemon();
+  renderTodayNews();
   renderCalendar();
   renderTrainingOverview();
   renderPrivatePulse();
@@ -1594,13 +1890,14 @@ function escapeHtml(value) {
 
 function safeModuleTone(value) {
   const tone = compactText(value, "calendar").toLowerCase().replace(/[^a-z-]/g, "");
-  return ["weather", "calendar", "training", "pokemon", "chess", "learning", "finance", "ai"].includes(tone) ? tone : "calendar";
+  return ["weather", "calendar", "training", "pokemon", "news", "chess", "learning", "finance", "ai"].includes(tone) ? tone : "calendar";
 }
 
 function buildProactiveBrief() {
   const recommendation = buildRecommendation();
   const trainingDecision = buildTrainingIntelligence();
   const pokemonEvent = primaryPokemonEvent();
+  const topNews = newsState.items[0];
   const pendingImports = pendingContextImports();
   const nextMemory = pendingImports.find((item) => /chatgpt|note|personal|file/i.test(item.source)) || pendingImports[0];
   const privateSourceCount = privateDaily.sources.length;
@@ -1655,20 +1952,22 @@ function buildCommandBrief() {
 
   const situation = pokemonEvent?.isActive
     ? `${pokemonEvent.title} is active. ${summarizePokemonEvent(pokemonEvent)}`
-    : privateDaily.summary || `${trainingDecision.title} is the useful training choice. ${sourceLine}.`;
+    : privateDaily.summary || (topNews ? `${topNews.source}: ${topNews.title}` : `${trainingDecision.title} is the useful training choice. ${sourceLine}.`);
 
   const eventActions = pokemonEvent?.isActive ? pokemonActionPlan(pokemonEvent) : [];
   const action = privateDaily.recommendations[0]?.title
     ? `${privateDaily.recommendations[0].title}: ${privateDaily.recommendations[0].detail || "Use the private packet recommendation."}`
     : eventActions.length
       ? `Use one deliberate ${pokemonEvent.title} window`
+      : topNews
+        ? `Skim the current ${topNews.tags?.[0] || "tech"} shift`
       : recommendation.reason === "Weather is only a constraint"
         ? trainingDecision.title
         : recommendation.title;
 
   const actionDetail =
     privateDaily.recommendations[0]?.detail ||
-    (eventActions.length ? eventActions.slice(0, 3).join(" Then ") : recommendation.body || trainingDecision.detail);
+    (eventActions.length ? eventActions.slice(0, 3).join(" Then ") : topNews ? newsWhyItMatters(topNews) : recommendation.body || trainingDecision.detail);
   const ignore = weatherConstraint
     ? "Ignore exact pace or mileage if rain closes the window."
     : pokemonEvent?.isActive
@@ -1682,13 +1981,13 @@ function buildCommandBrief() {
       label: "Situation",
       title: pokemonEvent?.isActive ? pokemonEvent.title : sourceLine,
       detail: situation,
-      source: pokemonEvent?.source || trainingDecision.source,
+      source: pokemonEvent?.source || topNews?.source || trainingDecision.source,
     },
     {
       label: "Action",
       title: action,
       detail: actionDetail,
-      source: eventActions.length ? pokemonEvent.source : recommendation.reason,
+      source: eventActions.length ? pokemonEvent.source : topNews?.source || recommendation.reason,
     },
     {
       label: "Ignore",
@@ -1835,6 +2134,36 @@ function renderTodayPokemon() {
       ${actions.map((action) => `<li>${escapeHtml(action)}</li>`).join("")}
     </ul>
     <span class="source-badge">${escapeHtml(source)}</span>
+  `;
+}
+
+function renderTodayNews() {
+  const target = document.getElementById("todayNewsCard");
+  if (!target) return;
+  const items = newsState.items.length ? newsState.items.slice(0, 3) : fallbackNewsItems().slice(0, 2);
+  target.innerHTML = `
+    <div class="module-header">
+      <span class="module-icon news-icon" aria-hidden="true">Nw</span>
+      <p class="eyebrow">Current news - ${escapeHtml(newsState.status)}</p>
+    </div>
+    <h3>${escapeHtml(items[0]?.title || "Current briefing loading")}</h3>
+    <p>${escapeHtml(newsState.overview)}</p>
+    <div class="news-mini-list">
+      ${items
+        .map(
+          (item) => `
+            <a class="news-mini-item" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
+              <strong>${escapeHtml(item.title)}</strong>
+              <span>${escapeHtml(item.source)} - ${escapeHtml(relativeTime(item.publishedAt))}</span>
+            </a>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="source-row">
+      <span class="source-badge">${escapeHtml(newsState.sourceNote)}</span>
+      <button class="text-button" data-view="news" type="button">News room</button>
+    </div>
   `;
 }
 
@@ -2079,6 +2408,97 @@ function renderPokemon() {
   document.getElementById("pokemonCards").innerHTML = [todayBrief, liveCard, ...eventCards, ...planningCards.slice(2)].join("");
 }
 
+function renderNews() {
+  const target = document.getElementById("newsCards");
+  if (!target) return;
+  const freshness = document.getElementById("newsFreshness");
+  if (freshness) {
+    freshness.textContent = newsState.updated ? `Updated ${newsState.updated}` : sourceStatusLabel(sourceHealthState.news);
+  }
+  const items = newsState.items.length ? newsState.items : fallbackNewsItems();
+  const sourceCards = newsState.sources.length
+    ? newsState.sources
+    : [
+        { label: "TechCrunch", status: "loading", count: 0 },
+        { label: "VentureBeat", status: "loading", count: 0 },
+        { label: "BBC / GDELT", status: "loading", count: 0 },
+        { label: "Hacker News", status: "loading", count: 0 },
+      ];
+
+  const overviewCard = `
+    <article class="liquid-panel action-card module-news news-brief-card">
+      <div class="module-header">
+        <span class="module-icon news-icon" aria-hidden="true">Nw</span>
+        <p class="eyebrow">AI overview</p>
+      </div>
+      <h3>${escapeHtml(newsState.status === "live" ? "What changed in your lanes" : "Current briefing")}</h3>
+      <p>${escapeHtml(newsState.overview)}</p>
+      <div class="source-status-list news-source-list">
+        ${sourceCards
+          .map(
+            (source) => `
+              <span class="source-status" data-state="${source.status}">
+                <strong>${escapeHtml(sourceStatusLabel(source.status))}</strong>
+                ${escapeHtml(source.label)}${source.count ? ` (${source.count})` : ""}
+              </span>
+            `,
+          )
+          .join("")}
+      </div>
+      <div class="source-row">
+        <span class="source-badge">${escapeHtml(newsState.sourceNote)}</span>
+        <button class="text-button" data-action="refresh-news" type="button">Refresh</button>
+      </div>
+    </article>
+  `;
+
+  const storyCards = items.slice(0, 8).map(
+    (item) => `
+      <article class="glass-card action-card module-news news-story-card">
+        <div class="module-header">
+          <span class="module-icon news-icon" aria-hidden="true">${escapeHtml(item.sourceKey === "hacker-news" ? "HN" : item.sourceKey === "bbc" ? "BBC" : "Nw")}</span>
+          <p class="eyebrow">${escapeHtml(item.source)} - ${escapeHtml(relativeTime(item.publishedAt))}</p>
+        </div>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.summary || newsWhyItMatters(item))}</p>
+        <div class="news-tag-row">
+          ${(item.tags || []).slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+        </div>
+        <div class="news-why">
+          <span>Why it matters</span>
+          <p>${escapeHtml(newsWhyItMatters(item))}</p>
+        </div>
+        <a class="text-button" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Read source</a>
+      </article>
+    `,
+  );
+
+  const youtubeCard = `
+    <article class="glass-card action-card module-news news-youtube-card">
+      <div class="module-header">
+        <span class="module-icon news-icon" aria-hidden="true">YT</span>
+        <p class="eyebrow">YouTube radar</p>
+      </div>
+      <h3>Fresh video lanes to scan</h3>
+      <p>YouTube needs either channel choices or an API key for true automatic ingestion. For now, these open recency-sorted searches in your interest lanes.</p>
+      <div class="news-mini-list">
+        ${youtubeRadarLinks
+          .map(
+            (link) => `
+              <a class="news-mini-item" href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer">
+                <strong>${escapeHtml(link.title)}</strong>
+                <span>${escapeHtml(link.detail)}</span>
+              </a>
+            `,
+          )
+          .join("")}
+      </div>
+    </article>
+  `;
+
+  target.innerHTML = [overviewCard, ...storyCards, youtubeCard].join("");
+}
+
 function renderLearning() {
   document.getElementById("learningCards").innerHTML = seed.learning
     .map(
@@ -2256,7 +2676,7 @@ function sourceStatusLabel(status) {
 }
 
 function liveSourceCount() {
-  return ["weather", "pokemon", "lichess", "private"].filter((key) => sourceHealthState[key] === "live").length;
+  return ["weather", "pokemon", "news", "lichess", "private"].filter((key) => sourceHealthState[key] === "live").length;
 }
 
 function renderSourceHealth() {
@@ -2266,6 +2686,7 @@ function renderSourceHealth() {
   const statuses = [
     { label: "Weather", state: sourceHealthState.weather },
     { label: "Pokemon GO", state: sourceHealthState.pokemon },
+    { label: "News", state: sourceHealthState.news },
     { label: "Lichess", state: sourceHealthState.lichess },
     { label: "Auto Sync", state: sourceHealthState.private },
     { label: "Local memory", state: sourceHealthState.local },
@@ -2276,7 +2697,7 @@ function renderSourceHealth() {
       <span class="module-icon ai-icon" aria-hidden="true">Src</span>
       <p class="eyebrow">Source health</p>
     </div>
-    <h3>${liveSourceCount()} of 4 approved signals live</h3>
+    <h3>${liveSourceCount()} of 5 approved signals live</h3>
     <p>Public signals refresh in-browser. Private summaries load from encrypted Auto Sync packets when configured.</p>
     <div class="source-status-list">
       ${statuses
@@ -2468,7 +2889,7 @@ function renderDailySignals() {
   const completedToday = seed.todayTasks.filter((task) => completedTasks.has(taskId(task))).length;
   const sourceCount = liveSourceCount();
   const weatherWord = weatherState.status === "live" ? weatherState.temp : "--";
-  const sourceWord = `${sourceCount}/4`;
+  const sourceWord = `${sourceCount}/5`;
   const pokemonEvent = primaryPokemonEvent();
   const eventBrief = pokemonEvent
     ? `${pokemonEvent.title}: ${summarizePokemonEvent(pokemonEvent)}`
@@ -2487,6 +2908,7 @@ function renderDailySignals() {
 function renderIntelligence() {
   renderSourceHealth();
   renderDailySignals();
+  renderTodayNews();
   renderRecommendation();
   renderCommandBrief();
 }
@@ -3090,6 +3512,53 @@ async function refreshPokemonLiveData() {
   renderIntelligence();
 }
 
+async function refreshNewsLiveData() {
+  sourceHealthState.news = "loading";
+  newsState = {
+    ...newsState,
+    status: "loading",
+    overview: "Refreshing a focused public news briefing...",
+    sourceNote: "Checking TechCrunch, VentureBeat, BBC, Hacker News, and YouTube radar.",
+    updated: "",
+  };
+  renderTodayNews();
+  renderNews();
+  renderIntelligence();
+
+  try {
+    const data = await sourceAdapters.news.fetch();
+    const normalized = normalizeNewsResults(data);
+    const liveSources = normalized.sources.filter((source) => source.status === "live");
+    const items = normalized.items.length ? normalized.items : fallbackNewsItems();
+    newsState = {
+      status: liveSources.length ? "live" : "offline",
+      updated: formatShortTime(),
+      overview: buildNewsOverview(items),
+      items,
+      sources: normalized.sources,
+      sourceNote: liveSources.length
+        ? `${liveSources.length} public news source${liveSources.length === 1 ? "" : "s"} live`
+        : "Public feeds blocked or unavailable; showing fallback lanes",
+    };
+    sourceHealthState.news = liveSources.length ? "live" : "offline";
+  } catch (error) {
+    const items = fallbackNewsItems();
+    newsState = {
+      status: "offline",
+      updated: "",
+      overview: buildNewsOverview(items),
+      items,
+      sources: [],
+      sourceNote: "Public news feeds unavailable; showing fallback lanes",
+    };
+    sourceHealthState.news = "offline";
+  }
+
+  renderTodayNews();
+  renderNews();
+  renderIntelligence();
+}
+
 async function refreshWeather() {
   sourceHealthState.weather = "loading";
   weatherState = {
@@ -3244,6 +3713,9 @@ function wireEvents() {
     }
     if (actionButton?.dataset.action === "refresh-pokemon") {
       refreshPokemonLiveData();
+    }
+    if (actionButton?.dataset.action === "refresh-news") {
+      refreshNewsLiveData();
     }
     if (actionButton?.dataset.action === "sync-private-bridge") {
       syncPrivateBridge();
@@ -3400,11 +3872,13 @@ function init() {
   renderTodayAgenda();
   renderTodayWorkout();
   renderTodayPokemon();
+  renderTodayNews();
   renderTasks();
   renderCalendar();
   renderTrainingOverview();
   renderWorkouts();
   renderPokemon();
+  renderNews();
   renderLearning();
   renderPrompts();
   renderLibrary();
@@ -3427,6 +3901,7 @@ function init() {
   }
   refreshEncryptedAutoSync();
   refreshWeather();
+  refreshNewsLiveData();
   refreshLichessDaily();
   refreshPokemonLiveData();
 }
