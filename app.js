@@ -1234,7 +1234,7 @@ const newsInterestRules = [
   { tag: "Productivity", score: 6, pattern: /\b(productivity|workflow|automation|calendar|notes|email|gmail|tool|desk|browser)\b/i },
   { tag: "YouTube", score: 5, pattern: /\b(youtube|creator|video|streaming|shorts)\b/i },
   { tag: "Gaming", score: 5, pattern: /\b(game|gaming|pokemon|nintendo|xbox|playstation|steam|chess|lichess)\b/i },
-  { tag: "Health tech", score: 4, pattern: /\b(health|fitness|running|sleep|heart rate|wearable|strava|garmin)\b/i },
+  { tag: "Health tech", score: 4, pattern: /\b(health|fitness|workout|sleep|heart rate|wearable|strava|garmin)\b/i },
   { tag: "Security", score: 4, pattern: /\b(security|privacy|hack|breach|password|scam|malware|ransomware)\b/i },
 ];
 
@@ -1379,24 +1379,39 @@ function normalizeNewsResults(results) {
   };
 }
 
-function newsWhyItMatters(item) {
+function newsBriefSummary(item) {
+  const summary = compactSentence(item.summary || "", 210);
+  if (summary && !/points on hacker news|tech-community pulse/i.test(summary)) return summary;
+  const title = item.title || "This story";
+  if (item.tags?.includes("AI")) return `${title} points to another place where AI is moving from abstract capability into real products, policy, security, or everyday tools.`;
+  if (item.tags?.includes("Startups")) return `${title} is a startup and market-structure signal: funding, acquisitions, new products, or company momentum worth tracking.`;
+  if (item.tags?.includes("Personal tech")) return `${title} may affect the apps, devices, platforms, or services people actually use day to day.`;
+  if (item.tags?.includes("Security")) return `${title} is a security/privacy story with practical implications for accounts, devices, or software trust.`;
+  return `${title} is a current tech story surfaced because it overlaps with the briefing lanes Ben HQ is watching.`;
+}
+
+function newsKeyTakeaways(item) {
   const tags = item.tags || [];
-  if (tags.includes("AI")) return "AI/tooling is one of Ben HQ's core interest lanes; this may affect workflows, apps, or how personal automation evolves.";
-  if (tags.includes("Startups")) return "Startup movement is useful signal for where products, funding, and consumer tools may be heading next.";
-  if (tags.includes("Personal tech")) return "This could matter for the devices and apps that shape day-to-day personal systems.";
-  if (tags.includes("Security")) return "Security/privacy stories can become practical account, device, or family-tech actions.";
-  if (tags.includes("Gaming")) return "Gaming stories are relevant when they touch Pokemon, chess, Nintendo, or family-friendly play.";
-  return "Worth a quick scan if the headline connects to your current interests; otherwise safe to ignore.";
+  const takeaways = [];
+  if (tags.includes("AI")) takeaways.push("AI is showing up as a product layer, not just a research headline.");
+  if (tags.includes("Startups")) takeaways.push("Watch whether this is durable traction or funding-cycle noise.");
+  if (tags.includes("Personal tech")) takeaways.push("Potential downstream impact is on apps, devices, platforms, or user habits.");
+  if (tags.includes("Productivity")) takeaways.push("This may translate into a workflow or automation pattern worth borrowing.");
+  if (tags.includes("Security")) takeaways.push("Security angle: look for practical account, data, or device exposure.");
+  if (tags.includes("Health tech")) takeaways.push("Health-tech angle: useful if it changes patient access, tracking, or recommendations.");
+  if (tags.includes("Gaming")) takeaways.push("Gaming angle: relevant when it affects platforms, communities, or family-friendly play.");
+  if (!takeaways.length) takeaways.push("Skim the source only if the headline connects to a current project or decision.");
+  takeaways.push(`${item.source} has the full context.`);
+  return takeaways.slice(0, 3);
 }
 
 function buildNewsOverview(items = newsState.items) {
   if (!items.length) {
-    return "No live news signal yet. Ben HQ will fill this with public-source stories when the feeds respond.";
+    return "The current briefing is still loading. Stories will appear here automatically when a public feed responds.";
   }
   const topTags = [...new Set(items.flatMap((item) => item.tags || []))].slice(0, 4);
-  const topSources = [...new Set(items.slice(0, 6).map((item) => item.source))].slice(0, 3);
-  const lead = items[0];
-  return `${topTags.join(", ")} are the strongest live lanes right now. Lead story: ${lead.title}. Sources in play: ${topSources.join(", ")}.`;
+  const topStories = items.slice(0, 3).map((item) => item.title);
+  return `${topTags.join(", ")} are the strongest briefing lanes right now. Top stories: ${topStories.join(" / ")}.`;
 }
 
 function fallbackNewsItems() {
@@ -1967,7 +1982,7 @@ function buildCommandBrief() {
 
   const actionDetail =
     privateDaily.recommendations[0]?.detail ||
-    (eventActions.length ? eventActions.slice(0, 3).join(" Then ") : topNews ? newsWhyItMatters(topNews) : recommendation.body || trainingDecision.detail);
+    (eventActions.length ? eventActions.slice(0, 3).join(" Then ") : topNews ? newsBriefSummary(topNews) : recommendation.body || trainingDecision.detail);
   const ignore = weatherConstraint
     ? "Ignore exact pace or mileage if rain closes the window."
     : pokemonEvent?.isActive
@@ -2141,10 +2156,11 @@ function renderTodayNews() {
   const target = document.getElementById("todayNewsCard");
   if (!target) return;
   const items = newsState.items.length ? newsState.items.slice(0, 3) : fallbackNewsItems().slice(0, 2);
+  const freshness = newsState.updated ? `Updated ${newsState.updated}` : "Current briefing";
   target.innerHTML = `
     <div class="module-header">
       <span class="module-icon news-icon" aria-hidden="true">Nw</span>
-      <p class="eyebrow">Current news - ${escapeHtml(newsState.status)}</p>
+      <p class="eyebrow">Current news</p>
     </div>
     <h3>${escapeHtml(items[0]?.title || "Current briefing loading")}</h3>
     <p>${escapeHtml(newsState.overview)}</p>
@@ -2161,7 +2177,7 @@ function renderTodayNews() {
         .join("")}
     </div>
     <div class="source-row">
-      <span class="source-badge">${escapeHtml(newsState.sourceNote)}</span>
+      <span class="source-badge">${escapeHtml(freshness)}</span>
       <button class="text-button" data-view="news" type="button">News room</button>
     </div>
   `;
@@ -2413,40 +2429,20 @@ function renderNews() {
   if (!target) return;
   const freshness = document.getElementById("newsFreshness");
   if (freshness) {
-    freshness.textContent = newsState.updated ? `Updated ${newsState.updated}` : sourceStatusLabel(sourceHealthState.news);
+    freshness.textContent = newsState.updated ? `Updated ${newsState.updated}` : "Updating";
   }
   const items = newsState.items.length ? newsState.items : fallbackNewsItems();
-  const sourceCards = newsState.sources.length
-    ? newsState.sources
-    : [
-        { label: "TechCrunch", status: "loading", count: 0 },
-        { label: "VentureBeat", status: "loading", count: 0 },
-        { label: "BBC / GDELT", status: "loading", count: 0 },
-        { label: "Hacker News", status: "loading", count: 0 },
-      ];
 
   const overviewCard = `
     <article class="liquid-panel action-card module-news news-brief-card">
       <div class="module-header">
         <span class="module-icon news-icon" aria-hidden="true">Nw</span>
-        <p class="eyebrow">AI overview</p>
+        <p class="eyebrow">Briefing</p>
       </div>
-      <h3>${escapeHtml(newsState.status === "live" ? "What changed in your lanes" : "Current briefing")}</h3>
+      <h3>Current stories worth scanning</h3>
       <p>${escapeHtml(newsState.overview)}</p>
-      <div class="source-status-list news-source-list">
-        ${sourceCards
-          .map(
-            (source) => `
-              <span class="source-status" data-state="${source.status}">
-                <strong>${escapeHtml(sourceStatusLabel(source.status))}</strong>
-                ${escapeHtml(source.label)}${source.count ? ` (${source.count})` : ""}
-              </span>
-            `,
-          )
-          .join("")}
-      </div>
       <div class="source-row">
-        <span class="source-badge">${escapeHtml(newsState.sourceNote)}</span>
+        <span class="source-badge">${escapeHtml(newsState.updated ? `Updated ${newsState.updated}` : "Updating automatically")}</span>
         <button class="text-button" data-action="refresh-news" type="button">Refresh</button>
       </div>
     </article>
@@ -2460,13 +2456,15 @@ function renderNews() {
           <p class="eyebrow">${escapeHtml(item.source)} - ${escapeHtml(relativeTime(item.publishedAt))}</p>
         </div>
         <h3>${escapeHtml(item.title)}</h3>
-        <p>${escapeHtml(item.summary || newsWhyItMatters(item))}</p>
+        <p>${escapeHtml(newsBriefSummary(item))}</p>
         <div class="news-tag-row">
           ${(item.tags || []).slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
         </div>
-        <div class="news-why">
-          <span>Why it matters</span>
-          <p>${escapeHtml(newsWhyItMatters(item))}</p>
+        <div class="news-takeaways">
+          <span>Key takeaways</span>
+          <ul>
+            ${newsKeyTakeaways(item).map((takeaway) => `<li>${escapeHtml(takeaway)}</li>`).join("")}
+          </ul>
         </div>
         <a class="text-button" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Read source</a>
       </article>
@@ -2886,10 +2884,8 @@ function renderCommandBrief() {
 }
 
 function renderDailySignals() {
-  const completedToday = seed.todayTasks.filter((task) => completedTasks.has(taskId(task))).length;
-  const sourceCount = liveSourceCount();
   const weatherWord = weatherState.status === "live" ? weatherState.temp : "--";
-  const sourceWord = `${sourceCount}/5`;
+  const newsWord = newsState.items.length ? newsState.items.length : "--";
   const pokemonEvent = primaryPokemonEvent();
   const eventBrief = pokemonEvent
     ? `${pokemonEvent.title}: ${summarizePokemonEvent(pokemonEvent)}`
@@ -2898,7 +2894,8 @@ function renderDailySignals() {
 
   document.getElementById("priorityCount").textContent = seed.priorities.length;
   document.getElementById("weatherSignal").textContent = weatherWord;
-  document.getElementById("sourceSignal").textContent = sourceWord;
+  const newsSignal = document.getElementById("newsSignal");
+  if (newsSignal) newsSignal.textContent = newsWord;
   document.getElementById("dailySignalScore").textContent = todayModeLabel();
   document.getElementById("dailyBrief").textContent =
     privateDaily.summary ||
