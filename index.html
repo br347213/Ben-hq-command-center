@@ -43,32 +43,11 @@
           </div>
           <div class="top-actions">
             <button class="ghost-button" data-action="open-review">Weekly review</button>
-            <button class="primary-button" data-action="focus-capture">Quick capture</button>
           </div>
         </header>
 
         <section class="mobile-nav-drawer" id="mobileNavDrawer" aria-label="Mobile navigation">
           <nav class="nav-list" id="mobileNav"></nav>
-        </section>
-
-        <section class="capture-strip glass-panel" aria-label="Quick capture">
-          <div>
-            <p class="eyebrow">Capture first, organize later</p>
-            <h3>Drop in a task, note, reminder, or idea.</h3>
-          </div>
-          <form class="capture-form" id="captureForm">
-            <select id="captureType" aria-label="Capture type">
-              <option value="task">Task</option>
-              <option value="note">Note</option>
-              <option value="idea">Idea</option>
-              <option value="reminder">Reminder</option>
-              <option value="training">Training note</option>
-              <option value="pokemon">Pokemon GO goal</option>
-              <option value="chess">Chess note</option>
-            </select>
-            <input id="captureInput" type="text" placeholder="Example: plan Saturday tempo route" autocomplete="off" />
-            <button class="primary-button" type="submit">Add</button>
-          </form>
         </section>
 
         <section class="page-view active" id="view-today" aria-labelledby="today-heading">
@@ -88,12 +67,12 @@
                 </div>
                 <div class="today-insight-grid" id="todayInsightGrid" aria-label="Today quick facts"></div>
               </div>
-              <div class="signal-orbit" aria-label="Daily readiness visualization">
+              <div class="signal-orbit" aria-label="Today operating mode">
                 <div class="orbit-ring ring-one"></div>
                 <div class="orbit-ring ring-two"></div>
                 <div class="orbit-core">
-                  <strong id="dailySignalScore">73</strong>
-                  <span>daily signal</span>
+                  <strong id="dailySignalScore">Focus</strong>
+                  <span>today mode</span>
                 </div>
               </div>
             </article>
@@ -172,15 +151,6 @@
               <p>One short tactic today: white to move, spot the direct mate pattern, then check your answer.</p>
               <button class="text-button" data-view="chess">Open puzzle</button>
             </article>
-            <article class="glass-card action-card module-learning">
-              <div class="module-header">
-                <span class="module-icon learning-icon" aria-hidden="true">Read</span>
-                <p class="eyebrow">Learning queue</p>
-              </div>
-              <h3>One useful thing</h3>
-              <p>Save a short AI workflow idea for weekly review instead of opening a feed.</p>
-              <button class="text-button">Open queue</button>
-            </article>
             <article class="glass-card action-card module-finance" id="privatePulseCard" aria-live="polite">
               <div class="module-header">
                 <span class="module-icon finance-icon" aria-hidden="true">Src</span>
@@ -190,24 +160,13 @@
               <p>Calendar, Gmail, Drive, ChatGPT, Notes, Garmin, Apple Health, Lichess, and Pokemon calendar are queued behind privacy gates.</p>
               <button class="text-button" data-view="sources">View sources</button>
             </article>
-            <article class="glass-card action-card module-ai">
-              <div class="module-header">
-                <span class="module-icon ai-icon" aria-hidden="true">AI</span>
-                <p class="eyebrow">Recommendation</p>
-              </div>
-              <div id="recommendationCard" aria-live="polite">
-                <h3>Do the smallest prep step</h3>
-                <p>Pack running gear tonight if Saturday quality work is still the plan.</p>
-                <span class="reason-pill">Because weekend running matters</span>
-              </div>
-            </article>
-            <article class="glass-card action-card module-ai hq-brief-card" id="proactiveBriefCard" aria-live="polite">
+            <article class="glass-card action-card module-ai command-brief-card" id="commandBriefCard" aria-live="polite">
               <div class="module-header">
                 <span class="module-icon ai-icon" aria-hidden="true">HQ</span>
-                <p class="eyebrow">HQ brief</p>
+                <p class="eyebrow">Command brief</p>
               </div>
-              <h3>Building your next best actions</h3>
-              <p>Ben HQ will combine weather, events, training, private packets, and memory into a short action brief.</p>
+              <h3>What is actually worth noticing</h3>
+              <p>Ben HQ will collapse the day into situation, action, and ignore signals.</p>
             </article>
             <article class="glass-card action-card module-ai" id="sourceHealthCard" aria-live="polite">
               <div class="module-header">

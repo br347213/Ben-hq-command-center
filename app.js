@@ -1639,6 +1639,76 @@ function buildProactiveBrief() {
   return items;
 }
 
+function buildCommandBrief() {
+  const recommendation = buildRecommendation();
+  const trainingDecision = buildTrainingIntelligence();
+  const pokemonEvent = primaryPokemonEvent();
+  const pendingImports = pendingContextImports();
+  const privateSourceCount = privateDaily.sources.length;
+  const rainChance = parseInt(weatherState.rain, 10);
+  const weatherConstraint = weatherState.status === "live" && rainChance >= 55;
+  const sourceLine = privateSourceCount
+    ? `${privateSourceCount} private sources loaded`
+    : pendingImports.length
+      ? `${pendingImports.length} memory item${pendingImports.length === 1 ? "" : "s"} waiting`
+      : "public signals only";
+
+  const situation = pokemonEvent?.isActive
+    ? `${pokemonEvent.title} is active. ${summarizePokemonEvent(pokemonEvent)}`
+    : privateDaily.summary || `${trainingDecision.title} is the useful training choice. ${sourceLine}.`;
+
+  const eventActions = pokemonEvent?.isActive ? pokemonActionPlan(pokemonEvent) : [];
+  const action = privateDaily.recommendations[0]?.title
+    ? `${privateDaily.recommendations[0].title}: ${privateDaily.recommendations[0].detail || "Use the private packet recommendation."}`
+    : eventActions.length
+      ? `Use one deliberate ${pokemonEvent.title} window`
+      : recommendation.reason === "Weather is only a constraint"
+        ? trainingDecision.title
+        : recommendation.title;
+
+  const actionDetail =
+    privateDaily.recommendations[0]?.detail ||
+    (eventActions.length ? eventActions.slice(0, 3).join(" Then ") : recommendation.body || trainingDecision.detail);
+  const ignore = weatherConstraint
+    ? "Ignore exact pace or mileage if rain closes the window."
+    : pokemonEvent?.isActive
+      ? "Ignore completionist event grinding; use one deliberate play window."
+      : pendingImports.length
+        ? "Ignore new capture. Review one existing memory item first."
+        : "Ignore dashboard maintenance; only act on the visible high-signal cards.";
+
+  return [
+    {
+      label: "Situation",
+      title: pokemonEvent?.isActive ? pokemonEvent.title : sourceLine,
+      detail: situation,
+      source: pokemonEvent?.source || trainingDecision.source,
+    },
+    {
+      label: "Action",
+      title: action,
+      detail: actionDetail,
+      source: eventActions.length ? pokemonEvent.source : recommendation.reason,
+    },
+    {
+      label: "Ignore",
+      title: "What not to spend energy on",
+      detail: ignore,
+      source: "Ben HQ filter",
+    },
+  ];
+}
+
+function todayModeLabel() {
+  const trainingDecision = buildTrainingIntelligence();
+  const pokemonEvent = primaryPokemonEvent();
+  if (pendingContextImports().length > 0) return "Review";
+  if (trainingDecision.readiness === "Low") return "Recover";
+  if (pokemonEvent?.isActive) return "Event";
+  if (hasPrivateDailyData()) return "Act";
+  return "Focus";
+}
+
 function taskKey(task) {
   return encodeURIComponent(taskId(task));
 }
@@ -2284,9 +2354,9 @@ function buildRecommendation() {
 
   if (rainy) {
     return {
-      title: "Protect the run window",
-      body: "Weather looks wet enough to plan a dry backup: mobility, core, or an earlier easy run if the window opens.",
-      reason: "Because weather is shaping today's training choice",
+      title: "Use the indoor fallback if rain closes the window",
+      body: "Do not negotiate with the weather all day. If the outside window is messy, take the mobility/core version and move on.",
+      reason: "Weather is only a constraint",
     };
   }
 
@@ -2365,16 +2435,16 @@ function renderRecommendation() {
   `;
 }
 
-function renderProactiveBrief() {
-  const target = document.getElementById("proactiveBriefCard");
+function renderCommandBrief() {
+  const target = document.getElementById("commandBriefCard");
   if (!target) return;
-  const items = buildProactiveBrief();
+  const items = buildCommandBrief();
   target.innerHTML = `
     <div class="module-header">
       <span class="module-icon ai-icon" aria-hidden="true">HQ</span>
-      <p class="eyebrow">HQ brief</p>
+      <p class="eyebrow">Command brief</p>
     </div>
-    <h3>Next best moves</h3>
+    <h3>What is actually worth noticing</h3>
     <div class="brief-action-list">
       ${items
         .map(
@@ -2397,8 +2467,6 @@ function renderProactiveBrief() {
 function renderDailySignals() {
   const completedToday = seed.todayTasks.filter((task) => completedTasks.has(taskId(task))).length;
   const sourceCount = liveSourceCount();
-  const baseScore = 58 + sourceCount * 7 + completedToday * 5;
-  const cappedScore = Math.min(92, baseScore);
   const weatherWord = weatherState.status === "live" ? weatherState.temp : "--";
   const sourceWord = `${sourceCount}/4`;
   const pokemonEvent = primaryPokemonEvent();
@@ -2410,7 +2478,7 @@ function renderDailySignals() {
   document.getElementById("priorityCount").textContent = seed.priorities.length;
   document.getElementById("weatherSignal").textContent = weatherWord;
   document.getElementById("sourceSignal").textContent = sourceWord;
-  document.getElementById("dailySignalScore").textContent = cappedScore;
+  document.getElementById("dailySignalScore").textContent = todayModeLabel();
   document.getElementById("dailyBrief").textContent =
     privateDaily.summary ||
     `${eventBrief} Training: ${trainingDecision.title}. Keep the day concrete: one useful workout choice, one event plan, and one small personal loop.`;
@@ -2420,7 +2488,7 @@ function renderIntelligence() {
   renderSourceHealth();
   renderDailySignals();
   renderRecommendation();
-  renderProactiveBrief();
+  renderCommandBrief();
 }
 
 function renderSources() {
@@ -3165,9 +3233,6 @@ function wireEvents() {
     }
 
     const actionButton = event.target.closest("[data-action]");
-    if (actionButton?.dataset.action === "focus-capture") {
-      document.getElementById("captureInput").focus();
-    }
     if (actionButton?.dataset.action === "open-review") {
       navigate("review");
     }
@@ -3255,7 +3320,7 @@ function wireEvents() {
     document.getElementById("mobileNavDrawer").classList.toggle("open");
   });
 
-  document.getElementById("captureForm").addEventListener("submit", (event) => {
+  document.getElementById("captureForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const input = document.getElementById("captureInput");
     const type = document.getElementById("captureType").value;
