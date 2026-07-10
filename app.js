@@ -1058,6 +1058,79 @@ function loadAutoSyncSettings() {
   };
 }
 
+function openPrivateKeyDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      resolve(null);
+      return;
+    }
+    const request = window.indexedDB.open("my-command-center-private-v1", 1);
+    request.addEventListener("upgradeneeded", () => {
+      if (!request.result.objectStoreNames.contains("secrets")) request.result.createObjectStore("secrets");
+    });
+    request.addEventListener("success", () => resolve(request.result));
+    request.addEventListener("error", () => reject(request.error));
+  });
+}
+
+async function readPrivateKeyFromDatabase() {
+  try {
+    const database = await openPrivateKeyDatabase();
+    if (!database) return "";
+    const value = await new Promise((resolve, reject) => {
+      const request = database.transaction("secrets", "readonly").objectStore("secrets").get("garmin-sync-key");
+      request.addEventListener("success", () => resolve(request.result || ""));
+      request.addEventListener("error", () => reject(request.error));
+    });
+    database.close();
+    return typeof value === "string" ? value : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+async function persistPrivateKeyInDatabase(key) {
+  try {
+    const database = await openPrivateKeyDatabase();
+    if (!database) return;
+    await new Promise((resolve, reject) => {
+      const request = database.transaction("secrets", "readwrite").objectStore("secrets").put(key, "garmin-sync-key");
+      request.addEventListener("success", resolve);
+      request.addEventListener("error", () => reject(request.error));
+    });
+    database.close();
+  } catch (error) {
+    // The private activation URL remains the fallback when storage is unavailable.
+  }
+}
+
+async function clearPrivateKeyDatabase() {
+  try {
+    const database = await openPrivateKeyDatabase();
+    if (!database) return;
+    await new Promise((resolve, reject) => {
+      const request = database.transaction("secrets", "readwrite").objectStore("secrets").delete("garmin-sync-key");
+      request.addEventListener("success", resolve);
+      request.addEventListener("error", () => reject(request.error));
+    });
+    database.close();
+  } catch (error) {
+    // Clearing the other stores still locks the current session.
+  }
+}
+
+async function restorePrivateKeyFromDatabase() {
+  if (autoSyncSettings.key) {
+    persistPrivateKeyInDatabase(autoSyncSettings.key);
+    return true;
+  }
+  const key = await readPrivateKeyFromDatabase();
+  if (!key) return false;
+  autoSyncSettings = { ...autoSyncSettings, key, status: "configured", error: "" };
+  saveAutoSyncSettings();
+  return true;
+}
+
 function saveCapturedItems() {
   writeJson(storageKeys.captures, capturedItems);
 }
@@ -1083,6 +1156,7 @@ function saveAutoSyncSettings() {
   if (autoSyncSettings.key) {
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `ben-hq-private-key=${encodeURIComponent(autoSyncSettings.key)}; Max-Age=31536000; Path=/; SameSite=Strict${secure}`;
+    persistPrivateKeyInDatabase(autoSyncSettings.key);
   }
 }
 
@@ -2085,9 +2159,6 @@ function importSyncKeyFromLocationHash() {
     error: "",
   };
   saveAutoSyncSettings();
-  if (window.history?.replaceState) {
-    window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
-  }
   return true;
 }
 
@@ -4072,6 +4143,7 @@ function clearAutoSync() {
   removeStoredItem(storageKeys.autoSync);
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `ben-hq-private-key=; Max-Age=0; Path=/; SameSite=Strict${secure}`;
+  clearPrivateKeyDatabase();
   renderBridgePanel();
   renderIntelligence();
 }
@@ -4769,6 +4841,7 @@ function formatToday() {
 
 async function init() {
   await initializeDailyFallbackPuzzle();
+  await restorePrivateKeyFromDatabase();
   renderNav("desktopNav");
   renderNav("mobileNav");
   renderMobileBottomNav();
