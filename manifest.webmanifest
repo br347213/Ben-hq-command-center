@@ -1,11 +1,11 @@
 {
-  "name": "Ben HQ",
-  "short_name": "Ben HQ",
-  "description": "A private personal daily command center.",
+  "name": "My Command Center",
+  "short_name": "Command Center",
+  "description": "A calm personal operating system for what matters now.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#070a0f",
-  "theme_color": "#080b10",
+  "background_color": "#0b1320",
+  "theme_color": "#0b1320",
   "icons": [
     {
       "src": "icons/icon.svg",

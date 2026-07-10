@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#080b10" />
-    <title>Ben HQ</title>
+    <meta name="theme-color" content="#0b1320" />
+    <title>My Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260705-visual-1" />
+    <link rel="stylesheet" href="styles.css?v=20260709-mcc-1" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -14,20 +14,18 @@
     <div class="app-shell">
       <aside class="side-rail" aria-label="Primary navigation">
         <div class="brand-lockup">
-          <div class="brand-mark" aria-hidden="true">BH</div>
-          <div>
-            <p class="eyebrow">Personal command center</p>
-            <h1>Ben HQ</h1>
+          <img class="brand-mark" src="icons/icon.svg" alt="" />
+          <div class="brand-wordmark">
+            <span>My</span>
+            <h1>Command Center</h1>
+            <p>Navigate. Analyze. Command.</p>
           </div>
         </div>
         <nav class="nav-list" id="desktopNav"></nav>
-        <div class="rail-status">
+        <button class="rail-review" data-action="open-review" type="button">
           <span class="status-dot"></span>
-          <div>
-            <strong>Integration mode</strong>
-            <span>Public live signals</span>
-          </div>
-        </div>
+          <span><strong>Weekly review</strong><small>Keep the system current</small></span>
+        </button>
       </aside>
 
       <main class="main-stage">
@@ -37,12 +35,18 @@
             <span></span>
             <span></span>
           </button>
-          <div>
+          <div class="top-bar-title">
             <p class="eyebrow" id="todayLabel">Today</p>
-            <h2 id="pageTitle">Today</h2>
+            <h2 id="pageTitle">Good morning, Ben.</h2>
           </div>
           <div class="top-actions">
-            <button class="ghost-button" data-action="open-review">Weekly review</button>
+            <button class="top-icon-button" data-view="news" aria-label="Search current news" title="Current news">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.8-3.8"></path></svg>
+            </button>
+            <button class="top-icon-button" data-action="open-review" aria-label="Open weekly review" title="Weekly review">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+            </button>
+            <button class="profile-button" data-view="settings" aria-label="Open settings">BR</button>
           </div>
         </header>
 
@@ -51,46 +55,88 @@
         </section>
 
         <section class="page-view active" id="view-today" aria-labelledby="today-heading">
-          <div class="hero-grid">
-            <article class="hero-panel liquid-panel">
+          <div class="hero-grid command-hero-grid">
+            <article class="hero-panel liquid-panel command-hero">
               <div class="hero-copy">
-                <p class="eyebrow" id="heroDate">Friday, July 3</p>
+                <p class="eyebrow" id="heroDate">Thursday, July 9</p>
                 <h2 id="today-heading">What matters today</h2>
                 <p class="summary-text" id="dailyBrief">
-                  Keep today light and useful: protect weekend running, clear the highest-friction personal tasks,
-                  and save one good idea for later instead of letting it float away.
+                  Your briefing is assembling the most relevant personal signals for today.
                 </p>
                 <div class="hero-stat-row" aria-label="Today signals">
                   <span><strong id="priorityCount">3</strong> priorities</span>
                   <span><strong id="weatherSignal">--</strong> weather</span>
-                <span><strong id="newsSignal">--</strong> news</span>
+                  <span><strong id="newsSignal">--</strong> stories</span>
                 </div>
-                <div class="today-insight-grid" id="todayInsightGrid" aria-label="Today quick facts"></div>
               </div>
-              <div class="signal-orbit" aria-label="Today operating mode">
-                <div class="orbit-ring ring-one"></div>
-                <div class="orbit-ring ring-two"></div>
-                <div class="orbit-core">
-                  <strong id="dailySignalScore">Focus</strong>
-                  <span>today mode</span>
-                </div>
+              <div class="command-mode" aria-label="Today operating mode">
+                <span>Today</span>
+                <strong id="dailySignalScore">Focus</strong>
               </div>
             </article>
 
-            <article class="glass-panel priority-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="eyebrow">Top three</p>
-                  <h3>Priorities</h3>
+            <article class="glass-panel priority-panel command-priority-panel">
+              <div class="section-heading compact-heading">
+                <div class="section-title-with-icon">
+                  <span class="line-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4"></circle><path d="m12 3 2.2 3.8"></path></svg>
+                  </span>
+                  <div><p class="eyebrow">Command brief</p><h3>Do these next</h3></div>
                 </div>
-                <span class="freshness">Manual</span>
               </div>
               <ul class="priority-list" id="priorityList"></ul>
             </article>
           </div>
 
-          <div class="dashboard-grid">
-            <article class="glass-card action-card module-weather" id="weatherCard" aria-live="polite">
+          <div class="today-insight-grid briefing-strip" id="todayInsightGrid" aria-label="Today quick facts"></div>
+
+          <div class="dashboard-grid command-dashboard-grid">
+            <article class="glass-card action-card agenda-card command-schedule-card" id="todayAgendaCard">
+              <div class="module-header">
+                <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
+                <p class="eyebrow">Today's schedule</p>
+              </div>
+              <h3>Loading today plan</h3>
+              <p>Your next useful window will appear here.</p>
+            </article>
+            <article class="glass-card action-card workout-card module-training" id="todayWorkoutCard">
+              <div class="module-header">
+                <span class="module-icon training-icon" aria-hidden="true">Run</span>
+                <p class="eyebrow">Fitness decision</p>
+              </div>
+              <h3>Loading readiness</h3>
+              <p>Your current training context will appear here.</p>
+            </article>
+            <article class="glass-card action-card module-news today-news-card" id="todayNewsCard" aria-live="polite">
+              <div class="module-header">
+                <span class="module-icon news-icon" aria-hidden="true">Nw</span>
+                <p class="eyebrow">News spotlight</p>
+              </div>
+              <h3>Loading current briefing</h3>
+              <p>Finding the newest developments across your interests.</p>
+            </article>
+            <article class="glass-card action-card module-pokemon today-pokemon-card" id="todayPokemonCard">
+              <div class="module-header">
+                <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
+                <p class="eyebrow">Pokemon GO events</p>
+              </div>
+              <h3>Loading current events</h3>
+              <p>The best play window and prep will appear here.</p>
+            </article>
+            <article class="glass-card action-card module-chess today-chess-card">
+              <div class="chess-card-visual" aria-hidden="true">
+                <span class="chess-rank">8</span><span class="chess-rank">7</span><span class="chess-rank">6</span>
+                <strong>&#9812;</strong><em>&#9820;</em>
+              </div>
+              <div class="module-header">
+                <span class="module-icon chess-icon" aria-hidden="true">64</span>
+                <p class="eyebrow">Daily chess</p>
+              </div>
+              <h3>Find the forcing move</h3>
+              <p>White to move. One short tactical pattern, ready to solve.</p>
+              <button class="text-button" data-view="chess">Solve puzzle</button>
+            </article>
+            <article class="glass-card action-card module-weather compact-weather-card" id="weatherCard" aria-live="polite">
               <div class="module-header">
                 <span class="module-icon weather-icon" aria-hidden="true">Wx</span>
                 <p class="eyebrow">Arden weather</p>
@@ -106,79 +152,10 @@
               </div>
               <span class="source-badge">Open-Meteo - loading</span>
             </article>
-            <article class="glass-card action-card agenda-card" id="todayAgendaCard">
-              <div class="module-header">
-                <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
-                <p class="eyebrow">Today agenda</p>
-              </div>
-              <h3>Loading today plan</h3>
-              <p>Daily agenda details will appear here.</p>
-            </article>
-            <article class="glass-card action-card workout-card module-training" id="todayWorkoutCard">
-              <div class="module-header">
-                <span class="module-icon training-icon" aria-hidden="true">Run</span>
-                <p class="eyebrow">Today's workout</p>
-              </div>
-              <h3>Easy run or mobility reset</h3>
-              <p>3-4 easy miles if legs feel normal. If fatigue is high, do 20 minutes of mobility and core.</p>
-              <div class="mini-fact-grid">
-                <span><strong>25-40</strong> min</span>
-                <span><strong>RPE 3</strong> easy</span>
-                <span><strong>Fallback</strong> mobility</span>
-              </div>
-            </article>
-            <article class="glass-card action-card module-pokemon today-pokemon-card" id="todayPokemonCard">
-              <div class="module-header">
-                <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
-                <p class="eyebrow">Pokemon GO</p>
-              </div>
-              <h3>Sobble Community Day today</h3>
-              <p>2-5 PM local time. Clear storage, run a Water Mega, and evolve a strong Drizzile into Inteleon for Hydro Cannon.</p>
-              <div class="mini-fact-grid">
-                <span><strong>2x</strong> candy</span>
-                <span><strong>1/4</strong> hatch distance</span>
-                <span><strong>Jul 4-6</strong> anniversary</span>
-              </div>
-              <span class="source-badge">Public event schedule - checked Jul 4</span>
-              <button class="text-button" data-view="pokemon">Open Pokemon</button>
-            </article>
-            <article class="glass-card action-card module-news today-news-card" id="todayNewsCard" aria-live="polite">
-              <div class="module-header">
-                <span class="module-icon news-icon" aria-hidden="true">Nw</span>
-                <p class="eyebrow">Current news</p>
-              </div>
-              <h3>Loading current briefing</h3>
-              <p>Ben HQ is checking public tech and world-news sources for stories that match your interests.</p>
-              <span class="source-badge">Checking sources</span>
-            </article>
-            <article class="glass-card action-card module-chess">
-              <div class="module-header">
-                <span class="module-icon chess-icon" aria-hidden="true">64</span>
-                <p class="eyebrow">Chess puzzle</p>
-              </div>
-              <h3>Find the forcing move</h3>
-              <p>One short tactic today: white to move, spot the direct mate pattern, then check your answer.</p>
-              <button class="text-button" data-view="chess">Open puzzle</button>
-            </article>
-            <article class="glass-card action-card module-finance" id="privatePulseCard" aria-live="polite">
-              <div class="module-header">
-                <span class="module-icon finance-icon" aria-hidden="true">Src</span>
-                <p class="eyebrow">Sources pulse</p>
-              </div>
-              <h3>Personal sources approved</h3>
-              <p>Calendar, Gmail, Drive, ChatGPT, Notes, Garmin, Apple Health, Lichess, and Pokemon calendar are queued behind privacy gates.</p>
-              <button class="text-button" data-view="sources">View sources</button>
-            </article>
-            <article class="glass-card action-card module-ai command-brief-card" id="commandBriefCard" aria-live="polite">
-              <div class="module-header">
-                <span class="module-icon ai-icon" aria-hidden="true">HQ</span>
-                <p class="eyebrow">Command brief</p>
-              </div>
-              <h3>What is actually worth noticing</h3>
-              <p>Ben HQ will collapse the day into situation, action, and ignore signals.</p>
-            </article>
           </div>
         </section>
+
+        <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Primary mobile navigation"></nav>
 
         <section class="page-view" id="view-sources">
           <div class="section-heading">
@@ -196,7 +173,7 @@
               </div>
               <h3>Every recommendation needs a source trail.</h3>
               <p>
-                Ben HQ can grow into a living knowledge vault, but the rule is simple: connect personal sources only,
+                My Command Center can grow into a living knowledge vault, but the rule is simple: connect personal sources only,
                 label where data came from, and keep review controls between raw imports and long-term memory.
               </p>
               <div class="source-pill-row">
@@ -213,9 +190,9 @@
                 <p class="eyebrow">Auto Sync</p>
               </div>
               <div class="bridge-panel-copy">
-                <h3>Private context updates automatically when you open Ben HQ.</h3>
+                <h3>Private context updates automatically when you open My Command Center.</h3>
                 <p class="summary-text">
-                  Ben HQ can load encrypted daily packets from the public site, but only your phone can decrypt them after a one-time setup link. This keeps private summaries out of GitHub while removing manual refresh steps.
+                  My Command Center can load encrypted daily packets from the public site, but only your phone can decrypt them after a one-time setup link. This keeps private summaries out of GitHub while removing manual refresh steps.
                 </p>
               </div>
               <div class="bridge-helper">
@@ -223,7 +200,7 @@
                   <strong>1</strong>
                   <div>
                     <h4>One-time phone setup.</h4>
-                    <p>Open the private setup link once. Ben HQ stores the sync key on this phone and removes it from the address bar.</p>
+                    <p>Open the private setup link once. My Command Center stores the sync key on this phone and removes it from the address bar.</p>
                   </div>
                 </div>
                 <div class="bridge-step">
