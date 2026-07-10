@@ -814,13 +814,14 @@ function normalizeStaticNews(items) {
       return {
         id: compactText(item.id, `${item.source || "News"}:${url}`),
         title,
-        summary: compactSentence(item.summary || item.overview || "", 260),
+        summary: compactSentence(item.summary || item.factualSummary || item.overview || "", 260),
         url,
         image: compactText(item.image || item.imageUrl || item.thumbnail),
         source: compactText(item.source, "News"),
         sourceKey: compactText(item.sourceKey, compactText(item.source, "news").toLowerCase().replace(/\s+/g, "-")),
         publishedAt: item.publishedAt || item.date,
         tags: asArray(item.tags).map((tag) => compactText(tag)).filter(Boolean),
+        takeaways: asArray(item.takeaways).map((takeaway) => compactSentence(takeaway, 170)).filter(Boolean).slice(0, 3),
       };
     })
     .filter(Boolean);
@@ -1462,6 +1463,8 @@ function newsBriefSummary(item) {
 }
 
 function newsKeyTakeaways(item) {
+  const supplied = asArray(item.takeaways).map((takeaway) => compactSentence(takeaway, 150)).filter((takeaway) => takeaway.length > 24).slice(0, 2);
+  if (supplied.length) return supplied;
   const summary = stripHtml(item.summary || "");
   return summary
     .split(/(?<=[.!?])\s+/)
@@ -3730,7 +3733,7 @@ async function refreshNewsLiveData() {
 
   try {
     const snapshot = await fetchSameOriginSnapshot("data/public-news.json").catch(() => null);
-    const snapshotItems = normalizeStaticNews(snapshot?.items);
+    const snapshotItems = normalizeStaticNews(snapshot?.items || snapshot?.stories);
     const data = snapshotItems.length ? [] : await sourceAdapters.news.fetch();
     const normalized = snapshotItems.length ? { items: snapshotItems, sources: [{ label: "Daily briefing", status: "live", count: snapshotItems.length }] } : normalizeNewsResults(data);
     const liveSources = normalized.sources.filter((source) => source.status === "live");
