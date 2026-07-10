@@ -61,6 +61,17 @@ def load_credentials(config_path: Path) -> tuple[str, str]:
     return str(username), str(password)
 
 
+def load_strength_profile(summary_path: Path) -> dict[str, Any]:
+    profile_path = summary_path.parent.parent / "fitness-profile.json"
+    if not profile_path.exists():
+        return {}
+    try:
+        payload = json.loads(profile_path.read_text(encoding="utf-8-sig"))
+        return payload if isinstance(payload, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
@@ -170,6 +181,7 @@ def main() -> int:
     latest_activity = activities[0] if activities else {}
     activity_type = nested(latest_activity, "activityType", "typeKey", default="")
 
+    strength_profile = load_strength_profile(summary_path)
     payload = {
         "source": "Garmin Connect",
         "status": "ready",
@@ -211,6 +223,8 @@ def main() -> int:
             },
         },
     }
+    if strength_profile:
+        payload["training"]["strengthProfile"] = strength_profile
     summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"Wrote verified Garmin summary to {summary_path}")
     return 0

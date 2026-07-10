@@ -6,6 +6,7 @@ Ben HQ uses GarminDB as the zero-dollar Garmin source.
 
 - Garmin credentials stay in `.ben-hq-private/garmin/GarminConnectConfig.json`.
 - Garmin raw downloads, FIT/JSON files, and SQLite databases stay under `.ben-hq-private/garmin`.
+- Personal strength preferences stay in `.ben-hq-private/fitness-profile.json`.
 - GitHub Pages only receives the encrypted Ben HQ daily packet.
 
 ## Local Flow
@@ -14,7 +15,8 @@ Ben HQ uses GarminDB as the zero-dollar Garmin source.
 2. Run `tools/garmin-sync.ps1 -Setup`.
 3. Fill in `.ben-hq-private/garmin/GarminConnectConfig.json` with Garmin Connect credentials.
 4. Run `tools/garmin-sync.ps1 -Latest`.
-5. Ben HQ daily automation reads `.ben-hq-private/garmin/garmin-summary.json` and includes a small training summary in the encrypted packet.
+5. The sync merges the private strength profile into `garmin-summary.json` without exposing the profile publicly.
+6. Ben HQ daily automation includes the compact Garmin and strength summary in the encrypted packet.
 
 ## Notes
 
