@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b1320" />
     <title>My Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260709-value-pass-2" />
+    <link rel="stylesheet" href="styles.css?v=20260710-intelligence-1" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -39,7 +39,7 @@
             <button class="top-icon-button" data-view="news" aria-label="Search current news" title="Current news">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.8-3.8"></path></svg>
             </button>
-            <button class="profile-button" data-view="settings" aria-label="Open settings">BR</button>
+            <button class="profile-button" data-view="settings" aria-label="Open settings"><img src="assets/my-command-center-logo.png" alt="" /></button>
           </div>
         </header>
 
@@ -57,7 +57,7 @@
                   Your briefing is assembling the most relevant personal signals for today.
                 </p>
                 <div class="hero-stat-row" aria-label="Today signals">
-                  <span><strong id="priorityCount">3</strong> priorities</span>
+                  <span><strong id="priorityCount">3</strong> <i id="priorityLabel">priorities</i></span>
                   <span><strong id="weatherSignal">--</strong> weather</span>
                   <span><strong id="newsSignal">--</strong> stories</span>
                 </div>
@@ -212,10 +212,8 @@
                 <span class="module-icon chess-icon" aria-hidden="true">64</span>
                 <p class="eyebrow">Puzzle of the day</p>
               </div>
-              <h3>White to move: mate in one</h3>
-              <p>
-                This is a pattern-recognition rep. Look for the forcing queen move supported by the bishop.
-              </p>
+              <h3 id="chessPuzzleTitle">Loading today's puzzle</h3>
+              <p id="chessPuzzleDescription">Reconstructing the current Lichess daily position.</p>
               <div class="chess-feedback" id="chessFeedback">Select the white queen, then choose the mating square.</div>
               <div class="button-row">
                 <button class="secondary-button" id="resetChessPuzzle" type="button">Reset</button>
@@ -225,8 +223,8 @@
             <article class="glass-panel chess-board-panel module-chess">
               <div class="chess-board-wrap">
                 <div class="chess-board-meta">
-                  <span><strong>White</strong> to move</span>
-                  <span><strong>Mate</strong> in one</span>
+                  <span id="chessPuzzleSide"><strong>White</strong> to move</span>
+                  <span id="chessPuzzleGoal"><strong>Daily</strong> puzzle</span>
                 </div>
                 <div class="chess-board" id="chessBoard" aria-label="Interactive chess puzzle board"></div>
               </div>
@@ -239,14 +237,12 @@
               <h3>Checks, captures, threats</h3>
               <p>Before choosing a move, scan forcing moves in that order. It is a simple habit that catches a lot of tactics.</p>
             </article>
-            <article class="glass-card action-card module-chess" id="lichessDailyCard" aria-live="polite">
+            <article class="glass-card action-card module-chess" id="lichessDailyCard" aria-live="polite" hidden>
               <div class="module-header">
                 <span class="module-icon chess-icon" aria-hidden="true">64</span>
-                <p class="eyebrow">Lichess - loading</p>
+                <p class="eyebrow">Today's Lichess puzzle</p>
               </div>
-              <h3>Daily puzzle loading...</h3>
-              <p>Daily public puzzle signal from Lichess.</p>
-              <span class="source-badge">Lichess - loading</span>
+              <h3>Daily position</h3>
             </article>
             <article class="glass-card action-card module-learning">
               <div class="module-header">
@@ -262,8 +258,8 @@
         <section class="page-view" id="view-prompts">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Reusable AI workflows</p>
-              <h2>Prompt Library</h2>
+              <p class="eyebrow">Structured personal workflows</p>
+              <h2>AI Tools</h2>
             </div>
             <input class="search-input" id="promptSearch" type="search" placeholder="Search prompts" />
           </div>
@@ -309,6 +305,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260709-value-pass-2"></script>
+    <script src="app.js?v=20260710-intelligence-1"></script>
   </body>
 </html>

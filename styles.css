@@ -2670,7 +2670,16 @@ h3 {
   }
 
   .metric-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-row span {
+    min-height: 84px;
+    padding: 11px;
+  }
+
+  .metric-row strong {
+    font-size: 1.25rem;
   }
 
   .pokemon-decision-grid {
@@ -2924,6 +2933,7 @@ body::after {
 }
 
 .top-bar {
+  position: relative;
   min-height: 64px;
   margin-bottom: 22px;
   padding: 0 4px;
@@ -2977,6 +2987,13 @@ body::after {
   background: rgba(174, 235, 224, 0.08);
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.profile-button img {
+  width: 34px;
+  height: 34px;
+  display: block;
+  object-fit: contain;
 }
 
 .liquid-panel,
@@ -3042,6 +3059,13 @@ body::after {
   background-size: cover;
 }
 
+.command-hero::before {
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.09), transparent 26%);
+  opacity: 1;
+}
+
 .command-hero::after {
   content: "";
   position: absolute;
@@ -3049,6 +3073,9 @@ body::after {
   pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: inherit;
+  background: none;
+  transform: none;
+  opacity: 1;
 }
 
 .command-hero .hero-copy {
@@ -3075,17 +3102,20 @@ body::after {
   top: 18px;
   right: 18px;
   z-index: 2;
-  min-width: 86px;
-  padding: 9px 12px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
   border: 1px solid rgba(205, 242, 246, 0.22);
   border-radius: 12px;
-  text-align: right;
-  background: rgba(5, 18, 29, 0.5);
+  text-align: left;
+  background: rgba(5, 18, 29, 0.68);
   backdrop-filter: blur(14px);
 }
 
 .command-mode span {
-  display: block;
+  display: inline;
   color: var(--muted);
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -3094,6 +3124,67 @@ body::after {
 .command-mode strong {
   color: var(--text);
   font-size: 0.94rem;
+}
+
+.hero-stat-row i {
+  font-style: normal;
+}
+
+.training-adjustment {
+  margin-top: 18px;
+  padding: 13px 14px;
+  border-left: 3px solid rgba(43, 200, 232, 0.55);
+  border-radius: 8px;
+  background: rgba(174, 235, 224, 0.055);
+}
+
+.training-adjustment span,
+.prompt-utility span {
+  color: var(--sea-glass);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.training-adjustment p {
+  margin: 5px 0 0;
+}
+
+.prompt-utility {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 7px 10px;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid rgba(174, 235, 224, 0.1);
+  border-radius: 8px;
+  background: rgba(174, 235, 224, 0.035);
+}
+
+.prompt-utility p {
+  margin: 0;
+  color: #dce7ec;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.prompt-details {
+  margin: 4px 0 14px;
+  border-top: 1px solid rgba(174, 235, 224, 0.1);
+  border-bottom: 1px solid rgba(174, 235, 224, 0.1);
+}
+
+.prompt-details summary {
+  padding: 11px 0;
+  color: var(--cyan);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.prompt-details .prompt-body {
+  margin: 0 0 12px;
+  color: #dce7ec;
 }
 
 .command-priority-panel {
@@ -3346,7 +3437,7 @@ body::after {
   }
 
   .command-hero {
-    min-height: 410px;
+    min-height: 360px;
     padding: 20px;
     background-image:
       linear-gradient(0deg, rgba(4, 14, 24, 0.96) 0%, rgba(4, 14, 24, 0.56) 60%, rgba(4, 14, 24, 0.06) 100%),
@@ -3355,7 +3446,7 @@ body::after {
   }
 
   .command-hero .hero-copy h2 {
-    font-size: 2.35rem;
+    font-size: 2.18rem;
   }
 
   .command-hero .summary-text {

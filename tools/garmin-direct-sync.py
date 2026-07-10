@@ -81,13 +81,26 @@ def main() -> int:
         if mfa_status:
             write_status(summary_path, "mfa_required", "Garmin requires a one-time MFA confirmation before automatic sync can begin.")
             return 2
+        # return_on_mfa exits before garminconnect persists tokens or loads the
+        # user profile, even when no MFA challenge is present. Persist the clean
+        # session, then reopen it through the normal token path.
+        api.client.dump(str(tokenstore))
+        api = Garmin()
+        api.login(str(tokenstore))
     except Exception as exc:
-        write_status(summary_path, "auth_failed", f"Garmin authentication failed: {type(exc).__name__}")
+        message = str(exc).lower()
+        status = "rate_limited" if "429" in message or "rate limit" in message else "auth_failed"
+        note = (
+            "Garmin temporarily rate-limited authentication. The next scheduled sync will retry after the cooldown."
+            if status == "rate_limited"
+            else f"Garmin authentication failed: {type(exc).__name__}"
+        )
+        write_status(summary_path, status, note)
         return 1
 
     today = date.today()
     recent_days: list[dict[str, Any]] = []
-    for offset in range(7):
+    for offset in range(14):
         current = (today - timedelta(days=offset)).isoformat()
         try:
             stats = api.get_stats(current) or {}
@@ -123,19 +136,22 @@ def main() -> int:
     stress = first(latest_stats.get("averageStressLevel"), latest_stats.get("avgStressLevel"))
     body_battery = first(latest_stats.get("bodyBatteryHighestValue"), latest_stats.get("bodyBatteryMostRecentValue"))
 
+    baseline_days = recent_days[1:8] or recent_days[:7]
     sleep_values = [
         hours(first(nested(day["sleep"], "dailySleepDTO", "sleepTimeSeconds"), nested(day["sleep"], "dailySleepDTO", "sleepTimeInSeconds")))
-        for day in recent_days
+        for day in baseline_days
     ]
-    hrv_values = [nested(day["hrv"], "hrvSummary", "lastNightAvg") for day in recent_days]
-    resting_values = [first(day["stats"].get("restingHeartRate"), day["stats"].get("minHeartRate")) for day in recent_days]
+    hrv_values = [nested(day["hrv"], "hrvSummary", "lastNightAvg") for day in baseline_days]
+    resting_values = [first(day["stats"].get("restingHeartRate"), day["stats"].get("minHeartRate")) for day in baseline_days]
 
     try:
         activities = api.get_activities(0, 20) or []
     except Exception:
         activities = []
     week_start = datetime.combine(today - timedelta(days=6), datetime.min.time())
+    previous_week_start = datetime.combine(today - timedelta(days=13), datetime.min.time())
     week_activities = []
+    previous_week_activities = []
     for activity in activities:
         start_text = first(activity.get("startTimeLocal"), activity.get("startTimeGMT"))
         try:
@@ -144,9 +160,13 @@ def main() -> int:
             continue
         if start_time >= week_start:
             week_activities.append(activity)
+        elif start_time >= previous_week_start:
+            previous_week_activities.append(activity)
 
     total_distance = round(sum(miles(activity.get("distance")) or 0 for activity in week_activities), 2)
     total_duration = round(sum(hours(activity.get("duration")) or 0 for activity in week_activities), 2)
+    previous_distance = round(sum(miles(activity.get("distance")) or 0 for activity in previous_week_activities), 2)
+    previous_duration = round(sum(hours(activity.get("duration")) or 0 for activity in previous_week_activities), 2)
     latest_activity = activities[0] if activities else {}
     activity_type = nested(latest_activity, "activityType", "typeKey", default="")
 
@@ -183,6 +203,11 @@ def main() -> int:
                 "activities": len(week_activities),
                 "distanceMiles": total_distance,
                 "durationHours": total_duration,
+                "previousActivities": len(previous_week_activities),
+                "previousDistanceMiles": previous_distance,
+                "previousDurationHours": previous_duration,
+                "distanceChangePct": round(((total_distance - previous_distance) / previous_distance) * 100, 1) if previous_distance else None,
+                "durationChangePct": round(((total_duration - previous_duration) / previous_duration) * 100, 1) if previous_duration else None,
             },
         },
     }

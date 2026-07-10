@@ -243,28 +243,84 @@ const seed = {
   ],
   prompts: [
     {
-      title: "Weekly personal reset",
+      title: "Morning contradiction check",
+      category: "Daily intelligence",
+      useWhen: "The day looks manageable, but the inputs may be pulling in different directions.",
+      output: "One decision, one watch item, one thing to ignore",
+      body: "Use my current personal calendar, Garmin recovery and training load, weather, active event windows, and recent personal context. Find the single most important contradiction or constraint across those sources. State: (1) what changed, (2) the decision it creates for today, (3) the evidence behind it, and (4) what I should deliberately ignore. Do not give generic wellness or productivity advice.",
+      tags: ["today", "decision", "context"],
+    },
+    {
+      title: "Garmin baseline interpreter",
+      category: "Fitness",
+      useWhen: "A Garmin number changed and you need to know whether it should alter training.",
+      output: "Signal vs noise, training call, adjustment threshold",
+      body: "Compare today's sleep, HRV, resting heart rate, Body Battery or stress, and seven-day training load with my own recent baselines. Separate meaningful deviations from normal noise. Recommend whether to keep, cap, replace, or skip the planned session. Cite the exact metrics that drove the call and define the warm-up signal that would make you change it. Never infer a metric that is not present.",
+      tags: ["garmin", "running", "recovery"],
+    },
+    {
+      title: "Personal pattern miner",
+      category: "Self knowledge",
+      useWhen: "You have several weeks of ChatGPT conversations, notes, or repeated decisions.",
+      output: "Three evidenced patterns and one small experiment",
+      body: "Review only the personal context I have approved. Identify up to three recurring patterns in what I postpone, overcomplicate, repeatedly ask about, or say matters to me. For each pattern, cite at least two concrete examples and distinguish observation from inference. End with one low-friction experiment for the next seven days and the evidence that would confirm or reject it.",
+      tags: ["chatgpt", "patterns", "experiment"],
+    },
+    {
+      title: "Decision memo with kill criteria",
+      category: "Decisions",
+      useWhen: "Two reasonable options keep generating circular thought.",
+      output: "Recommendation, reversible step, and stop conditions",
+      body: "Turn this personal decision into a one-page memo. Define the actual decision, constraints, options, opportunity cost, reversible versus irreversible parts, and the strongest argument against the leading option. Recommend the smallest reversible next step. Add explicit kill criteria: what new fact, cost, delay, or downside would make the recommendation no longer valid.",
+      tags: ["decision", "premortem", "tradeoffs"],
+    },
+    {
+      title: "Weekend systems planner",
       category: "Planning",
-      body: "Review the last week, identify loose loops, choose one focus, and suggest a realistic next action list.",
-      tags: ["review", "tasks", "family"],
+      useWhen: "Training, family time, weather, errands, and events must fit without turning into a checklist marathon.",
+      output: "Primary plan, fallback plan, protected open space",
+      body: "Combine my real calendar, forecast, Garmin training context, current Pokemon GO windows, and stated family preferences. Build a realistic weekend with only the few anchors that materially improve it. Give a primary plan and a weather or energy fallback. Protect at least one unscheduled block and explain which tempting activities were intentionally left out.",
+      tags: ["weekend", "family", "weather"],
     },
     {
-      title: "Training adjustment helper",
-      category: "Running / fitness",
-      body: "Given soreness, fatigue, and schedule constraints, suggest safer workout substitutions without increasing load.",
-      tags: ["running", "strength"],
+      title: "News change detector",
+      category: "News",
+      useWhen: "Several stories cover the same fast-moving topic and headlines are creating more heat than clarity.",
+      output: "What changed, source agreement, unresolved questions",
+      body: "Synthesize the current approved news stories about this topic. Separate genuinely new facts from repeated framing. Show where sources agree, where they differ, and which claim is still unsupported or uncertain. End with the two developments worth monitoring next. Do not explain why the topic is relevant to me and do not pad the answer with background I already know.",
+      tags: ["news", "synthesis", "signal"],
     },
     {
-      title: "Pokemon event decision",
+      title: "Pokemon event optimizer",
       category: "Pokemon GO",
-      body: "Summarize why this event matters, what to prioritize, what to ignore, and a family-friendly play plan.",
-      tags: ["pokemon", "events"],
+      useWhen: "An event has too many bonuses and you want one deliberate play window.",
+      output: "Priority stack, prep minimum, stop condition",
+      body: "Use the current event schedule and bonuses plus any stated collection, raid, PvP, or family-play goals. Rank the event's opportunities by expected personal value. Give the minimum preparation, the best play window, what to ignore, and a stop condition that prevents completionist grinding. Flag any time-sensitive evolution, raid, trade, or research requirement.",
+      tags: ["pokemon", "events", "priorities"],
     },
     {
-      title: "Purchase decision brief",
-      category: "Personal finance",
-      body: "Compare options using total cost, value, risk, timing, and whether the purchase actually solves the problem.",
-      tags: ["money", "decisions"],
+      title: "Chess mistake compressor",
+      category: "Chess",
+      useWhen: "You finished a game and want a lesson you will actually remember.",
+      output: "Turning point, recurring pattern, next practice rep",
+      body: "Analyze this PGN for a casual improving player. Ignore engine-perfect commentary on every move. Identify the first meaningful decision error, the tactical or strategic pattern behind it, and one later moment where the same thinking issue reappeared. Give one plain-language rule to remember and create a five-minute practice exercise for that exact pattern.",
+      tags: ["chess", "pgn", "learning"],
+    },
+    {
+      title: "Purchase pause test",
+      category: "Decisions",
+      useWhen: "A product looks compelling, but it is unclear whether it solves the real problem.",
+      output: "Need diagnosis, full cost, wait-or-buy call",
+      body: "Evaluate this personal purchase by first naming the problem I am trying to solve. Compare buying now, waiting, buying used or cheaper, and doing nothing. Include total cost of ownership, setup and maintenance friction, likely usage frequency, resale or lock-in risk, and what I already own that overlaps. Recommend buy, wait, or skip and state what evidence would change the answer.",
+      tags: ["purchase", "value", "friction"],
+    },
+    {
+      title: "Weekly friction audit",
+      category: "Personal systems",
+      useWhen: "The same small annoyances keep surviving each week.",
+      output: "Remove, automate, or accept",
+      body: "Review the past seven days of approved personal context. Find repeated friction, not isolated inconvenience. Classify each item as remove, automate, simplify, schedule, or consciously accept. Rank by time and attention recovered rather than novelty. Propose at most two changes, each small enough to complete this week, and name the signal that will show whether it worked.",
+      tags: ["systems", "friction", "automation"],
     },
   ],
   library: [
@@ -438,6 +494,10 @@ let bridgeSettings = loadBridgeSettings();
 let autoSyncSettings = loadAutoSyncSettings();
 let selectedChessSquare = null;
 let chessSolved = false;
+let chessGame = null;
+let chessInitialFen = "";
+let chessSolutionIndex = 0;
+let chessModulePromise = null;
 let weatherState = {
   status: "loading",
   source: "Open-Meteo",
@@ -484,7 +544,13 @@ let sourceHealthState = {
   local: "live",
 };
 
-const chessPuzzle = {
+let chessPuzzle = {
+  id: "fallback-scholar",
+  title: "White to move: mate in one",
+  description: "Look for the forcing queen move supported by the bishop.",
+  goal: "Mate in one",
+  orientation: "white",
+  solution: ["h5f7"],
   expectedFrom: "h5",
   expectedTo: "f7",
   hint: "The bishop on c4 supports f7. Look for a queen check that leaves the king no escape.",
@@ -505,6 +571,36 @@ const chessPuzzle = {
     h2: { side: "white", label: "p" },
   },
 };
+
+const dailyFallbackPuzzles = [
+  {
+    id: "scholars-finish",
+    title: "White to move",
+    goal: "Mate in one",
+    description: "The king is exposed on f7. Find the forcing finish.",
+    hint: "The queen can capture on f7 with support from the bishop on c4.",
+    fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+    solution: ["h5f7"],
+  },
+  {
+    id: "fools-mate",
+    title: "Black to move",
+    goal: "Mate in one",
+    description: "White weakened the king before developing. Punish the open diagonal.",
+    hint: "The queen has a direct route to h4.",
+    fen: "rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq g3 0 2",
+    solution: ["d8h4"],
+  },
+  {
+    id: "back-rank",
+    title: "White to move",
+    goal: "Mate in one",
+    description: "The pawns have boxed in the king. Use the open file.",
+    hint: "Put the rook on the eighth rank with check.",
+    fen: "6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1",
+    solution: ["e1e8"],
+  },
+];
 
 const chessPieceGlyphs = {
   white: {
@@ -1102,9 +1198,40 @@ function normalizeTextItem(item, fallbackTitle = "Private item") {
   };
 }
 
+function privateItemText(item) {
+  if (typeof item === "string") return item;
+  if (!item || typeof item !== "object") return "";
+  return [item.title, item.detail, item.source, item.meta, item.summary, item.reason].filter(Boolean).join(" ");
+}
+
+function isInternalHousekeeping(item) {
+  const text = privateItemText(item);
+  if (!text) return false;
+  return [
+    /\b(set[ -]?up|configure|configuration|deploy|deployment)\b.*\b(script|bridge|source|sync|web app|url|packet)\b/i,
+    /\b(copy|paste)\b.*\b(google script|web app url|bridge|sync key)\b/i,
+    /\b(starter packet|source next|private bridge|web app url|sync key)\b/i,
+    /\bsecurity (notice|code)\b/i,
+    /\b(code omitted|no reply (?:is )?needed|no action (?:is )?needed)\b/i,
+  ].some((pattern) => pattern.test(text));
+}
+
+function usefulPrivateItems(items) {
+  return items.filter((item) => item && !isInternalHousekeeping(item));
+}
+
+function usefulPrivateSummary(value) {
+  const summary = compactText(value, "");
+  return summary && !isInternalHousekeeping(summary) ? summary : "";
+}
+
 function normalizePrivateDailyPacket(payload, origin = "import") {
   if (!payload || typeof payload !== "object") return emptyPrivateDaily();
   const data = payload.daily || payload.packet || payload;
+  const starterSource = asArray(data.sources).some((source) => /starter/i.test(compactText(source?.status || source?.source || source?.name, "")));
+  if (starterSource || /starter (?:private )?packet/i.test(compactText(data.summary || data.brief || data.dailyBrief, ""))) {
+    return emptyPrivateDaily();
+  }
   const mail = data.gmail || data.mail || {};
   const drive = data.drive || {};
   const notes = data.notes || {};
@@ -1113,32 +1240,38 @@ function normalizePrivateDailyPacket(payload, origin = "import") {
   const generatedAt = compactText(data.generatedAt || data.updatedAt || data.date, "");
   const importedAt = compactText(data.importedAt, new Date().toISOString());
 
-  const agenda = asArray(data.agenda).map((item) => normalizeAgendaItem(item, "Daily packet")).filter(Boolean);
+  const agenda = usefulPrivateItems(asArray(data.agenda).map((item) => normalizeAgendaItem(item, "Daily packet")).filter(Boolean));
   const calendarEvents = asArray(data.calendar?.events || data.calendarEvents || data.events)
     .map((item) => normalizeAgendaItem(item, "Calendar"))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((item) => !isInternalHousekeeping(item));
   const highlights = asArray(mail.highlights || mail.items || mail.summaries)
     .map((item) => normalizeTextItem(item, "Inbox highlight"))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((item) => !isInternalHousekeeping(item));
   const needsReply = asArray(mail.needsReply || mail.actions || mail.replyNeeded)
     .map((item) => normalizeTextItem(item, "Needs reply"))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((item) => !isInternalHousekeeping(item));
   const driveItems = asArray(drive.items || drive.recent || drive.files)
     .map((item) => normalizeTextItem(item, "Drive item"))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((item) => !isInternalHousekeeping(item));
   const noteItems = asArray(notes.items || notes.recent || notes)
     .map((item) => normalizeTextItem(item, "Note"))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((item) => !isInternalHousekeeping(item));
   const recommendations = asArray(data.recommendations || data.suggestions || data.actions)
     .map((item) => normalizeTextItem(item, "Recommendation"))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((item) => !isInternalHousekeeping(item));
   const sources = normalizeSourceList(data.sources);
 
   const normalized = {
     status: origin === "stored" ? compactText(data.status, "stored") : "live",
     generatedAt,
     importedAt,
-    summary: compactText(data.summary || data.brief || data.dailyBrief, ""),
+    summary: usefulPrivateSummary(data.summary || data.brief || data.dailyBrief),
     sources,
     agenda,
     calendarEvents,
@@ -1599,19 +1732,51 @@ function classifyReadiness(health = {}, training = {}) {
   return compactText(health.readiness || training.readiness || training.status, "Unscored");
 }
 
+function metricDelta(current, baseline) {
+  const currentNumber = parseMetricNumber(current);
+  const baselineNumber = parseMetricNumber(baseline);
+  if (currentNumber === null || baselineNumber === null || baselineNumber === 0) return null;
+  return ((currentNumber - baselineNumber) / baselineNumber) * 100;
+}
+
+function signedPercent(value) {
+  if (value === null || !Number.isFinite(value)) return "";
+  return `${value > 0 ? "+" : ""}${Math.round(value)}%`;
+}
+
+function workoutDetailText(detail) {
+  if (!detail || typeof detail !== "object") return compactText(detail, "");
+  return [
+    detail.distanceMiles ? `${detail.distanceMiles} mi` : "",
+    detail.durationHours ? `${Math.round(detail.durationHours * 60)} min` : "",
+    detail.averageHr ? `${detail.averageHr} avg HR` : "",
+    detail.aerobicEffect ? `${detail.aerobicEffect} aerobic effect` : "",
+  ].filter(Boolean).join(" · ");
+}
+
 function buildTrainingIntelligence() {
   const training = privateDaily.training || {};
   const health = privateDaily.health || {};
-  const readiness = classifyReadiness(health, training);
-  const sleep = firstText(health.sleepHours, health.sleep, training.sleep);
-  const steps = firstText(health.steps, training.steps);
-  const lastWorkout = firstText(training.lastWorkout, health.lastWorkout, training.lastActivity);
-  const source = "Garmin + private daily packet";
+  const baselines = health.baselines || {};
+  const weeklyLoad = training.weeklyLoad && typeof training.weeklyLoad === "object" ? training.weeklyLoad : {};
+  const sleep = parseMetricNumber(firstText(health.sleepHours, health.sleep, training.sleep));
+  const hrv = parseMetricNumber(firstText(health.hrv, health.hrvStatus));
+  const restingHr = parseMetricNumber(firstText(health.restingHr, health.restingHeartRate));
+  const bodyBattery = parseMetricNumber(health.bodyBattery);
+  const stress = parseMetricNumber(health.stress);
+  const steps = parseMetricNumber(firstText(health.steps, training.steps));
+  const lastWorkout = compactText(training.lastWorkout || health.lastWorkout || training.lastActivity, "");
+  const lastWorkoutDetail = workoutDetailText(training.lastWorkoutDetail || health.lastWorkoutDetail);
+  const sleepDeltaHours = sleep !== null && parseMetricNumber(baselines.sleep7Day) !== null ? sleep - parseMetricNumber(baselines.sleep7Day) : null;
+  const hrvDelta = metricDelta(hrv, baselines.hrv7Day);
+  const restingDelta = restingHr !== null && parseMetricNumber(baselines.restingHr7Day) !== null ? restingHr - parseMetricNumber(baselines.restingHr7Day) : null;
+  const loadDelta = parseMetricNumber(weeklyLoad.durationChangePct ?? weeklyLoad.distanceChangePct);
+  const source = health.date ? `Garmin Connect · ${health.date}` : "Garmin Connect";
   const recommended = training.recommendedWorkout || training.today || training.recommendation || {};
   const recommendedObject = typeof recommended === "object" && recommended ? recommended : { title: recommended };
-  const title = compactText(recommendedObject.title);
-  const detail = compactText(recommendedObject.detail || recommendedObject.summary || training.summary || health.readinessNote);
-  const fallback = compactText(recommendedObject.fallback || training.fallback || health.recoveryNote);
+  let title = compactText(recommendedObject.title);
+  let detail = compactText(recommendedObject.detail || recommendedObject.summary || training.summary || health.readinessNote);
+  let fallback = compactText(recommendedObject.fallback || training.fallback || health.recoveryNote);
   const packetInsights = asArray(training.insights || health.insights)
     .map((item) => {
       if (typeof item === "string") return { label: "Insight", value: item, detail: "" };
@@ -1623,14 +1788,69 @@ function buildTrainingIntelligence() {
       };
     })
     .filter((item) => item?.value);
-  const factualSignals = [
-    sleep && { label: "Sleep", value: sleep, detail: compactText(health.sleepNote) },
-    firstText(health.hrv, health.hrvStatus) && {
-      label: "HRV",
-      value: firstText(health.hrv, health.hrvStatus),
-      detail: compactText(health.hrvNote || health.hrvTrend),
-    },
-    lastWorkout && { label: "Last activity", value: lastWorkout, detail: compactText(training.lastWorkoutDetail || health.lastWorkoutDetail) },
+  const derivedSignals = [];
+  const recoveryFlags = [];
+  if (sleep !== null) {
+    const value = `${sleep.toFixed(1)} hr${sleepDeltaHours === null ? "" : ` (${sleepDeltaHours > 0 ? "+" : ""}${sleepDeltaHours.toFixed(1)} vs baseline)`}`;
+    const signal = { label: "Sleep", value, detail: sleepDeltaHours !== null && sleepDeltaHours <= -0.75 ? "Materially below your recent sleep baseline." : "Compared with your own seven-day baseline." };
+    derivedSignals.push(signal);
+    if (sleepDeltaHours !== null && sleepDeltaHours <= -0.75) recoveryFlags.push(signal);
+  }
+  if (hrv !== null) {
+    const signal = { label: "HRV", value: `${Math.round(hrv)} ms${hrvDelta === null ? "" : ` (${signedPercent(hrvDelta)})`}`, detail: hrvDelta !== null && hrvDelta <= -8 ? "Below your recent HRV baseline." : "Nightly HRV versus your recent baseline." };
+    derivedSignals.push(signal);
+    if (hrvDelta !== null && hrvDelta <= -8) recoveryFlags.push(signal);
+  }
+  if (restingHr !== null) {
+    const signal = { label: "Resting HR", value: `${Math.round(restingHr)} bpm${restingDelta === null ? "" : ` (${restingDelta > 0 ? "+" : ""}${Math.round(restingDelta)} bpm)`}`, detail: restingDelta !== null && restingDelta >= 4 ? "Elevated versus your recent baseline." : "Resting heart rate versus your recent baseline." };
+    derivedSignals.push(signal);
+    if (restingDelta !== null && restingDelta >= 4) recoveryFlags.push(signal);
+  }
+  if (loadDelta !== null) {
+    const signal = { label: "7-day load", value: signedPercent(loadDelta), detail: loadDelta >= 25 ? "Training duration rose sharply versus the previous seven days." : "Current seven-day training volume versus the prior seven days." };
+    derivedSignals.push(signal);
+    if (loadDelta >= 25) recoveryFlags.push(signal);
+  }
+  if (bodyBattery !== null) derivedSignals.push({ label: "Body Battery", value: `${Math.round(bodyBattery)}`, detail: "Latest Garmin daily high or most recent reading." });
+  if (stress !== null) derivedSignals.push({ label: "Stress", value: `${Math.round(stress)}`, detail: "Latest Garmin average stress reading." });
+  if (lastWorkout) derivedSignals.push({ label: "Last activity", value: lastWorkout, detail: lastWorkoutDetail });
+
+  const availableRecoveryMetrics = [sleep, hrv, restingHr, bodyBattery, stress].filter((value) => value !== null).length;
+  let readiness = classifyReadiness(health, training);
+  if (!title && availableRecoveryMetrics) {
+    if (recoveryFlags.length >= 2) {
+      title = "Keep the next session easy";
+      detail = `${recoveryFlags.slice(0, 2).map((signal) => `${signal.label} ${signal.value}`).join(" and ")} are both outside your recent pattern. Preserve frequency, but remove intensity.`;
+      fallback = "Mobility or a short easy session is enough if the warm-up does not improve how you feel.";
+      readiness = "Constrained";
+    } else if (recoveryFlags.length === 1) {
+      title = "Train, but cap the ambition";
+      detail = `${recoveryFlags[0].label} is the only clear recovery flag. Use the first 10 minutes as a check before committing to intensity or volume.`;
+      fallback = "Convert the session to easy aerobic work if effort feels unusually high.";
+      readiness = "Watch";
+    } else {
+      title = "No recovery flag in the available Garmin data";
+      detail = "Sleep, HRV, and resting-heart-rate signals that are available are not materially outside your recent baseline. Follow the planned session rather than adding extra work.";
+      fallback = "The live warm-up still outranks the dashboard if your legs or breathing disagree.";
+      readiness = "Stable";
+    }
+  } else if (!title && loadDelta !== null) {
+    const currentMiles = parseMetricNumber(weeklyLoad.distanceMiles);
+    const previousMiles = parseMetricNumber(weeklyLoad.previousDistanceMiles);
+    title = loadDelta <= -20 ? "Your rolling training load is lighter" : loadDelta >= 25 ? "Your rolling training load jumped" : "Your rolling training load is steady";
+    detail = `${currentMiles !== null ? `${currentMiles.toFixed(1)} miles` : "Current load"} in the latest seven-day window versus ${previousMiles !== null ? `${previousMiles.toFixed(1)} miles` : "the prior window"} (${signedPercent(loadDelta)}). Recovery metrics are not available today, so this is a load observation rather than a readiness score.`;
+    fallback = "Use how the warm-up feels before treating the lighter load as permission to add intensity.";
+    readiness = "Load only";
+  }
+
+  const metrics = [
+    sleep !== null && { value: `${sleep.toFixed(1)}h`, label: "sleep" },
+    hrv !== null && { value: `${Math.round(hrv)} ms`, label: "HRV" },
+    restingHr !== null && { value: `${Math.round(restingHr)}`, label: "resting HR" },
+    bodyBattery !== null && { value: `${Math.round(bodyBattery)}`, label: "body battery" },
+    steps !== null && { value: `${Math.round(steps).toLocaleString()}`, label: "steps" },
+    parseMetricNumber(weeklyLoad.distanceMiles) !== null && { value: `${parseMetricNumber(weeklyLoad.distanceMiles).toFixed(1)} mi`, label: "7-day distance" },
+    parseMetricNumber(weeklyLoad.durationHours) !== null && { value: `${parseMetricNumber(weeklyLoad.durationHours).toFixed(1)}h`, label: "7-day training" },
   ].filter(Boolean);
 
   return {
@@ -1643,7 +1863,9 @@ function buildTrainingIntelligence() {
     detail,
     duration: firstText(recommendedObject.duration, training.duration),
     fallback,
-    rules: (packetInsights.length ? packetInsights : factualSignals).slice(0, 4),
+    rules: [...packetInsights, ...derivedSignals].slice(0, 6),
+    metrics,
+    hasVerifiedMetrics: availableRecoveryMetrics > 0 || Boolean(lastWorkout),
   };
 }
 
@@ -2173,7 +2395,9 @@ function hasTrainingContext() {
     health.bodyBattery,
     health.stress,
     health.steps,
-    training.weeklyLoad,
+    training.weeklyLoad?.activities,
+    training.weeklyLoad?.distanceMiles,
+    training.weeklyLoad?.durationHours,
     training.load,
     training.lastWorkout,
   ];
@@ -2269,10 +2493,10 @@ function renderTodayAgenda() {
   const target = document.getElementById("todayAgendaCard");
   if (!target) return;
   const privateAgenda = [...privateDaily.agenda, ...privateDaily.calendarEvents].slice(0, 4);
-  const agendaItems = privateAgenda.length
-    ? privateAgenda
-    : [{ time: "Today", title: "Open day", detail: "No fixed personal commitment has surfaced.", tone: "calendar" }];
-  const heading = privateAgenda.length ? "Your next commitments" : "No schedule pressure";
+  target.hidden = !privateAgenda.length;
+  if (target.hidden) return;
+  const agendaItems = privateAgenda;
+  const heading = "Your next commitments";
   target.innerHTML = `
     <div class="module-header">
       <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
@@ -2307,24 +2531,16 @@ function renderTodayWorkout() {
   }
   target.hidden = false;
   const decision = buildTrainingIntelligence();
+  const quickSignals = decision.rules.slice(0, 2);
 
   target.innerHTML = `
-    <div class="training-visual" aria-hidden="true">
-      <div class="route-line"></div>
-      <span class="route-dot dot-one"></span>
-      <span class="route-dot dot-two"></span>
-      <span class="route-stat">${escapeHtml(decision.duration)}</span>
-    </div>
     <div class="module-header">
       <span class="module-icon training-icon" aria-hidden="true">Run</span>
       <p class="eyebrow">Fitness decision</p>
     </div>
     <h3>${escapeHtml(decision.title)}</h3>
-    <div class="mini-fact-grid">
-      <span><strong>${escapeHtml(decision.duration)}</strong> plan</span>
-      <span><strong>${escapeHtml(decision.readiness)}</strong> readiness</span>
-      <span><strong>${escapeHtml(decision.fallback)}</strong> fallback</span>
-    </div>
+    <p>${escapeHtml(decision.detail)}</p>
+    ${quickSignals.length ? `<div class="mini-fact-grid">${quickSignals.map((signal) => `<span><strong>${escapeHtml(signal.value)}</strong>${escapeHtml(signal.label)}</span>`).join("")}</div>` : ""}
     <span class="source-badge">${escapeHtml(decision.source)}</span>
   `;
 }
@@ -2465,28 +2681,15 @@ function renderTrainingOverview() {
     if (workoutStack) workoutStack.innerHTML = "";
     return;
   }
-  const title = compactText(training.title || health.title, "Current Garmin picture");
-  const summaryText = compactText(training.summary || health.summary || health.readinessNote, decision.detail);
-  const metrics = [
-    { value: firstText(health.sleepHours, health.sleep), label: "sleep" },
-    { value: firstText(health.hrv, health.hrvStatus), label: "HRV" },
-    { value: firstText(health.restingHr, health.restingHeartRate), label: "resting HR" },
-    { value: firstText(health.bodyBattery, health.stress), label: health.bodyBattery ? "body battery" : "stress" },
-    { value: firstText(training.weeklyLoad, training.load), label: "weekly load" },
-    { value: firstText(health.steps, training.steps), label: "steps" },
-  ].filter((metric) => metric.value).slice(0, 4);
+  const metrics = decision.metrics.slice(0, 6);
   const readinessItems = decision.rules;
   if (summaryCard) {
     summaryCard.hidden = false;
     summaryCard.innerHTML = `
-      <p class="eyebrow">This week</p>
-      <h3>${escapeHtml(title)}</h3>
-      <p>${escapeHtml(summaryText)}</p>
-      <div class="training-decision">
-        <span>Today</span>
-        <strong>${escapeHtml(decision.title)}</strong>
-        <p>${escapeHtml(decision.detail)}</p>
-      </div>
+      <p class="eyebrow">Today from your Garmin baseline</p>
+      <h3>${escapeHtml(decision.title)}</h3>
+      <p>${escapeHtml(decision.detail)}</p>
+      ${decision.fallback ? `<div class="training-adjustment"><span>If the warm-up disagrees</span><p>${escapeHtml(decision.fallback)}</p></div>` : ""}
       <div class="metric-row">
         ${metrics
           .map((metric) => `<span><strong>${escapeHtml(metric.value)}</strong> ${escapeHtml(metric.label)}</span>`)
@@ -2500,9 +2703,9 @@ function renderTrainingOverview() {
     readinessCard.innerHTML = `
       <div class="module-header">
         <span class="module-icon training-icon" aria-hidden="true">Fit</span>
-        <p class="eyebrow">Garmin + AI interpretation</p>
+        <p class="eyebrow">Signals behind the call</p>
       </div>
-      <h3>${escapeHtml(decision.readiness)} readiness</h3>
+      <h3>${escapeHtml(decision.readiness)} recovery context</h3>
       <div class="training-rule-list">
         ${readinessItems
           .map(
@@ -2675,7 +2878,7 @@ function renderNews() {
     </article>
   `;
 
-  const storyCards = items.slice(1, 9).map((item) => {
+  const storyCards = items.slice(1, 13).map((item) => {
     const takeaways = newsKeyTakeaways(item);
     return `
       <article class="glass-card action-card module-news news-story-card">
@@ -2719,7 +2922,7 @@ function renderLearning() {
 function renderPrompts(filter = "") {
   const normalizedFilter = filter.trim().toLowerCase();
   const prompts = seed.prompts.filter((prompt) =>
-    [prompt.title, prompt.category, prompt.body, prompt.tags.join(" ")].join(" ").toLowerCase().includes(normalizedFilter),
+    [prompt.title, prompt.category, prompt.useWhen, prompt.output, prompt.body, prompt.tags.join(" ")].join(" ").toLowerCase().includes(normalizedFilter),
   );
   document.getElementById("promptGrid").innerHTML = prompts
     .map(
@@ -2730,7 +2933,16 @@ function renderPrompts(filter = "") {
             <p class="eyebrow">${prompt.category}</p>
           </div>
           <h3>${prompt.title}</h3>
-          <p class="prompt-body">${prompt.body}</p>
+          <div class="prompt-utility">
+            <span>Use when</span>
+            <p>${prompt.useWhen}</p>
+            <span>Delivers</span>
+            <p>${prompt.output}</p>
+          </div>
+          <details class="prompt-details">
+            <summary>View full prompt</summary>
+            <p class="prompt-body">${prompt.body}</p>
+          </details>
           <div class="tag-row">
             ${prompt.tags.map((tag) => `<span class="tag-pill">${tag}</span>`).join("")}
           </div>
@@ -3110,6 +3322,8 @@ function renderDailySignals() {
   const priorities = buildTodayPriorities();
 
   document.getElementById("priorityCount").textContent = priorities.length;
+  const priorityLabel = document.getElementById("priorityLabel");
+  if (priorityLabel) priorityLabel.textContent = priorities.length === 1 ? "priority" : "priorities";
   document.getElementById("weatherSignal").textContent = weatherWord;
   const newsSignal = document.getElementById("newsSignal");
   if (newsSignal) newsSignal.textContent = newsWord;
@@ -3585,18 +3799,20 @@ function resetLocalData() {
 function renderLichessDaily() {
   const target = document.getElementById("lichessDailyCard");
   if (!target) return;
+  target.hidden = lichessState.status !== "live";
+  if (target.hidden) return;
 
   target.innerHTML = `
     <div class="module-header">
       <span class="module-icon chess-icon" aria-hidden="true">64</span>
-      <p class="eyebrow">Lichess - ${lichessState.status}</p>
+      <p class="eyebrow">Today's Lichess puzzle</p>
     </div>
-    <h3>${lichessState.title}</h3>
-    <p>Daily public puzzle signal from Lichess. The playable in-app board stays curated until we add a real chess parser.</p>
+    <h3>${escapeHtml(lichessState.themes)}</h3>
+    <p>The position above is today's live puzzle. Solve it here, then open Lichess only if you want the full game context.</p>
     <div class="weather-metrics source-metrics" aria-label="Lichess daily puzzle">
       <span><strong>${lichessState.rating}</strong> rating</span>
-      <span><strong>${lichessState.themes}</strong> themes</span>
-      <span><strong>${lichessState.status}</strong> status</span>
+      <span><strong>${chessPuzzle.solution.length}</strong> move${chessPuzzle.solution.length === 1 ? "" : "s"}</span>
+      <span><strong>Daily</strong> rotation</span>
     </div>
     <div class="source-row">
       <a class="text-button" href="${lichessState.link}" target="_blank" rel="noreferrer">Open on Lichess</a>
@@ -3646,6 +3862,7 @@ async function refreshLichessDaily() {
       link: puzzle.id ? `https://lichess.org/training/${puzzle.id}` : "https://lichess.org/training/daily",
       updated: formatShortTime(),
     };
+    await loadLichessPuzzleIntoBoard(data);
     sourceHealthState.lichess = "live";
   } catch (error) {
     lichessState = {
@@ -3734,13 +3951,23 @@ async function refreshNewsLiveData() {
   try {
     const snapshot = await fetchSameOriginSnapshot("data/public-news.json").catch(() => null);
     const snapshotItems = normalizeStaticNews(snapshot?.items || snapshot?.stories);
-    const data = snapshotItems.length ? [] : await sourceAdapters.news.fetch();
-    const normalized = snapshotItems.length ? { items: snapshotItems, sources: [{ label: "Daily briefing", status: "live", count: snapshotItems.length }] } : normalizeNewsResults(data);
+    const data = snapshotItems.length >= 12 ? [] : await sourceAdapters.news.fetch();
+    const liveNormalized = normalizeNewsResults(data);
+    const mergedItems = [...snapshotItems, ...liveNormalized.items].filter(
+      (item, index, items) => index === items.findIndex((candidate) => candidate.url === item.url || candidate.title.toLowerCase() === item.title.toLowerCase()),
+    );
+    const normalized = {
+      items: mergedItems,
+      sources: [
+        ...(snapshotItems.length ? [{ label: "Daily briefing", status: "live", count: snapshotItems.length }] : []),
+        ...liveNormalized.sources,
+      ],
+    };
     const liveSources = normalized.sources.filter((source) => source.status === "live");
     const items = normalized.items
       .map((item) => ({ ...item, tags: item.tags?.length ? item.tags : newsTagsForText(`${item.title} ${item.summary}`), score: newsScoreForItem(item) }))
       .sort((a, b) => b.score - a.score || toTime(b.publishedAt) - toTime(a.publishedAt))
-      .slice(0, 12);
+      .slice(0, 16);
     newsState = {
       status: liveSources.length ? "live" : "offline",
       updated: formatShortTime(),
@@ -3816,10 +4043,6 @@ async function refreshWeather() {
   renderIntelligence();
 }
 
-function chessSquareName(fileIndex, rank) {
-  return `${"abcdefgh"[fileIndex]}${rank}`;
-}
-
 function setChessFeedback(message, state = "") {
   const feedback = document.getElementById("chessFeedback");
   if (!feedback) return;
@@ -3827,23 +4050,111 @@ function setChessFeedback(message, state = "") {
   feedback.dataset.state = state;
 }
 
+function getChessModule() {
+  if (!chessModulePromise) chessModulePromise = import("./assets/vendor/chess.js");
+  return chessModulePromise;
+}
+
+function chessPiecesFromGame(game) {
+  const pieces = {};
+  game.board().flat().forEach((piece) => {
+    if (!piece) return;
+    pieces[piece.square] = {
+      side: piece.color === "w" ? "white" : "black",
+      label: piece.type === "p" ? "p" : piece.type.toUpperCase(),
+    };
+  });
+  return pieces;
+}
+
+function updateExpectedChessMove() {
+  const move = chessPuzzle.solution[chessSolutionIndex] || "";
+  chessPuzzle.expectedFrom = move.slice(0, 2);
+  chessPuzzle.expectedTo = move.slice(2, 4);
+}
+
+function renderChessPuzzleCopy() {
+  const title = document.getElementById("chessPuzzleTitle");
+  const description = document.getElementById("chessPuzzleDescription");
+  const side = document.getElementById("chessPuzzleSide");
+  const goal = document.getElementById("chessPuzzleGoal");
+  if (title) title.textContent = chessPuzzle.title;
+  if (description) description.textContent = chessPuzzle.description;
+  if (side) side.innerHTML = `<strong>${chessPuzzle.orientation === "black" ? "Black" : "White"}</strong> to move`;
+  if (goal) goal.innerHTML = `<strong>${escapeHtml(chessPuzzle.goal.split(" ")[0])}</strong> ${escapeHtml(chessPuzzle.goal.split(" ").slice(1).join(" ") || "puzzle")}`;
+}
+
+function configureChessPuzzle(game, metadata) {
+  chessGame = game;
+  chessInitialFen = game.fen();
+  chessSolutionIndex = 0;
+  selectedChessSquare = null;
+  chessSolved = false;
+  chessPuzzle = {
+    ...chessPuzzle,
+    ...metadata,
+    orientation: game.turn() === "b" ? "black" : "white",
+    pieces: chessPiecesFromGame(game),
+    solution: metadata.solution || [],
+    lastMoveTo: "",
+  };
+  updateExpectedChessMove();
+  renderChessPuzzleCopy();
+  setChessFeedback(`Find the first move for ${chessPuzzle.orientation}.`, "");
+  renderChessBoard();
+}
+
+async function initializeDailyFallbackPuzzle() {
+  const { Chess } = await getChessModule();
+  const dayNumber = Math.floor(Date.now() / 86400000);
+  const puzzle = dailyFallbackPuzzles[dayNumber % dailyFallbackPuzzles.length];
+  configureChessPuzzle(new Chess(puzzle.fen), puzzle);
+}
+
+async function loadLichessPuzzleIntoBoard(data) {
+  const puzzle = data?.puzzle || {};
+  const pgn = data?.game?.pgn;
+  const solution = asArray(puzzle.solution).filter((move) => /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move));
+  if (!pgn || !solution.length) throw new Error("Incomplete daily puzzle");
+  const { Chess } = await getChessModule();
+  const fullGame = new Chess();
+  fullGame.loadPgn(pgn);
+  const history = fullGame.history({ verbose: true });
+  const position = new Chess();
+  const moveCount = Math.min(history.length, Number(puzzle.initialPly || 0) + 1);
+  for (let index = 0; index < moveCount; index += 1) position.move(history[index]);
+  const themeLabels = asArray(puzzle.themes).slice(0, 3).map((theme) => String(theme).replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase());
+  const mateTheme = themeLabels.some((theme) => /mate/.test(theme));
+  configureChessPuzzle(position, {
+    id: puzzle.id || "lichess-daily",
+    title: `${position.turn() === "b" ? "Black" : "White"} to move`,
+    goal: mateTheme ? "Find mate" : "Find best move",
+    description: `${puzzle.rating ? `Rated ${puzzle.rating}. ` : ""}${themeLabels.length ? `Today's themes: ${themeLabels.join(", ")}.` : "Find the forcing continuation."}`,
+    hint: mateTheme ? "Start with checks, then remove the king's escape squares." : "Start with checks, captures, and direct threats. Look for the move that changes the position immediately.",
+    solution,
+  });
+}
+
 function renderChessBoard() {
   const board = document.getElementById("chessBoard");
   if (!board) return;
 
-  const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+  const isBlack = chessPuzzle.orientation === "black";
+  const ranks = isBlack ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
+  const files = isBlack ? "hgfedcba" : "abcdefgh";
   board.innerHTML = ranks
     .map((rank) =>
-      Array.from({ length: 8 }, (_, fileIndex) => {
-        const square = chessSquareName(fileIndex, rank);
+      Array.from(files, (file, displayFileIndex) => {
+        const fileIndex = file.charCodeAt(0) - 97;
+        const square = `${file}${rank}`;
         const piece = chessPuzzle.pieces[square];
         const shade = (fileIndex + rank) % 2 === 0 ? "light" : "dark";
         const selected = selectedChessSquare === square ? " selected" : "";
-        const solvedTarget = chessSolved && square === chessPuzzle.expectedTo ? " solved" : "";
+        const solvedTarget = chessSolved && square === chessPuzzle.lastMoveTo ? " solved" : "";
         const icon = piece ? chessPieceGlyphs[piece.side][piece.label] : "";
         const content = piece ? `<span class="piece ${piece.side}" aria-hidden="true">${icon}</span>` : "";
-        const rankLabel = fileIndex === 0 ? `<span class="coord coord-rank">${rank}</span>` : "";
-        const fileLabel = rank === 1 ? `<span class="coord coord-file">${"abcdefgh"[fileIndex]}</span>` : "";
+        const rankLabel = displayFileIndex === 0 ? `<span class="coord coord-rank">${rank}</span>` : "";
+        const fileLabel = rank === ranks[ranks.length - 1] ? `<span class="coord coord-file">${file}</span>` : "";
         return `
           <button class="chess-square ${shade}${selected}${solvedTarget}" type="button" data-square="${square}" aria-label="${square}">
             ${content}
@@ -3860,45 +4171,61 @@ function handleChessSquare(square) {
   if (chessSolved) return;
 
   const piece = chessPuzzle.pieces[square];
+  const playerSide = chessPuzzle.orientation;
   if (!selectedChessSquare) {
-    if (piece?.side === "white") {
+    if (piece?.side === playerSide) {
       selectedChessSquare = square;
       setChessFeedback(`Selected ${square}. Choose the destination square.`, "");
       renderChessBoard();
       return;
     }
-    setChessFeedback("Start by selecting a white piece.", "error");
+    setChessFeedback(`Start by selecting a ${playerSide} piece.`, "error");
     return;
   }
 
   if (selectedChessSquare === square) {
     selectedChessSquare = null;
-    setChessFeedback("Selection cleared. Choose the white queen to start.", "");
+    setChessFeedback("Selection cleared. Choose another piece.", "");
     renderChessBoard();
     return;
   }
 
   if (selectedChessSquare === chessPuzzle.expectedFrom && square === chessPuzzle.expectedTo) {
-    chessSolved = true;
-    chessPuzzle.pieces[chessPuzzle.expectedTo] = chessPuzzle.pieces[chessPuzzle.expectedFrom];
-    delete chessPuzzle.pieces[chessPuzzle.expectedFrom];
+    const moveCode = chessPuzzle.solution[chessSolutionIndex];
+    const played = chessGame?.move({ from: moveCode.slice(0, 2), to: moveCode.slice(2, 4), promotion: moveCode[4] || "q" });
+    chessSolutionIndex += 1;
+    chessPuzzle.lastMoveTo = square;
+    if (chessSolutionIndex < chessPuzzle.solution.length) {
+      const replyCode = chessPuzzle.solution[chessSolutionIndex];
+      chessGame?.move({ from: replyCode.slice(0, 2), to: replyCode.slice(2, 4), promotion: replyCode[4] || "q" });
+      chessPuzzle.lastMoveTo = replyCode.slice(2, 4);
+      chessSolutionIndex += 1;
+    }
+    chessPuzzle.pieces = chessGame ? chessPiecesFromGame(chessGame) : chessPuzzle.pieces;
     selectedChessSquare = null;
-    setChessFeedback("Correct: Qxf7# is checkmate. Nice pattern spot.", "success");
+    chessSolved = chessSolutionIndex >= chessPuzzle.solution.length;
+    updateExpectedChessMove();
+    setChessFeedback(chessSolved ? `Solved. ${played?.san || "Best move"} completes today's puzzle.` : `Correct: ${played?.san || "best move"}. Find the continuation.`, "success");
     renderChessBoard();
     return;
   }
 
   selectedChessSquare = null;
-  setChessFeedback("Not quite. Look for a forcing queen move on f7.", "error");
+  setChessFeedback("Not quite. Re-scan checks, captures, and direct threats.", "error");
   renderChessBoard();
 }
 
 function resetChessPuzzle() {
   selectedChessSquare = null;
   chessSolved = false;
-  chessPuzzle.pieces.h5 = { side: "white", label: "Q" };
-  chessPuzzle.pieces.f7 = { side: "black", label: "p" };
-  setChessFeedback("Select the white queen, then choose the mating square.", "");
+  chessSolutionIndex = 0;
+  chessPuzzle.lastMoveTo = "";
+  if (chessGame && chessInitialFen) {
+    chessGame.load(chessInitialFen);
+    chessPuzzle.pieces = chessPiecesFromGame(chessGame);
+  }
+  updateExpectedChessMove();
+  setChessFeedback(`Find the first move for ${chessPuzzle.orientation}.`, "");
   renderChessBoard();
 }
 
@@ -4073,7 +4400,8 @@ function formatToday() {
   if (currentView === "today") document.getElementById("pageTitle").textContent = greetingLabel();
 }
 
-function init() {
+async function init() {
+  await initializeDailyFallbackPuzzle();
   renderNav("desktopNav");
   renderNav("mobileNav");
   renderMobileBottomNav();

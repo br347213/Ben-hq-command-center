@@ -1,59 +1,161 @@
 {
-    "generatedAt":  "2026-07-10T07:25:34.4126924-04:00",
-    "stories":  [
-                    {
-                        "title":  "OpenAI launches its new family of models with GPT-5.6",
-                        "factualSummary":  "TechCrunch reports that OpenAI introduced GPT-5.6 in three variants, positioning the family for coding, cybersecurity, scientific research, and general AI workloads.",
-                        "takeaways":  [
-                                          "The family uses three performance and cost tiers rather than a single flagship configuration.",
-                                          "OpenAI is emphasizing coding efficiency and defensive cybersecurity capabilities in the release."
-                                      ],
-                        "source":  "TechCrunch",
-                        "url":  "https://techcrunch.com/2026/07/09/openai-launches-its-new-family-of-models-with-gpt-5-6/",
-                        "publishedAt":  "2026-07-09T15:24:00-07:00",
-                        "tags":  [
-                                     "AI",
-                                     "OpenAI",
-                                     "models",
-                                     "cybersecurity"
-                                 ],
-                        "image":  "https://techcrunch.com/wp-content/uploads/2025/09/GettyImages-2224158119.jpg?w=1024"
-                    },
-                    {
-                        "title":  "Merck and Mastercard are seeing real agentic AI results. Both say the plumbing came first.",
-                        "factualSummary":  "VentureBeat describes how Merck and Mastercard are applying AI agents to regulated workflows while prioritizing shared infrastructure, governed context, permissions, and human oversight.",
-                        "takeaways":  [
-                                          "Reusable infrastructure and access controls are presented as prerequisites for scaling agents safely.",
-                                          "Both organizations keep humans in governing roles where errors carry regulatory or trust consequences."
-                                      ],
-                        "source":  "VentureBeat",
-                        "url":  "https://venturebeat.com/infrastructure/merck-and-mastercard-are-seeing-real-agentic-ai-results-both-say-the-plumbing-came-first",
-                        "publishedAt":  "2026-05-27T11:23:00-07:00",
-                        "tags":  [
-                                     "AI agents",
-                                     "infrastructure",
-                                     "governance",
-                                     "enterprise"
-                                 ],
-                        "image":  "https://images.ctfassets.net/jdtwqhzvc2n1/4CBUUbOwnAvyCtaosmRxYr/eea81e58c1a207d16773ebad282b251f/Collaboration.png?w=1000\u0026q=100"
-                    },
-                    {
-                        "title":  "IShowSpeed to lead first-ever YouTube FIFA Creator Cup",
-                        "factualSummary":  "The official YouTube Blog says the Creator Cup will stream from Central Park on July 12 at 5:00 p.m. ET through FIFA\u0027s official YouTube channel and IShowSpeed\u0027s channel.",
-                        "takeaways":  [
-                                          "The event combines creators, football figures, and a global livestream around the World Cup.",
-                                          "YouTube is using creator-led live programming to expand its sports coverage."
-                                      ],
-                        "source":  "YouTube Blog",
-                        "url":  "https://blog.youtube/news-and-events/youtube-fifa-creator-cup-central-park/",
-                        "publishedAt":  "2026-07-07T00:00:00-04:00",
-                        "tags":  [
-                                     "YouTube",
-                                     "FIFA",
-                                     "creators",
-                                     "livestream"
-                                 ],
-                        "image":  "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/YT_FIFA_CreatorCup_TalentThumb.max-100x3000.format-webp.webp"
-                    }
-                ]
+  "generatedAt": "2026-07-10T09:30:00-04:00",
+  "stories": [
+    {
+      "title": "OpenAI says GPT-5.6 is the preferred model for Microsoft Copilot 365 amid breakup chatter",
+      "factualSummary": "OpenAI says its new GPT-5.6 family will continue powering Microsoft Copilot 365 even as questions persist about the companies' broader partnership.",
+      "takeaways": [
+        "The model relationship is continuing inside Microsoft's productivity suite despite wider partnership tension.",
+        "GPT-5.6 is being positioned as the preferred Copilot model rather than a separate optional experiment."
+      ],
+      "source": "TechCrunch",
+      "url": "https://techcrunch.com/2026/07/09/openai-says-gpt-5-6-is-the-preferred-model-for-microsoft-copilot-amid-breakup-chatter/",
+      "publishedAt": "2026-07-10T00:16:54Z",
+      "tags": ["AI", "OpenAI", "Microsoft", "Copilot"],
+      "image": "https://techcrunch.com/wp-content/uploads/2024/04/GettyImages-2041281128-e1712563728365.jpg?w=680"
+    },
+    {
+      "title": "Fidji Simo steps down from OpenAI's No. 2 role",
+      "factualSummary": "Fidji Simo is leaving her full-time operating role at OpenAI after an extended medical leave, creating a leadership gap as the company faces enterprise competition and possible IPO planning.",
+      "takeaways": [
+        "The departure removes a senior operating leader during a strategically busy period for OpenAI.",
+        "The immediate story is organizational continuity, not a change to a specific model or product."
+      ],
+      "source": "TechCrunch",
+      "url": "https://techcrunch.com/2026/07/09/fidji-simo-steps-down-from-openais-no-2-role/",
+      "publishedAt": "2026-07-09T23:38:00Z",
+      "tags": ["AI", "OpenAI", "leadership"],
+      "image": "https://techcrunch.com/wp-content/uploads/2026/07/Fidji-Simo.jpg?w=680"
+    },
+    {
+      "title": "An AI agent startup let its own agent run a $100 million fundraise",
+      "factualSummary": "Enterprise-agent startup Lyzr used one of its own AI agents during a $100 million fundraising process, presenting the raise as a live demonstration of the product's capabilities.",
+      "takeaways": [
+        "The company turned a high-stakes internal workflow into a product proof point.",
+        "The useful question is how much of the process the agent completed versus assisted, which the headline alone does not establish."
+      ],
+      "source": "TechCrunch",
+      "url": "https://techcrunch.com/2026/07/09/an-ai-agent-startup-just-let-its-agent-run-its-100-million-fundraise/",
+      "publishedAt": "2026-07-09T22:08:58Z",
+      "tags": ["AI agents", "startups", "fundraising"],
+      "image": "https://techcrunch.com/wp-content/uploads/2026/07/Lyzr-graphic.png?w=680"
+    },
+    {
+      "title": "OpenAI is shutting down Atlas while moving browser features elsewhere",
+      "factualSummary": "OpenAI is sunsetting its Atlas AI browser after less than a year while moving parts of its agentic browsing work into the desktop app and a Chrome extension.",
+      "takeaways": [
+        "The standalone browser is ending, but OpenAI is not abandoning agentic web interaction.",
+        "The product strategy is shifting toward features inside surfaces people already use."
+      ],
+      "source": "TechCrunch",
+      "url": "https://techcrunch.com/2026/07/09/openai-is-shutting-down-atlas-but-its-ai-browser-ambitions-are-still-growing/",
+      "publishedAt": "2026-07-09T22:03:54Z",
+      "tags": ["AI", "browsers", "OpenAI", "agents"],
+      "image": "https://techcrunch.com/wp-content/uploads/2026/07/chatgpt-app-browser.jpg?w=680"
+    },
+    {
+      "title": "OpenAI launches its new GPT-5.6 model family",
+      "factualSummary": "OpenAI introduced GPT-5.6 in multiple variants aimed at coding, cybersecurity, scientific research, and general AI workloads.",
+      "takeaways": [
+        "The release uses multiple performance and cost tiers instead of one universal configuration.",
+        "Coding efficiency and defensive cybersecurity are central parts of the positioning."
+      ],
+      "source": "TechCrunch",
+      "url": "https://techcrunch.com/2026/07/09/openai-launches-its-new-family-of-models-with-gpt-5-6/",
+      "publishedAt": "2026-07-09T22:24:24Z",
+      "tags": ["AI", "OpenAI", "models", "cybersecurity"],
+      "image": "https://techcrunch.com/wp-content/uploads/2025/09/GettyImages-2224158119.jpg?w=680"
+    },
+    {
+      "title": "Shared API keys expose AI-agent fleets at 69% of surveyed enterprises",
+      "factualSummary": "VentureBeat reports that 69% of 107 surveyed enterprises share credentials somewhere in their agent deployments, weakening attribution and increasing the blast radius of a compromised agent.",
+      "takeaways": [
+        "Shared credentials make it difficult to determine which agent performed an action after an incident.",
+        "Scoped identities and sandbox isolation remain less common than prompt and output guardrails."
+      ],
+      "source": "VentureBeat",
+      "url": "https://venturebeat.com/security/shared-api-keys-expose-ai-agent-fleets-venturebeat-research",
+      "publishedAt": "2026-07-09T20:45:43Z",
+      "tags": ["AI agents", "security", "identity", "research"],
+      "image": ""
+    },
+    {
+      "title": "Multi-model AI systems may underestimate shared failure rates by 2.25x",
+      "factualSummary": "Research covered by VentureBeat argues that model-routing systems often overestimate the benefit of combining models because they fail to measure prompts that make every model fail together.",
+      "takeaways": [
+        "Low pairwise error correlation does not guarantee that a pool of models will outperform its strongest member.",
+        "Teams should measure the co-failure ceiling before paying the latency and governance cost of orchestration."
+      ],
+      "source": "VentureBeat",
+      "url": "https://venturebeat.com/orchestration/enterprises-using-multiple-ai-models-are-underestimating-failure-rates-by-2-25x",
+      "publishedAt": "2026-07-09T18:46:56Z",
+      "tags": ["AI", "model routing", "reliability", "research"],
+      "image": ""
+    },
+    {
+      "title": "EU threatens Meta with fines over addictive Facebook and Instagram design",
+      "factualSummary": "European regulators say features including infinite scroll may contribute to compulsive use and unhealthy habits, putting Meta at risk of fines under digital-platform rules.",
+      "takeaways": [
+        "The scrutiny targets product mechanics and user behavior, not only content moderation.",
+        "The case could influence how large social platforms design feeds and stopping cues in Europe."
+      ],
+      "source": "BBC Technology",
+      "url": "https://www.bbc.co.uk/news/articles/c8j2dje3pldo",
+      "publishedAt": "2026-07-10T12:02:40Z",
+      "tags": ["Meta", "social media", "EU", "regulation"],
+      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/07d0/live/f2f84510-7c54-11f1-ad56-219c1e341d26.jpg"
+    },
+    {
+      "title": "Big tech may have to address scam ads under Ofcom proposals",
+      "factualSummary": "Ofcom is proposing stronger obligations for major platforms after finding that more than half of UK adults have encountered potentially fraudulent advertising online.",
+      "takeaways": [
+        "The proposal shifts more responsibility for fraudulent advertising toward the platforms distributing it.",
+        "Implementation details will determine whether platforms must prevent ads before publication or mainly respond faster afterward."
+      ],
+      "source": "BBC Technology",
+      "url": "https://www.bbc.co.uk/news/articles/c9q2rznjqwwo",
+      "publishedAt": "2026-07-10T09:59:19Z",
+      "tags": ["online scams", "advertising", "platforms", "regulation"],
+      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/f656/live/df041af0-7c42-11f1-8ccc-df652c9169a7.jpg"
+    },
+    {
+      "title": "Fake portable air-conditioner claims are spreading online",
+      "factualSummary": "The UK's advertising regulator says ads claiming that small portable devices can cool a room in about 90 seconds are misleading and substantially overstate what the products can do.",
+      "takeaways": [
+        "The products are being marketed with performance claims that exceed their physical cooling capability.",
+        "The story is a practical warning about highly promoted direct-to-consumer gadgets during hot weather."
+      ],
+      "source": "BBC Technology",
+      "url": "https://www.bbc.co.uk/news/articles/cj6g41pzy41o",
+      "publishedAt": "2026-07-10T01:33:45Z",
+      "tags": ["consumer tech", "scams", "advertising"],
+      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/40f4/live/3731f960-7c3c-11f1-9510-1546718f668b.jpg"
+    },
+    {
+      "title": "Meta faces criticism over AI images made from public Instagram profile photos",
+      "factualSummary": "Meta is allowing users to generate AI images from some public Instagram profile pictures, prompting criticism from privacy campaigners despite an available opt-out.",
+      "takeaways": [
+        "The default treatment of public profile imagery is at the center of the backlash.",
+        "An opt-out does not resolve concerns when users may not know the feature exists before their image is used."
+      ],
+      "source": "BBC Technology",
+      "url": "https://www.bbc.co.uk/news/articles/cp9lee19y1yo",
+      "publishedAt": "2026-07-08T12:28:03Z",
+      "tags": ["Meta", "AI images", "privacy", "Instagram"],
+      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/2fa5/live/3d76fa30-7adb-11f1-bee8-53ce494e1abc.png"
+    },
+    {
+      "title": "YouTube's Ask Studio offers creators tailored ideas and channel analysis",
+      "factualSummary": "YouTube published a practical guide to Ask Studio, a creator tool designed to answer channel-specific questions, suggest ideas, and help interpret audience data.",
+      "takeaways": [
+        "The tool is positioned around channel context rather than generic content brainstorming.",
+        "YouTube recommends specific questions and iterative prompting to make the output more actionable."
+      ],
+      "source": "YouTube Blog",
+      "url": "https://blog.youtube/creator-and-artist-stories/youtube-ask-studio-creator-guide/",
+      "publishedAt": "2026-06-30T22:00:00Z",
+      "tags": ["YouTube", "creators", "AI tools", "analytics"],
+      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/creator-insider-ask-studio-vod-.max-600x600.format-webp.webp"
+    }
+  ]
 }
