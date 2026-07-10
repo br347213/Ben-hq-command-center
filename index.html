@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b1320" />
     <title>My Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260709-mcc-1" />
+    <link rel="stylesheet" href="styles.css?v=20260709-value-pass-2" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -14,7 +14,7 @@
     <div class="app-shell">
       <aside class="side-rail" aria-label="Primary navigation">
         <div class="brand-lockup">
-          <img class="brand-mark" src="icons/icon.svg" alt="" />
+          <img class="brand-mark" src="assets/my-command-center-logo.png" alt="" />
           <div class="brand-wordmark">
             <span>My</span>
             <h1>Command Center</h1>
@@ -22,10 +22,6 @@
           </div>
         </div>
         <nav class="nav-list" id="desktopNav"></nav>
-        <button class="rail-review" data-action="open-review" type="button">
-          <span class="status-dot"></span>
-          <span><strong>Weekly review</strong><small>Keep the system current</small></span>
-        </button>
       </aside>
 
       <main class="main-stage">
@@ -43,9 +39,6 @@
             <button class="top-icon-button" data-view="news" aria-label="Search current news" title="Current news">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.8-3.8"></path></svg>
             </button>
-            <button class="top-icon-button" data-action="open-review" aria-label="Open weekly review" title="Weekly review">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
-            </button>
             <button class="profile-button" data-view="settings" aria-label="Open settings">BR</button>
           </div>
         </header>
@@ -59,7 +52,7 @@
             <article class="hero-panel liquid-panel command-hero">
               <div class="hero-copy">
                 <p class="eyebrow" id="heroDate">Thursday, July 9</p>
-                <h2 id="today-heading">What matters today</h2>
+                <h2 id="today-heading">On The Horizon</h2>
                 <p class="summary-text" id="dailyBrief">
                   Your briefing is assembling the most relevant personal signals for today.
                 </p>
@@ -157,152 +150,13 @@
 
         <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Primary mobile navigation"></nav>
 
-        <section class="page-view" id="view-sources">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Personal-only integration layer</p>
-              <h2>Sources</h2>
-            </div>
-            <span class="freshness">1 live source + approved queue</span>
-          </div>
-          <div class="source-layout">
-            <article class="liquid-panel source-principles module-ai">
-              <div class="module-header">
-                <span class="module-icon ai-icon" aria-hidden="true">AI</span>
-                <p class="eyebrow">Connection rules</p>
-              </div>
-              <h3>Every recommendation needs a source trail.</h3>
-              <p>
-                My Command Center can grow into a living knowledge vault, but the rule is simple: connect personal sources only,
-                label where data came from, and keep review controls between raw imports and long-term memory.
-              </p>
-              <div class="source-pill-row">
-                <span class="reason-pill">No work accounts</span>
-                <span class="reason-pill">Read-only first</span>
-                <span class="reason-pill">Review before memory</span>
-                <span class="reason-pill">No direct finance</span>
-              </div>
-            </article>
-            <div class="source-grid" id="sourceGrid"></div>
-            <article class="glass-panel bridge-panel module-ai" id="bridgePanel">
-              <div class="module-header">
-                <span class="module-icon ai-icon" aria-hidden="true">Link</span>
-                <p class="eyebrow">Auto Sync</p>
-              </div>
-              <div class="bridge-panel-copy">
-                <h3>Private context updates automatically when you open My Command Center.</h3>
-                <p class="summary-text">
-                  My Command Center can load encrypted daily packets from the public site, but only your phone can decrypt them after a one-time setup link. This keeps private summaries out of GitHub while removing manual refresh steps.
-                </p>
-              </div>
-              <div class="bridge-helper">
-                <div class="bridge-step">
-                  <strong>1</strong>
-                  <div>
-                    <h4>One-time phone setup.</h4>
-                    <p>Open the private setup link once. My Command Center stores the sync key on this phone and removes it from the address bar.</p>
-                  </div>
-                </div>
-                <div class="bridge-step">
-                  <strong>2</strong>
-                  <div>
-                    <h4>Automatic encrypted updates.</h4>
-                    <p>A scheduled assistant refresh can publish encrypted daily context. The public site only sees unreadable encrypted data.</p>
-                  </div>
-                </div>
-                <div class="bridge-step">
-                  <strong>3</strong>
-                  <div>
-                    <h4>Account approvals are one-time.</h4>
-                    <p>Google can run through connected assistant access. Apple Health and Garmin need a separate authorization path before they can be truly automatic.</p>
-                  </div>
-                </div>
-                <div class="settings-actions bridge-helper-actions">
-                  <button class="secondary-button" data-action="load-starter-packet" type="button">Load starter packet</button>
-                  <button class="secondary-button" data-action="clear-auto-sync" type="button">Reset auto sync</button>
-                </div>
-              </div>
-              <form class="bridge-form" id="bridgeSettingsForm">
-                <label>
-                  <span>Bridge URL</span>
-                  <input id="bridgeUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" />
-                </label>
-                <label>
-                  <span>Passcode</span>
-                  <input id="bridgePasscode" type="password" placeholder="Stored only on this device" autocomplete="off" />
-                </label>
-                <div class="settings-actions">
-                  <button class="secondary-button" type="submit">Save bridge</button>
-                  <button class="secondary-button" data-action="sync-private-bridge" type="button">Sync now</button>
-                  <button class="secondary-button" data-action="import-daily-packet" type="button">Import packet</button>
-                  <button class="text-button danger-text" data-action="clear-private-bridge" type="button">Clear bridge</button>
-                </div>
-                <input class="hidden-file-input" id="dailyPacketInput" type="file" accept="application/json,.json" />
-              </form>
-              <div class="bridge-status-card" id="bridgeStatusCard"></div>
-            </article>
-            <article class="glass-panel context-intake-panel">
-              <div class="module-header">
-                <span class="module-icon ai-icon" aria-hidden="true">In</span>
-                <p class="eyebrow">Manual private intake</p>
-              </div>
-              <h3>Paste personal context for review.</h3>
-              <p class="summary-text">Use this for summaries from Gmail, Calendar, ChatGPT, Apple Notes, Garmin, Apple Health, or anything else personal. It stays in this browser until you export, promote, archive, or reset it.</p>
-              <form class="context-intake-form" id="contextIntakeForm">
-                <div class="context-input-row">
-                  <select id="contextSource" aria-label="Context source">
-                    <option value="ChatGPT">ChatGPT summary</option>
-                    <option value="Gmail">Gmail summary</option>
-                    <option value="Calendar">Calendar note</option>
-                    <option value="Apple Notes">Apple Notes</option>
-                    <option value="Garmin">Garmin summary</option>
-                    <option value="Apple Health">Apple Health summary</option>
-                    <option value="Pokemon GO">Pokemon GO note</option>
-                    <option value="Chess">Chess note</option>
-                    <option value="Personal">General personal note</option>
-                  </select>
-                  <input id="contextTitle" type="text" placeholder="Optional title" />
-                </div>
-                <textarea id="contextBody" rows="5" placeholder="Paste a personal summary, exported note, workout recap, calendar context, or idea to review later."></textarea>
-                <div class="settings-actions">
-                  <button class="secondary-button" type="submit">Save for review</button>
-                  <button class="secondary-button" data-action="import-context-file" type="button">Import file</button>
-                  <button class="text-button" data-action="clear-context-intake" type="button">Clear</button>
-                </div>
-                <input class="hidden-file-input" id="contextFileInput" type="file" accept=".txt,.md,.json,text/plain,text/markdown,application/json" multiple />
-              </form>
-              <div class="context-review-list" id="contextReviewList" aria-live="polite"></div>
-            </article>
-          </div>
-        </section>
-
-        <section class="page-view" id="view-tasks">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Personal operating layer</p>
-              <h2>Tasks Inbox</h2>
-            </div>
-            <span class="freshness">Local only</span>
-          </div>
-          <div class="two-column">
-            <article class="glass-panel">
-              <h3>Inbox</h3>
-              <ul class="task-list" id="taskInbox"></ul>
-            </article>
-            <article class="glass-panel">
-              <h3>Today focus</h3>
-              <ul class="task-list" id="todayTasks"></ul>
-            </article>
-          </div>
-        </section>
-
         <section class="page-view" id="view-calendar">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Planning surface</p>
               <h2>Calendar</h2>
             </div>
-            <span class="freshness" id="calendarFreshness">Internal preview</span>
+            <span class="freshness" id="calendarFreshness">Personal calendar</span>
           </div>
           <div class="calendar-grid" id="calendarGrid"></div>
         </section>
@@ -310,24 +164,13 @@
         <section class="page-view" id="view-training">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Rules before AI</p>
-              <h2>Training Hub</h2>
+              <p class="eyebrow">Garmin + personal context</p>
+              <h2>Fitness Intelligence</h2>
             </div>
-            <span class="freshness" id="trainingFreshness">Generated from constraints</span>
+            <span class="freshness" id="trainingFreshness">Private health data</span>
           </div>
           <div class="training-layout">
-            <article class="liquid-panel training-summary" id="trainingSummaryCard">
-              <p class="eyebrow">This week</p>
-              <h3>Sustainable base week</h3>
-              <p>
-                One quality run, one long run, two strength sessions, and enough easy work to preserve the base.
-              </p>
-              <div class="metric-row">
-                <span><strong>22</strong> miles</span>
-                <span><strong>2</strong> lifts</span>
-                <span><strong>1</strong> quality day</span>
-              </div>
-            </article>
+            <article class="liquid-panel training-summary" id="trainingSummaryCard"></article>
             <article class="glass-panel training-readiness" id="trainingReadinessCard"></article>
             <div class="workout-stack" id="workoutStack"></div>
           </div>
@@ -336,23 +179,23 @@
         <section class="page-view" id="view-pokemon">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Planning companion</p>
+              <p class="eyebrow">Live event briefing</p>
               <h2>Pokemon GO</h2>
             </div>
-            <span class="freshness">PoGoAPI public data</span>
+            <span class="freshness">Current events &amp; news</span>
           </div>
-          <div class="dashboard-grid" id="pokemonCards"></div>
+          <div class="pokemon-events-layout" id="pokemonCards"></div>
         </section>
 
         <section class="page-view" id="view-news">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Public-source briefing</p>
-              <h2>Current News</h2>
+              <p class="eyebrow">Personal news briefing</p>
+              <h2>News</h2>
             </div>
             <span class="freshness" id="newsFreshness">Checking sources</span>
           </div>
-          <div class="dashboard-grid" id="newsCards"></div>
+          <div class="news-layout" id="newsCards"></div>
         </section>
 
         <section class="page-view" id="view-chess">
@@ -361,7 +204,7 @@
               <p class="eyebrow">Casual improvement</p>
               <h2>Chess</h2>
             </div>
-            <span class="freshness">Seeded puzzle</span>
+            <span class="freshness">Daily puzzle</span>
           </div>
           <div class="chess-layout">
             <article class="liquid-panel chess-summary module-chess">
@@ -416,17 +259,6 @@
           </div>
         </section>
 
-        <section class="page-view" id="view-learn">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Curated, not infinite</p>
-              <h2>Learning Queue</h2>
-            </div>
-            <span class="freshness">Seeded</span>
-          </div>
-          <div class="dashboard-grid" id="learningCards"></div>
-        </section>
-
         <section class="page-view" id="view-prompts">
           <div class="section-heading">
             <div>
@@ -438,35 +270,13 @@
           <div class="prompt-grid" id="promptGrid"></div>
         </section>
 
-        <section class="page-view" id="view-library">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Personal knowledge</p>
-              <h2>Library</h2>
-            </div>
-            <span class="freshness" id="libraryFreshness">Local vault</span>
-          </div>
-          <div class="two-column" id="libraryList"></div>
-        </section>
-
-        <section class="page-view" id="view-review">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Low-maintenance reset</p>
-              <h2>Weekly Review</h2>
-            </div>
-            <span class="freshness">12 minute flow</span>
-          </div>
-          <div class="review-board" id="reviewBoard"></div>
-        </section>
-
         <section class="page-view" id="view-settings">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Private by default</p>
               <h2>Settings</h2>
             </div>
-            <span class="freshness">Weather connected</span>
+            <span class="freshness">Personal app</span>
           </div>
           <div class="settings-grid">
             <article class="glass-panel">
@@ -478,8 +288,8 @@
               <p>Personal-only app. No workplace files, email, or workplace applications are connected.</p>
             </article>
             <article class="glass-panel">
-              <h3>Future integrations</h3>
-              <p>Weather, Pokemon GO public data, and Lichess can run on GitHub Pages. Gmail, Calendar, Drive, ChatGPT, Notes, Garmin, and Apple Health need exports or a private bridge. Direct finance accounts are intentionally skipped.</p>
+              <h3>Personal intelligence</h3>
+              <p>Private account connections and data health are managed outside the app. This surface only presents verified personal signals and grounded recommendations.</p>
             </article>
             <article class="glass-panel" id="localDataCard">
               <h3>Local data</h3>
@@ -499,6 +309,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260704-auto-sync-1"></script>
+    <script src="app.js?v=20260709-value-pass-2"></script>
   </body>
 </html>

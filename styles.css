@@ -2100,7 +2100,7 @@ h3 {
 }
 
 .chess-board-wrap {
-  width: min(100%, 520px);
+  width: min(100%, 560px);
   margin: 0 auto;
 }
 
@@ -2135,21 +2135,25 @@ h3 {
 
 .chess-board {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
   width: 100%;
   aspect-ratio: 1;
+  container-type: inline-size;
   overflow: hidden;
-  border: 1px solid rgba(224, 244, 255, 0.22);
-  border-radius: 10px;
-  background: #0a1017;
+  border: 1px solid rgba(205, 242, 246, 0.25);
+  border-radius: 12px;
+  background: #102333;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.035),
-    0 24px 52px rgba(0, 0, 0, 0.34);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 24px 52px rgba(0, 0, 0, 0.3);
 }
 
 .chess-square {
   position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
   min-width: 0;
   min-height: 0;
   border: 0;
@@ -2162,15 +2166,11 @@ h3 {
 }
 
 .chess-square.light {
-  background:
-    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.2), transparent 45%),
-    linear-gradient(145deg, #aeb8bd, #76838b);
+  background: #cbd9d4;
 }
 
 .chess-square.dark {
-  background:
-    radial-gradient(circle at 28% 22%, rgba(124, 231, 255, 0.11), transparent 48%),
-    linear-gradient(145deg, #0e2830, #071116);
+  background: #3f716b;
 }
 
 .chess-square.selected {
@@ -2188,37 +2188,39 @@ h3 {
 .piece {
   position: relative;
   z-index: 2;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  padding-bottom: 4%;
+  width: auto;
+  height: auto;
+  display: block;
+  padding: 0;
   border: 0;
   border-radius: 0;
-  font-family: "Times New Roman", Georgia, serif;
-  font-size: clamp(2rem, 6vw, 3.45rem);
-  line-height: 0.9;
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-size: clamp(1.75rem, 9.4cqi, 4rem);
+  line-height: 1;
   font-weight: 700;
   background: transparent;
-  transform: translateY(1px);
+  transform: translateY(-1%);
   user-select: none;
 }
 
 .piece.white {
-  color: #f6fbff;
+  color: #f7fbfa;
   text-shadow:
-    0 1px 0 #9baab5,
-    0 2px 0 #596673,
-    0 8px 14px rgba(0, 0, 0, 0.42);
-  -webkit-text-stroke: 0.8px rgba(16, 25, 34, 0.72);
+    0 1px 0 #718392,
+    0 5px 10px rgba(11, 19, 32, 0.38);
+  -webkit-text-stroke: 0.9px #173042;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .piece.black {
-  color: #111a22;
+  color: #102333;
   text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.38),
-    0 8px 14px rgba(0, 0, 0, 0.36);
-  -webkit-text-stroke: 0.8px rgba(235, 247, 255, 0.5);
+    0 1px 0 rgba(234, 242, 242, 0.42),
+    0 5px 10px rgba(0, 0, 0, 0.32);
+  -webkit-text-stroke: 0.75px rgba(234, 242, 242, 0.48);
 }
 
 .coord {
@@ -2226,7 +2228,7 @@ h3 {
   z-index: 3;
   color: rgba(238, 245, 255, 0.54);
   font-family: var(--display-font);
-  font-size: clamp(0.52rem, 1.7vw, 0.68rem);
+  font-size: clamp(0.5rem, 1.55cqi, 0.68rem);
   font-weight: 760;
   line-height: 1;
   pointer-events: none;
@@ -2926,9 +2928,9 @@ body::after {
   margin-bottom: 22px;
   padding: 0 4px;
   border: 0;
-  background: rgba(11, 19, 32, 0.72);
+  background: transparent;
   box-shadow: none;
-  backdrop-filter: blur(18px);
+  backdrop-filter: none;
 }
 
 .top-bar-title .eyebrow {
@@ -3439,6 +3441,244 @@ body::after {
   .mobile-bottom-nav .nav-button.active {
     color: var(--cyan);
     background: rgba(23, 179, 166, 0.09);
+  }
+}
+
+.pokemon-events-layout,
+.news-layout {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.calendar-live-day {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.calendar-live-day > strong {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.calendar-chip {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-left: 3px solid var(--teal);
+  border-radius: 10px;
+  color: var(--text);
+  background: rgba(174, 235, 224, 0.055);
+}
+
+.calendar-chip b {
+  color: var(--sea-glass);
+  font-size: 0.76rem;
+}
+
+.calendar-chip small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.calendar-empty-live {
+  grid-column: 1 / -1;
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.pokemon-event-hero {
+  grid-column: 1 / -1;
+  min-height: 290px;
+  padding: 24px;
+}
+
+.pokemon-event-hero .pokemon-brief-art {
+  width: 230px;
+  height: 220px;
+  top: 24px;
+  right: 24px;
+}
+
+.pokemon-event-hero .pokemon-brief-art img {
+  width: 200px;
+  max-height: 210px;
+}
+
+.pokemon-event-card {
+  grid-column: span 4;
+  min-height: 390px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pokemon-event-card .pokemon-card-art {
+  min-height: 160px;
+}
+
+.pokemon-event-card .text-button {
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+.pokemon-bonus-list {
+  display: grid;
+  gap: 7px;
+  margin: 14px 0;
+}
+
+.pokemon-bonus-list span {
+  padding: 8px 10px;
+  border-left: 2px solid rgba(43, 200, 232, 0.48);
+  color: #dbe8ed;
+  background: rgba(174, 235, 224, 0.035);
+  font-size: 0.8rem;
+}
+
+.pokemon-news-card {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
+.pokemon-link-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.pokemon-link-list a {
+  min-height: 86px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--text);
+  text-decoration: none;
+  background: rgba(174, 235, 224, 0.04);
+}
+
+.pokemon-link-list a:hover {
+  border-color: rgba(43, 200, 232, 0.34);
+  background: rgba(23, 179, 166, 0.09);
+}
+
+.pokemon-link-list span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.news-feature-card {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 0;
+  min-height: 430px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.news-feature-card > .news-media {
+  min-height: 430px;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.news-feature-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+.news-feature-content h3 {
+  font-size: clamp(1.55rem, 2.5vw, 2.35rem);
+  line-height: 1.12;
+}
+
+.news-story-card {
+  grid-column: span 4;
+  min-height: 510px;
+  display: flex;
+  flex-direction: column;
+}
+
+.news-story-card > .news-media {
+  min-height: 185px;
+}
+
+.news-story-card .text-button {
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+@media (max-width: 920px) {
+  .pokemon-event-card,
+  .news-story-card {
+    grid-column: span 6;
+  }
+
+  .news-feature-card {
+    grid-template-columns: 1fr;
+  }
+
+  .news-feature-card > .news-media {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 640px) {
+  .pokemon-events-layout,
+  .news-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pokemon-event-hero,
+  .pokemon-event-card,
+  .pokemon-news-card,
+  .news-feature-card,
+  .news-story-card {
+    grid-column: 1;
+  }
+
+  .pokemon-event-hero {
+    min-height: 420px;
+    padding: 18px;
+  }
+
+  .pokemon-event-hero .pokemon-brief-art {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 18px;
+  }
+
+  .pokemon-link-list {
+    grid-template-columns: 1fr;
+  }
+
+  .news-feature-card > .news-media {
+    min-height: 220px;
+  }
+
+  .news-feature-content {
+    padding: 18px;
+  }
+
+  .news-story-card {
+    min-height: 0;
   }
 }
 

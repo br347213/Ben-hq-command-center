@@ -1,23 +1,19 @@
 const navItems = [
   { id: "today", label: "Today", icon: "home" },
   { id: "calendar", label: "Calendar", icon: "calendar" },
-  { id: "tasks", label: "Tasks", icon: "check" },
   { id: "training", label: "Fitness", icon: "activity" },
-  { id: "news", label: "News & Learning", icon: "news" },
+  { id: "news", label: "News", icon: "news" },
   { id: "pokemon", label: "Pokemon GO", icon: "game" },
   { id: "chess", label: "Chess", icon: "chess" },
-  { id: "library", label: "Knowledge", icon: "library" },
   { id: "prompts", label: "AI Tools", icon: "spark" },
-  { id: "review", label: "Review", icon: "review" },
-  { id: "sources", label: "Sources", icon: "database" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
 const mobileNavItems = [
   navItems.find((item) => item.id === "today"),
   navItems.find((item) => item.id === "calendar"),
-  navItems.find((item) => item.id === "tasks"),
   navItems.find((item) => item.id === "training"),
+  navItems.find((item) => item.id === "news"),
   { id: "more", label: "More", icon: "more" },
 ];
 
@@ -395,7 +391,7 @@ const seed = {
       status: "Live public",
       tone: "news",
       icon: "Nw",
-      source: "TechCrunch, VentureBeat, BBC via GDELT, Hacker News, YouTube links",
+      source: "TechCrunch, VentureBeat, BBC via GDELT, YouTube links",
       summary: "A public-source briefing for AI, startups, useful personal tech, platforms, gaming, and internet shifts worth noticing.",
       next: "Add saved interests and YouTube channel feeds once My Command Center has a stronger personal profile.",
     },
@@ -477,7 +473,7 @@ let newsState = {
   overview: "Loading a focused public news briefing...",
   items: [],
   sources: [],
-  sourceNote: "Checking TechCrunch, VentureBeat, BBC, Hacker News, and YouTube radar.",
+  sourceNote: "Checking TechCrunch, VentureBeat, and BBC.",
 };
 let sourceHealthState = {
   weather: "loading",
@@ -757,8 +753,10 @@ const sourceAdapters = {
       events: "https://raw.githubusercontent.com/ccev/pogoinfo/v2/active/events.json",
     },
     async fetch() {
-      const [released, shiny, nesting, raids, events] = await Promise.all(
-        [this.endpoints.released, this.endpoints.shiny, this.endpoints.nesting, this.endpoints.raids, this.endpoints.events].map(async (url) => {
+      const keys = Object.keys(this.endpoints);
+      const settled = await Promise.allSettled(
+        keys.map(async (key) => {
+          const url = this.endpoints[key];
           const response = await fetch(url);
           if (!response.ok) {
             throw new Error(`Pokemon GO public data request failed: ${response.status}`);
@@ -766,7 +764,7 @@ const sourceAdapters = {
           return response.json();
         }),
       );
-      return { released, shiny, nesting, raids, events };
+      return Object.fromEntries(keys.map((key, index) => [key, settled[index].status === "fulfilled" ? settled[index].value : null]));
     },
   },
   news: {
@@ -774,7 +772,6 @@ const sourceAdapters = {
     endpoints: {
       techcrunch: "https://techcrunch.com/wp-json/wp/v2/posts?per_page=10&_embed=1",
       venturebeat: "https://venturebeat.com/wp-json/wp/v2/posts?per_page=10&_embed=1",
-      hackerNews: "https://hn.algolia.com/api/v1/search_by_date?query=AI&tags=story&hitsPerPage=20",
       bbc:
         "https://api.gdeltproject.org/api/v2/doc/doc?query=domain:bbc.com%20technology&mode=artlist&format=json&maxrecords=10&sort=hybridrel",
     },
@@ -799,6 +796,36 @@ const sourceAdapters = {
     },
   },
 };
+
+async function fetchSameOriginSnapshot(path) {
+  const url = new URL(path, window.location.href);
+  url.searchParams.set("v", Date.now());
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Snapshot request failed: ${response.status}`);
+  return response.json();
+}
+
+function normalizeStaticNews(items) {
+  return asArray(items)
+    .map((item) => {
+      const title = stripHtml(item.title);
+      const url = compactText(item.url);
+      if (!title || !url || /hacker news/i.test(item.source || "")) return null;
+      return {
+        id: compactText(item.id, `${item.source || "News"}:${url}`),
+        title,
+        summary: compactSentence(item.summary || item.factualSummary || item.overview || "", 260),
+        url,
+        image: compactText(item.image || item.imageUrl || item.thumbnail),
+        source: compactText(item.source, "News"),
+        sourceKey: compactText(item.sourceKey, compactText(item.source, "news").toLowerCase().replace(/\s+/g, "-")),
+        publishedAt: item.publishedAt || item.date,
+        tags: asArray(item.tags).map((tag) => compactText(tag)).filter(Boolean),
+        takeaways: asArray(item.takeaways).map((takeaway) => compactSentence(takeaway, 170)).filter(Boolean).slice(0, 3),
+      };
+    })
+    .filter(Boolean);
+}
 
 function renderNav(targetId) {
   const target = document.getElementById(targetId);
@@ -1249,8 +1276,21 @@ function normalizePokemonEvent(event, today = new Date()) {
     summary: [spawns && `Spawns: ${spawns}`, raids && `Raids: ${raids}`, shiny && `Shiny checks: ${shiny}`, bonuses[0]].filter(Boolean).join(". "),
     bonuses,
     actions,
+    url: compactText(event.url || event.link || event.website),
+    image: compactText(event.image || event.image_url || event.banner),
     isActive: startDate && endDate ? startDate <= today && endDate >= today : false,
   };
+}
+
+function pokemonEventCountdown(event, now = new Date()) {
+  const target = event?.isActive ? event.end : event?.start;
+  if (!target) return event?.window || "Timing unavailable";
+  const minutes = Math.max(0, Math.round((target.getTime() - now.getTime()) / 60000));
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ${minutes % 60}m`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ${hours % 24}h`;
 }
 
 function isPokemonEventRelevant(event, today = new Date()) {
@@ -1333,7 +1373,10 @@ function normalizeWordPressNews(posts, source) {
         compactText(media?.media_details?.sizes?.large?.source_url) ||
         compactText(media?.media_details?.sizes?.medium_large?.source_url) ||
         compactText(media?.media_details?.sizes?.medium?.source_url) ||
-        compactText(media?.source_url);
+        compactText(media?.source_url) ||
+        compactText(post.jetpack_featured_media_url) ||
+        compactText(post.featured_media_src_url) ||
+        compactText(post.yoast_head_json?.og_image?.[0]?.url);
       if (!title || !url) return null;
       return {
         id: `${source}:${url}`,
@@ -1344,29 +1387,6 @@ function normalizeWordPressNews(posts, source) {
         source,
         sourceKey: source.toLowerCase().replace(/\s+/g, "-"),
         publishedAt: post.date_gmt || post.date,
-      };
-    })
-    .filter(Boolean);
-}
-
-function normalizeHackerNewsNews(payload) {
-  return asArray(payload?.hits)
-    .map((story) => {
-      const title = stripHtml(story.title || story.story_title);
-      const url = compactText(story.url || story.story_url || (story.objectID ? `https://news.ycombinator.com/item?id=${story.objectID}` : ""));
-      if (!title || !url) return null;
-      return {
-        id: `Hacker News:${story.objectID || url}`,
-        title,
-        summary: story.points
-          ? `${story.points} points on Hacker News. Use this as a tech-community pulse, not a definitive source.`
-          : "Recent Hacker News discussion signal.",
-        url,
-        image: "",
-        source: "Hacker News",
-        sourceKey: "hacker-news",
-        publishedAt: story.created_at,
-        points: Number(story.points) || 0,
       };
     })
     .filter(Boolean);
@@ -1401,13 +1421,9 @@ function normalizeNewsResults(results) {
         ? "TechCrunch"
         : result.name === "venturebeat"
           ? "VentureBeat"
-          : result.name === "hackerNews"
-            ? "Hacker News"
-            : "BBC / GDELT";
+          : "BBC";
     const normalized =
-      result.name === "hackerNews"
-        ? normalizeHackerNewsNews(result.value)
-        : result.name === "bbc"
+      result.name === "bbc"
           ? normalizeGdeltNews(result.value)
           : normalizeWordPressNews(result.value, label);
     sources.push({
@@ -1443,28 +1459,18 @@ function normalizeNewsResults(results) {
 
 function newsBriefSummary(item) {
   const summary = compactSentence(item.summary || "", 210);
-  if (summary && !/points on hacker news|tech-community pulse/i.test(summary)) return summary;
-  const title = item.title || "This story";
-  if (item.tags?.includes("AI")) return `${title} points to another place where AI is moving from abstract capability into real products, policy, security, or everyday tools.`;
-  if (item.tags?.includes("Startups")) return `${title} is a startup and market-structure signal: funding, acquisitions, new products, or company momentum worth tracking.`;
-  if (item.tags?.includes("Personal tech")) return `${title} may affect the apps, devices, platforms, or services people actually use day to day.`;
-  if (item.tags?.includes("Security")) return `${title} is a security/privacy story with practical implications for accounts, devices, or software trust.`;
-  return `${title} is a current tech story surfaced because it overlaps with the briefing lanes My Command Center is watching.`;
+  return summary;
 }
 
 function newsKeyTakeaways(item) {
-  const tags = item.tags || [];
-  const takeaways = [];
-  if (tags.includes("AI")) takeaways.push("AI is showing up as a product layer, not just a research headline.");
-  if (tags.includes("Startups")) takeaways.push("Watch whether this is durable traction or funding-cycle noise.");
-  if (tags.includes("Personal tech")) takeaways.push("Potential downstream impact is on apps, devices, platforms, or user habits.");
-  if (tags.includes("Productivity")) takeaways.push("This may translate into a workflow or automation pattern worth borrowing.");
-  if (tags.includes("Security")) takeaways.push("Security angle: look for practical account, data, or device exposure.");
-  if (tags.includes("Health tech")) takeaways.push("Health-tech angle: useful if it changes patient access, tracking, or recommendations.");
-  if (tags.includes("Gaming")) takeaways.push("Gaming angle: relevant when it affects platforms, communities, or family-friendly play.");
-  if (!takeaways.length) takeaways.push("Skim the source only if the headline connects to a current project or decision.");
-  takeaways.push(`${item.source} has the full context.`);
-  return takeaways.slice(0, 3);
+  const supplied = asArray(item.takeaways).map((takeaway) => compactSentence(takeaway, 150)).filter((takeaway) => takeaway.length > 24).slice(0, 2);
+  if (supplied.length) return supplied;
+  const summary = stripHtml(item.summary || "");
+  return summary
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => compactSentence(sentence, 150))
+    .filter((sentence) => sentence.length > 24)
+    .slice(0, 2);
 }
 
 function buildNewsOverview(items = newsState.items) {
@@ -1590,48 +1596,42 @@ function parseMetricNumber(value) {
 }
 
 function classifyReadiness(health = {}, training = {}) {
-  const explicit = compactText(health.readiness || training.readiness || training.status);
-  const sleep = parseMetricNumber(health.sleepHours || health.sleep || training.sleep);
-  const stress = parseMetricNumber(health.stress || training.stress);
-  const restingHr = parseMetricNumber(health.restingHr || health.restingHeartRate || training.restingHr);
-  const load = parseMetricNumber(training.load || training.trainingLoad);
-
-  if (/low|tired|poor|red|strained|sick/i.test(explicit)) return "Low";
-  if (/high|green|ready|fresh|good/i.test(explicit)) return "Good";
-  if (sleep !== null && sleep < 6) return "Low";
-  if (stress !== null && stress >= 70) return "Low";
-  if (load !== null && load >= 8) return "Caution";
-  if (restingHr !== null && restingHr >= 70) return "Caution";
-  return explicit || "Normal";
+  return compactText(health.readiness || training.readiness || training.status, "Unscored");
 }
 
 function buildTrainingIntelligence() {
   const training = privateDaily.training || {};
   const health = privateDaily.health || {};
   const readiness = classifyReadiness(health, training);
-  const sleep = firstText(health.sleepHours, health.sleep, training.sleep, "--");
-  const steps = firstText(health.steps, training.steps, "--");
-  const lastWorkout = firstText(training.lastWorkout, health.lastWorkout, training.lastActivity, "No recent import");
-  const source = hasPrivateDailyData() && (Object.keys(training).length || Object.keys(health).length) ? "Private health packet" : "Training rules";
+  const sleep = firstText(health.sleepHours, health.sleep, training.sleep);
+  const steps = firstText(health.steps, training.steps);
+  const lastWorkout = firstText(training.lastWorkout, health.lastWorkout, training.lastActivity);
+  const source = "Garmin + private daily packet";
   const recommended = training.recommendedWorkout || training.today || training.recommendation || {};
   const recommendedObject = typeof recommended === "object" && recommended ? recommended : { title: recommended };
-
-  let title = compactText(recommendedObject.title, "Easy run or mobility reset");
-  let detail = compactText(
-    recommendedObject.detail || recommendedObject.summary || training.summary || health.readinessNote,
-    "Keep the work useful but recoverable. The goal is consistency, not proving fitness today.",
-  );
-  let fallback = compactText(recommendedObject.fallback || training.fallback || health.recoveryNote, "20 minutes mobility and core");
-
-  if (readiness === "Low") {
-    title = "Mobility reset or very easy walk";
-    detail = "Recovery signal is low. Preserve the habit, skip strain, and make tomorrow easier.";
-    fallback = "Rest without guilt";
-  } else if (readiness === "Caution") {
-    title = compactText(recommendedObject.title, "Short easy run");
-    detail = "Keep the planned work capped. No pace target, no fast finish, stop while it still feels easy.";
-    fallback = "Cut volume by 30-50%";
-  }
+  const title = compactText(recommendedObject.title);
+  const detail = compactText(recommendedObject.detail || recommendedObject.summary || training.summary || health.readinessNote);
+  const fallback = compactText(recommendedObject.fallback || training.fallback || health.recoveryNote);
+  const packetInsights = asArray(training.insights || health.insights)
+    .map((item) => {
+      if (typeof item === "string") return { label: "Insight", value: item, detail: "" };
+      if (!item || typeof item !== "object") return null;
+      return {
+        label: compactText(item.label || item.type, "Insight"),
+        value: firstText(item.value, item.title, item.metric),
+        detail: compactText(item.detail || item.summary || item.reason),
+      };
+    })
+    .filter((item) => item?.value);
+  const factualSignals = [
+    sleep && { label: "Sleep", value: sleep, detail: compactText(health.sleepNote) },
+    firstText(health.hrv, health.hrvStatus) && {
+      label: "HRV",
+      value: firstText(health.hrv, health.hrvStatus),
+      detail: compactText(health.hrvNote || health.hrvTrend),
+    },
+    lastWorkout && { label: "Last activity", value: lastWorkout, detail: compactText(training.lastWorkoutDetail || health.lastWorkoutDetail) },
+  ].filter(Boolean);
 
   return {
     readiness,
@@ -1641,25 +1641,9 @@ function buildTrainingIntelligence() {
     source,
     title,
     detail,
-    duration: firstText(recommendedObject.duration, training.duration, readiness === "Low" ? "10-25 min" : "25-40 min"),
+    duration: firstText(recommendedObject.duration, training.duration),
     fallback,
-    rules: [
-      {
-        label: "Readiness",
-        value: readiness,
-        detail: compactText(health.readinessNote || training.readinessNote, detail),
-      },
-      {
-        label: "Last",
-        value: lastWorkout,
-        detail: compactText(training.lastWorkoutDetail || health.lastWorkoutDetail, "Use recent activity context before adding more load."),
-      },
-      {
-        label: "Rule",
-        value: readiness === "Good" ? "Build gently" : "Protect recovery",
-        detail: fallback,
-      },
-    ],
+    rules: (packetInsights.length ? packetInsights : factualSignals).slice(0, 4),
   };
 }
 
@@ -2003,7 +1987,6 @@ function localDataSnapshot() {
 
 function refreshLocalSurfaces() {
   renderTodayInsights();
-  renderTasks();
   renderTodayAgenda();
   renderTodayWorkout();
   renderTodayPokemon();
@@ -2011,7 +1994,6 @@ function refreshLocalSurfaces() {
   renderCalendar();
   renderTrainingOverview();
   renderPrivatePulse();
-  renderLibrary();
   renderContextReview();
   renderBridgePanel();
   renderLocalDataSettings();
@@ -2178,7 +2160,28 @@ function renderPriorities() {
 }
 
 function hasTrainingContext() {
-  return Boolean(Object.keys(privateDaily.training || {}).length || Object.keys(privateDaily.health || {}).length);
+  const training = privateDaily.training || {};
+  const health = privateDaily.health || {};
+  const readiness = firstText(health.readiness, training.readiness, training.status);
+  const recommendation = training.recommendedWorkout || training.today || training.recommendation;
+  const metricValues = [
+    health.sleepHours,
+    health.sleep,
+    health.hrv,
+    health.hrvStatus,
+    health.restingHr,
+    health.bodyBattery,
+    health.stress,
+    health.steps,
+    training.weeklyLoad,
+    training.load,
+    training.lastWorkout,
+  ];
+  return Boolean(
+    (readiness && !/unknown|configured|unavailable/i.test(readiness)) ||
+      (typeof recommendation === "string" ? recommendation.trim() : recommendation?.title || recommendation?.detail) ||
+      metricValues.some((value) => value !== undefined && value !== null && String(value).trim() && String(value) !== "--"),
+  );
 }
 
 function buildTodayPriorities() {
@@ -2206,7 +2209,7 @@ function buildTodayPriorities() {
 
   if (hasTrainingContext()) {
     const training = buildTrainingIntelligence();
-    priorities.push({ title: training.title, meta: `${training.duration} - ${training.detail}` });
+    if (training.title) priorities.push({ title: training.title, meta: [training.duration, training.detail].filter(Boolean).join(" - ") });
   }
 
   if (!priorities.length) {
@@ -2420,49 +2423,61 @@ function renderTasks() {
 
 function renderCalendar() {
   const privateEvents = privateDaily.calendarEvents.slice(0, 8);
-  const privateCards = privateEvents.length
-    ? [
-        `
-          <article class="day-card module-calendar">
-            <strong>Today</strong>
-            ${privateEvents.map((event) => `<span class="calendar-chip">${escapeHtml(event.time)} - ${escapeHtml(event.title)}</span>`).join("")}
-          </article>
-        `,
-      ]
-    : [];
-  const seedCards = seed.calendar
-    .map(
-      (day) => `
-        <article class="day-card">
-          <strong>${day.day}</strong>
-          ${day.events.map((event) => `<span class="calendar-chip">${event}</span>`).join("")}
+  const calendarSource = privateDaily.sources.find((source) => /calendar/i.test(source.name));
+  document.getElementById("calendarGrid").innerHTML = privateEvents.length
+    ? `
+        <article class="day-card module-calendar calendar-live-day">
+          <strong>Upcoming</strong>
+          ${privateEvents.map((event) => `<span class="calendar-chip"><b>${escapeHtml(event.time)}</b>${escapeHtml(event.title)}${event.detail ? `<small>${escapeHtml(event.detail)}</small>` : ""}</span>`).join("")}
         </article>
-      `,
-    );
-  document.getElementById("calendarGrid").innerHTML = [...privateCards, ...seedCards].join("");
+      `
+    : calendarSource
+      ? `<article class="glass-panel calendar-empty-live"><p class="eyebrow">Personal calendar checked</p><h3>No upcoming events</h3><p>Your connected personal calendar is clear in the current briefing window.</p></article>`
+      : "";
   const freshness = document.getElementById("calendarFreshness");
-  if (freshness) freshness.textContent = privateEvents.length ? privateDailyFreshness() : "Internal preview";
+  if (freshness) freshness.textContent = calendarSource ? privateDailyFreshness() : "Personal calendar only";
 }
 
 function renderTrainingOverview() {
-  const hasPrivateTraining = hasPrivateDailyData() && (Object.keys(privateDaily.training || {}).length || Object.keys(privateDaily.health || {}).length);
+  const hasPrivateTraining = hasTrainingContext();
   const training = privateDaily.training || {};
   const health = privateDaily.health || {};
-  const decision = buildTrainingIntelligence();
-  const title = hasPrivateTraining ? compactText(training.title || health.title, seed.training.title) : seed.training.title;
-  const summaryText = hasPrivateTraining
-    ? compactText(training.summary || health.summary || health.readinessNote, seed.training.summary)
-    : seed.training.summary;
-  const metrics = hasPrivateTraining
-    ? [
-        { value: compactText(decision.sleep, "--"), label: "sleep" },
-        { value: compactText(decision.steps, "--"), label: "steps" },
-        { value: compactText(decision.readiness, "check"), label: "readiness" },
-      ]
-    : seed.training.metrics;
-  const readinessItems = hasPrivateTraining ? decision.rules : seed.training.readiness;
   const summaryCard = document.getElementById("trainingSummaryCard");
+  const readinessCard = document.getElementById("trainingReadinessCard");
+  const workoutStack = document.getElementById("workoutStack");
+
+  if (!hasPrivateTraining) {
+    if (summaryCard) {
+      summaryCard.hidden = false;
+      summaryCard.innerHTML = `<p class="eyebrow">Verified data only</p><h3>No Garmin analysis available today</h3><p>Fitness stays quiet until the private sync produces real health or activity metrics.</p>`;
+    }
+    if (readinessCard) readinessCard.hidden = true;
+    if (workoutStack) workoutStack.innerHTML = "";
+    const freshness = document.getElementById("trainingFreshness");
+    if (freshness) freshness.textContent = "No verified metrics";
+    return;
+  }
+
+  const decision = buildTrainingIntelligence();
+  if (!decision.title) {
+    if (summaryCard) summaryCard.hidden = true;
+    if (readinessCard) readinessCard.hidden = true;
+    if (workoutStack) workoutStack.innerHTML = "";
+    return;
+  }
+  const title = compactText(training.title || health.title, "Current Garmin picture");
+  const summaryText = compactText(training.summary || health.summary || health.readinessNote, decision.detail);
+  const metrics = [
+    { value: firstText(health.sleepHours, health.sleep), label: "sleep" },
+    { value: firstText(health.hrv, health.hrvStatus), label: "HRV" },
+    { value: firstText(health.restingHr, health.restingHeartRate), label: "resting HR" },
+    { value: firstText(health.bodyBattery, health.stress), label: health.bodyBattery ? "body battery" : "stress" },
+    { value: firstText(training.weeklyLoad, training.load), label: "weekly load" },
+    { value: firstText(health.steps, training.steps), label: "steps" },
+  ].filter((metric) => metric.value).slice(0, 4);
+  const readinessItems = decision.rules;
   if (summaryCard) {
+    summaryCard.hidden = false;
     summaryCard.innerHTML = `
       <p class="eyebrow">This week</p>
       <h3>${escapeHtml(title)}</h3>
@@ -2480,14 +2495,14 @@ function renderTrainingOverview() {
     `;
   }
 
-  const readinessCard = document.getElementById("trainingReadinessCard");
   if (readinessCard) {
+    readinessCard.hidden = !readinessItems.length;
     readinessCard.innerHTML = `
       <div class="module-header">
         <span class="module-icon training-icon" aria-hidden="true">Fit</span>
-        <p class="eyebrow">Readiness rules</p>
+        <p class="eyebrow">Garmin + AI interpretation</p>
       </div>
-      <h3>Choose the version that protects tomorrow.</h3>
+      <h3>${escapeHtml(decision.readiness)} readiness</h3>
       <div class="training-rule-list">
         ${readinessItems
           .map(
@@ -2506,37 +2521,39 @@ function renderTrainingOverview() {
     `;
   }
   const freshness = document.getElementById("trainingFreshness");
-  if (freshness) freshness.textContent = hasPrivateTraining ? privateDailyFreshness() : "Generated from constraints";
+  if (freshness) freshness.textContent = privateDailyFreshness();
 }
 
 function renderWorkouts() {
-  document.getElementById("workoutStack").innerHTML = seed.workouts
+  const target = document.getElementById("workoutStack");
+  if (!target || !hasTrainingContext()) return;
+  const training = privateDaily.training || {};
+  const recommended = training.recommendedWorkout || training.today || training.recommendation;
+  const recommendedObject = typeof recommended === "object" && recommended ? recommended : recommended ? { title: recommended } : null;
+  const workouts = asArray(training.workouts || training.plan || training.sessions);
+  if (recommendedObject?.title) workouts.unshift(recommendedObject);
+  target.innerHTML = workouts.slice(0, 4)
     .map(
       (workout) => `
         <article class="glass-card workout-detail-card module-training">
           <div class="module-header">
             <span class="module-icon training-icon" aria-hidden="true">Run</span>
-            <p class="eyebrow">${escapeHtml(workout.tag)} - ${escapeHtml(workout.meta)}</p>
+            <p class="eyebrow">${escapeHtml(workout.tag || "Recommended session")}${workout.meta ? ` · ${escapeHtml(workout.meta)}` : ""}</p>
           </div>
           <div class="workout-detail-head">
             <h3>${escapeHtml(workout.title)}</h3>
-            <span class="source-badge">${escapeHtml(workout.meta)}</span>
+            ${workout.duration ? `<span class="source-badge">${escapeHtml(workout.duration)}</span>` : ""}
           </div>
-          <p>${escapeHtml(workout.purpose)}</p>
+          ${workout.purpose || workout.detail || workout.summary ? `<p>${escapeHtml(workout.purpose || workout.detail || workout.summary)}</p>` : ""}
           <div class="workout-prescription">
             <div>
-              <strong>Do this</strong>
-              <ol>
-                ${workout.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
-              </ol>
+              <strong>Session</strong>
+              <ol>${asArray(workout.steps || workout.prescription).map((step) => `<li>${escapeHtml(typeof step === "string" ? step : step.detail || step.title)}</li>`).join("")}</ol>
             </div>
             <div>
-              <strong>If tired</strong>
-              <p>${escapeHtml(workout.fallback)}</p>
+              <strong>Adjustment</strong>
+              <p>${escapeHtml(workout.fallback || workout.adjustment || "Use the grounded recommendation above.")}</p>
             </div>
-          </div>
-          <div class="tag-row">
-            ${workout.checklist.map((item) => `<span class="tag-pill">${escapeHtml(item)}</span>`).join("")}
           </div>
         </article>
       `,
@@ -2547,94 +2564,70 @@ function renderWorkouts() {
 function renderPokemon() {
   const activeEvents = currentPokemonEvents();
   const featuredEvent = primaryPokemonEvent();
-  const eventCards = activeEvents.slice(0, 4).map((event) => {
-    const actions = pokemonActionPlan(event);
+  const eventCards = activeEvents.slice(featuredEvent ? 1 : 0, featuredEvent ? 7 : 6).map((event) => {
     const bonuses = asArray(event.bonuses).slice(0, 3);
-    const artwork = pokemonArtworkForEvent(event);
+    const artwork = event.image || pokemonArtworkForEvent(event);
     return `
         <article class="glass-card action-card module-pokemon pokemon-event-card ${event.isActive ? "is-active" : ""}">
           <div class="pokemon-card-art" aria-hidden="true">
             <img src="${escapeHtml(artwork)}" alt="" loading="lazy" />
-            <span>${escapeHtml(event.isActive ? "Now" : "Soon")}</span>
+            <span>${escapeHtml(event.isActive ? "Happening now" : `Starts in ${pokemonEventCountdown(event)}`)}</span>
           </div>
           <div class="module-header">
-            <span class="module-icon pokemon-icon" aria-hidden="true">${event.isActive ? "Now" : "GO"}</span>
-            <p class="eyebrow">${escapeHtml(event.type)} - ${escapeHtml(event.window)}</p>
+            <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
+            <p class="eyebrow">${escapeHtml(event.type)} · ${escapeHtml(event.window)}</p>
           </div>
           <h3>${escapeHtml(event.title)}</h3>
           <p>${escapeHtml(summarizePokemonEvent(event))}</p>
           ${
             bonuses.length
-              ? `<div class="tag-row">${bonuses.map((bonus) => `<span class="tag-pill">${escapeHtml(bonus)}</span>`).join("")}</div>`
+              ? `<div class="pokemon-bonus-list">${bonuses.map((bonus) => `<span>${escapeHtml(bonus)}</span>`).join("")}</div>`
               : ""
           }
-          <ul class="check-list">
-            ${actions.map((action) => `<li class="check-item"><span class="task-check"></span><span>${escapeHtml(action)}</span></li>`).join("")}
-          </ul>
-          <span class="source-badge">${escapeHtml(event.source)}</span>
+          ${event.url ? `<a class="text-button" href="${escapeHtml(event.url)}" target="_blank" rel="noreferrer">Event details</a>` : ""}
         </article>
       `;
   });
 
-  const todayBrief = `
-        <article class="liquid-panel action-card module-pokemon pokemon-brief-card">
+  const todayBrief = featuredEvent
+    ? `
+        <article class="liquid-panel action-card module-pokemon pokemon-brief-card pokemon-event-hero">
           <div class="pokemon-brief-art" aria-hidden="true">
-            <img src="${escapeHtml(pokemonArtworkForEvent(featuredEvent))}" alt="" loading="lazy" />
+            <img src="${escapeHtml(featuredEvent.image || pokemonArtworkForEvent(featuredEvent))}" alt="" loading="lazy" />
             <span></span>
           </div>
           <div class="module-header">
             <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
-            <p class="eyebrow">Today's Pokemon plan</p>
+            <p class="eyebrow">${escapeHtml(featuredEvent.isActive ? "Happening now" : "Next major event")}</p>
           </div>
-          <h3>${escapeHtml(featuredEvent?.title || "Pokemon GO")}</h3>
+          <h3>${escapeHtml(featuredEvent.title)}</h3>
           <p>${escapeHtml(summarizePokemonEvent(featuredEvent))}</p>
           <div class="pokemon-decision-grid">
-            <span><strong>${escapeHtml(featuredEvent?.isActive ? "Play" : "Prep")}</strong> decision</span>
-            <span><strong>${escapeHtml(featuredEvent?.window || "Timing TBD")}</strong> window</span>
-            <span><strong>${escapeHtml(pokemonLiveState.sourceNote)}</strong> source</span>
+            <span><strong>${escapeHtml(featuredEvent.isActive ? `Ends in ${pokemonEventCountdown(featuredEvent)}` : `Starts in ${pokemonEventCountdown(featuredEvent)}`)}</strong> countdown</span>
+            <span><strong>${escapeHtml(featuredEvent.window)}</strong> local time</span>
+            <span><strong>${escapeHtml(featuredEvent.type)}</strong> event type</span>
+          </div>
+        </article>
+      `
+    : "";
+
+  const newsCard = `
+        <article class="glass-card action-card module-pokemon pokemon-news-card">
+          <div class="module-header">
+            <span class="module-icon pokemon-icon" aria-hidden="true">Nw</span>
+            <p class="eyebrow">News & calendars</p>
+          </div>
+          <h3>Follow the live game</h3>
+          <p>Official announcements and two event calendars for deeper details beyond this briefing.</p>
+          <div class="pokemon-link-list">
+            <a href="https://pokemongolive.com/news?hl=en" target="_blank" rel="noreferrer"><strong>Official Pokemon GO news</strong><span>Announcements and feature updates</span></a>
+            <a href="https://leekduck.com/events/" target="_blank" rel="noreferrer"><strong>Leek Duck events</strong><span>Visual current-event coverage</span></a>
+            <a href="https://pogocalendar.com/" target="_blank" rel="noreferrer"><strong>PoGO Calendar</strong><span>Month and event timeline</span></a>
           </div>
         </article>
   `;
 
-  const liveCard = `
-        <article class="glass-card action-card module-pokemon">
-          <div class="module-header">
-            <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
-            <p class="eyebrow">${escapeHtml(pokemonLiveState.status)} public pulse</p>
-          </div>
-          <h3>Live reference data</h3>
-          <p>Account-free public data for released Pokemon, shiny availability, nesting species, raid tiers, and current-event checks.</p>
-          <div class="weather-metrics source-metrics" aria-label="Pokemon GO public data">
-            <span><strong>${pokemonLiveState.released}</strong> released</span>
-            <span><strong>${pokemonLiveState.shiny}</strong> shiny</span>
-            <span><strong>${pokemonLiveState.nesting}</strong> nesting</span>
-            <span><strong>${pokemonLiveState.raids}</strong> raid slots</span>
-          </div>
-          <div class="source-row">
-            <span class="source-badge">${escapeHtml(pokemonLiveState.sourceNote)}</span>
-            <button class="text-button" data-action="refresh-pokemon" type="button">Refresh</button>
-          </div>
-          ${pokemonLiveState.updated ? `<p class="item-meta">Updated ${pokemonLiveState.updated}</p>` : ""}
-        </article>
-  `;
-
-  const planningCards = seed.pokemon.map(
-    (card) => `
-        <article class="glass-card action-card module-pokemon">
-          <div class="module-header">
-            <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
-            <p class="eyebrow">${card.source}</p>
-          </div>
-          <h3>${escapeHtml(card.title)}</h3>
-          <p>${escapeHtml(card.summary)}</p>
-          <ul class="check-list">
-            ${card.actions.map((action) => `<li class="check-item"><span class="task-check"></span><span>${escapeHtml(action)}</span></li>`).join("")}
-          </ul>
-        </article>
-      `,
-  );
-
-  document.getElementById("pokemonCards").innerHTML = [todayBrief, liveCard, ...eventCards, ...planningCards.slice(2)].join("");
+  document.getElementById("pokemonCards").innerHTML = [todayBrief, ...eventCards, newsCard].join("");
 }
 
 function renderNews() {
@@ -2660,47 +2653,47 @@ function renderNews() {
     return;
   }
 
+  const featured = items[0];
+  const featuredTakeaways = newsKeyTakeaways(featured);
   const overviewCard = `
-    <article class="liquid-panel action-card module-news news-brief-card">
-      <div class="news-hero-strip">
-        ${items.slice(0, 3).map((item) => renderNewsMedia(item, true)).join("")}
-      </div>
-      <div class="module-header">
-        <span class="module-icon news-icon" aria-hidden="true">Nw</span>
-        <p class="eyebrow">Briefing</p>
-      </div>
-      <h3>Current stories worth scanning</h3>
-      <p>${escapeHtml(newsState.overview)}</p>
-      <div class="source-row">
-        <span class="source-badge">${escapeHtml(newsState.updated ? `Updated ${newsState.updated}` : "Updating automatically")}</span>
-        <button class="text-button" data-action="refresh-news" type="button">Refresh</button>
+    <article class="liquid-panel action-card module-news news-feature-card">
+      ${renderNewsMedia(featured)}
+      <div class="news-feature-content">
+        <div class="module-header">
+          <span class="module-icon news-icon" aria-hidden="true">Nw</span>
+          <p class="eyebrow">${escapeHtml(featured.source)} · ${escapeHtml(relativeTime(featured.publishedAt))}</p>
+        </div>
+        <h3>${escapeHtml(featured.title)}</h3>
+        ${newsBriefSummary(featured) ? `<p>${escapeHtml(newsBriefSummary(featured))}</p>` : ""}
+        ${
+          featuredTakeaways.length
+            ? `<div class="news-takeaways"><span>Key takeaways</span><ul>${featuredTakeaways.map((takeaway) => `<li>${escapeHtml(takeaway)}</li>`).join("")}</ul></div>`
+            : ""
+        }
+        <a class="text-button" href="${escapeHtml(featured.url)}" target="_blank" rel="noreferrer">Read full story</a>
       </div>
     </article>
   `;
 
-  const storyCards = items.slice(0, 8).map(
-    (item) => `
+  const storyCards = items.slice(1, 9).map((item) => {
+    const takeaways = newsKeyTakeaways(item);
+    return `
       <article class="glass-card action-card module-news news-story-card">
         ${renderNewsMedia(item)}
         <div class="module-header">
-          <span class="module-icon news-icon" aria-hidden="true">${escapeHtml(item.sourceKey === "hacker-news" ? "HN" : item.sourceKey === "bbc" ? "BBC" : "Nw")}</span>
-          <p class="eyebrow">${escapeHtml(item.source)} - ${escapeHtml(relativeTime(item.publishedAt))}</p>
+          <span class="module-icon news-icon" aria-hidden="true">${escapeHtml(item.sourceKey === "bbc" ? "BBC" : "Nw")}</span>
+          <p class="eyebrow">${escapeHtml(item.source)} · ${escapeHtml(relativeTime(item.publishedAt))}</p>
         </div>
         <h3>${escapeHtml(item.title)}</h3>
-        <p>${escapeHtml(newsBriefSummary(item))}</p>
+        ${newsBriefSummary(item) ? `<p>${escapeHtml(newsBriefSummary(item))}</p>` : ""}
         <div class="news-tag-row">
           ${(item.tags || []).slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
         </div>
-        <div class="news-takeaways">
-          <span>Key takeaways</span>
-          <ul>
-            ${newsKeyTakeaways(item).map((takeaway) => `<li>${escapeHtml(takeaway)}</li>`).join("")}
-          </ul>
-        </div>
+        ${takeaways.length ? `<div class="news-takeaways"><span>Key takeaways</span><ul>${takeaways.map((takeaway) => `<li>${escapeHtml(takeaway)}</li>`).join("")}</ul></div>` : ""}
         <a class="text-button" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Read source</a>
       </article>
-    `,
-  );
+    `;
+  });
 
   target.innerHTML = [overviewCard, ...storyCards].join("");
 }
@@ -2954,7 +2947,6 @@ function renderPrivatePulse() {
       </div>
       <h3>Private sources ready</h3>
       <p>Connect the daily bridge or import a packet to surface Gmail, Calendar, Drive, Notes, Garmin, and Apple Health summaries here.</p>
-      <button class="text-button" data-view="sources">Set up sources</button>
     `;
     return;
   }
@@ -3112,7 +3104,7 @@ function renderDailySignals() {
   const briefParts = [
     nextAgenda ? `${nextAgenda.time || "Next"}: ${nextAgenda.title}.` : "",
     pokemonEvent ? `${pokemonEvent.title} ${pokemonEvent.isActive ? "is active" : `is next ${pokemonEvent.window}`}.` : "",
-    trainingDecision ? `Fitness: ${trainingDecision.title} (${trainingDecision.readiness} readiness).` : "",
+    trainingDecision?.title ? `Fitness: ${trainingDecision.title} (${trainingDecision.readiness} readiness).` : "",
     weatherState.status === "live" ? `Arden is ${weatherState.temp} with ${weatherState.summary.toLowerCase()}` : "",
   ].filter(Boolean);
   const priorities = buildTodayPriorities();
@@ -3204,18 +3196,9 @@ function renderBridgePanel() {
 function renderLocalDataSettings() {
   const target = document.getElementById("localDataCard");
   if (!target) return;
-  const memoryCount = localMemoryItems().length;
-  const completedCount = completedTasks.size;
-  const reviewCount = pendingContextImports().length;
   target.innerHTML = `
-    <h3>Local data</h3>
-    <p>Captures and checkmarks stay in this browser only. Export before clearing browser data or switching devices.</p>
-    <div class="local-data-metrics">
-      <span><strong>${capturedItems.length}</strong> captures</span>
-      <span><strong>${memoryCount}</strong> memory</span>
-      <span><strong>${reviewCount}</strong> review</span>
-      <span><strong>${completedCount}</strong> done</span>
-    </div>
+    <h3>Device data</h3>
+    <p>Private preferences and briefing access stay on this device. Export only when moving to another browser.</p>
     <div class="settings-actions">
       <button class="secondary-button" data-action="export-local-data" type="button">Export</button>
       <button class="secondary-button" data-action="import-local-data" type="button">Import</button>
@@ -3228,19 +3211,13 @@ function renderLocalDataSettings() {
   if (!packetTarget) return;
   const hasPacket = hasPrivateDailyData();
   packetTarget.innerHTML = `
-    <h3>Private packet</h3>
-    <p>${hasPacket ? "Daily summaries are loaded on this device." : "No private daily packet has been imported on this device yet."}</p>
-    <div class="local-data-metrics">
-      <span><strong>${privateDaily.mail.highlights.length}</strong> mail</span>
-      <span><strong>${privateDaily.calendarEvents.length}</strong> events</span>
-      <span><strong>${privateDaily.notes.items.length + privateDaily.drive.items.length}</strong> notes/files</span>
-      <span><strong>${privateDaily.recommendations.length}</strong> recs</span>
-    </div>
+    <h3>Personal briefing</h3>
+    <p>${hasPacket ? `Latest private briefing loaded ${escapeHtml(privateDailyFreshness().toLowerCase())}.` : "The automatic personal briefing has not produced a verified update on this device yet."}</p>
     <div class="settings-actions">
-      <button class="secondary-button" data-view="sources" type="button">Sources</button>
       <button class="secondary-button" data-action="import-daily-packet" type="button">Import packet</button>
       <button class="text-button danger-text" data-action="clear-private-daily" type="button">Clear packet</button>
     </div>
+    <input class="hidden-file-input" id="dailyPacketInput" type="file" accept="application/json,.json" />
   `;
 }
 
@@ -3699,33 +3676,37 @@ async function refreshPokemonLiveData() {
   renderIntelligence();
 
   try {
-    const data = await sourceAdapters.pogo.fetch();
+    const [snapshotResult, publicResult] = await Promise.allSettled([
+      fetchSameOriginSnapshot("data/pokemon-events.json"),
+      sourceAdapters.pogo.fetch(),
+    ]);
+    const snapshotEvents = snapshotResult.status === "fulfilled" ? normalizePokemonEvents(snapshotResult.value?.events) : [];
+    const data = publicResult.status === "fulfilled" ? publicResult.value : {};
     const activeEvents = normalizePokemonEvents(data.events);
     const fallbackEvents = fallbackPokemonEvents().map((event) => normalizePokemonEvent(event)).filter(Boolean).sort(sortPokemonEvents);
-    const usableEvents = (activeEvents.length ? activeEvents : fallbackEvents).sort(sortPokemonEvents);
+    const usableEvents = (snapshotEvents.length ? snapshotEvents : activeEvents.length ? activeEvents : fallbackEvents).sort(sortPokemonEvents);
     pokemonLiveState = {
-      status: "live",
+      status: usableEvents.length || publicResult.status === "fulfilled" ? "live" : "offline",
       released: formatInteger(objectCount(data.released)),
       shiny: formatInteger(objectCount(data.shiny)),
       nesting: formatInteger(objectCount(data.nesting)),
       raids: formatInteger(raidSlotCount(data.raids)),
       activeEvents: usableEvents,
       featuredEvent: usableEvents[0] || null,
-      sourceNote: activeEvents.length ? "PogoInfo current event feed" : "Curated fallback; public event feed stale",
+      sourceNote: snapshotEvents.length ? "Daily event briefing" : activeEvents.length ? "PogoInfo current event feed" : "",
       updated: formatShortTime(),
     };
-    sourceHealthState.pokemon = "live";
+    sourceHealthState.pokemon = pokemonLiveState.status;
   } catch (error) {
-    const fallbackEvents = fallbackPokemonEvents().map((event) => normalizePokemonEvent(event)).filter(Boolean).sort(sortPokemonEvents);
     pokemonLiveState = {
       status: "offline",
       released: "--",
       shiny: "--",
       nesting: "--",
       raids: "--",
-      activeEvents: fallbackEvents,
-      featuredEvent: fallbackEvents[0] || null,
-      sourceNote: "Curated fallback; public Pokemon feeds unavailable",
+      activeEvents: [],
+      featuredEvent: null,
+      sourceNote: "",
       updated: "",
     };
     sourceHealthState.pokemon = "offline";
@@ -3743,7 +3724,7 @@ async function refreshNewsLiveData() {
     ...newsState,
     status: "loading",
     overview: "Refreshing a focused public news briefing...",
-    sourceNote: "Checking TechCrunch, VentureBeat, BBC, Hacker News, and YouTube radar.",
+    sourceNote: "Checking TechCrunch, VentureBeat, and BBC.",
     updated: "",
   };
   renderTodayNews();
@@ -3751,10 +3732,15 @@ async function refreshNewsLiveData() {
   renderIntelligence();
 
   try {
-    const data = await sourceAdapters.news.fetch();
-    const normalized = normalizeNewsResults(data);
+    const snapshot = await fetchSameOriginSnapshot("data/public-news.json").catch(() => null);
+    const snapshotItems = normalizeStaticNews(snapshot?.items || snapshot?.stories);
+    const data = snapshotItems.length ? [] : await sourceAdapters.news.fetch();
+    const normalized = snapshotItems.length ? { items: snapshotItems, sources: [{ label: "Daily briefing", status: "live", count: snapshotItems.length }] } : normalizeNewsResults(data);
     const liveSources = normalized.sources.filter((source) => source.status === "live");
-    const items = liveSources.length ? normalized.items : [];
+    const items = normalized.items
+      .map((item) => ({ ...item, tags: item.tags?.length ? item.tags : newsTagsForText(`${item.title} ${item.summary}`), score: newsScoreForItem(item) }))
+      .sort((a, b) => b.score - a.score || toTime(b.publishedAt) - toTime(a.publishedAt))
+      .slice(0, 12);
     newsState = {
       status: liveSources.length ? "live" : "offline",
       updated: formatShortTime(),
@@ -3927,9 +3913,6 @@ function wireEvents() {
     if (actionButton?.dataset.action === "toggle-mobile-nav") {
       document.getElementById("mobileNavDrawer")?.classList.toggle("open");
     }
-    if (actionButton?.dataset.action === "open-review") {
-      navigate("review");
-    }
     if (actionButton?.dataset.action === "refresh-weather") {
       refreshWeather();
     }
@@ -4100,17 +4083,12 @@ function init() {
   renderTodayWorkout();
   renderTodayPokemon();
   renderTodayNews();
-  renderTasks();
   renderCalendar();
   renderTrainingOverview();
   renderWorkouts();
   renderPokemon();
   renderNews();
-  renderLearning();
   renderPrompts();
-  renderLibrary();
-  renderReview();
-  renderSources();
   renderPrivatePulse();
   renderContextReview();
   renderBridgePanel();

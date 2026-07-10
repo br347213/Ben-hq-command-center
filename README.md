@@ -35,7 +35,7 @@ The current machine path does not have Node or npm available, so the first build
 - Training hub with visible workout prescriptions, fallback options, readiness rules, and a health-aware Today decision layer
 - Pokemon GO public data pulse through PoGoAPI plus community event/raid JSON when usable
 - Source-labeled Pokemon GO event brief with stale-feed detection and curated fallback for current event windows
-- Current News briefing with public-source stories from TechCrunch, Hacker News, and best-effort VentureBeat/BBC feeds
+- Current News briefing with image-backed stories from TechCrunch, VentureBeat, and BBC-linked feeds
 - News relevance scoring for AI, startups, personal tech, productivity, security, gaming, health tech, and YouTube radar lanes
 - Chess module with a polished interactive puzzle board and Lichess daily puzzle metadata
 - Learning queue
