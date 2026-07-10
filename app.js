@@ -1891,6 +1891,103 @@ function buildTrainingIntelligence() {
   };
 }
 
+function buildStrengthIntelligence(now = new Date()) {
+  const training = privateDaily.training || {};
+  const profile = training.strengthProfile && typeof training.strengthProfile === "object" ? training.strengthProfile : {};
+  const running = buildTrainingIntelligence();
+  const day = now.getDay();
+  const constraints = asArray(profile.constraints).join(" ").toLowerCase();
+  const recoveryConstrained = /constrained|low/i.test(running.readiness) || (running.loadDelta !== null && running.loadDelta >= 25);
+  const protectWeekend = [5, 6, 0].includes(day);
+  const earlyWeek = [1, 2].includes(day);
+  const sessionA = asArray(profile.sessions?.a?.exercises);
+  const sessionB = asArray(profile.sessions?.b?.exercises);
+  const upperPrimer = asArray(profile.sessions?.primer?.exercises);
+  const defaultA = [
+    "Bench press: 4 x 5-8, stop with 2 reps in reserve",
+    "Chest-supported row: 4 x 6-10",
+    "Romanian deadlift: 3 x 6 at controlled effort",
+    "Rear-foot elevated split squat: 2 x 6-8 per side",
+    "Standing calf raise: 3 x 10-15",
+    "Pallof press or dead bug: 3 x 8-12 per side",
+  ];
+  const defaultB = [
+    "Neutral-grip overhead press: 3 x 6-8",
+    "Pull-up or lat pulldown: 4 x 6-10",
+    "Incline dumbbell press: 3 x 8-12",
+    "Single-leg Romanian deadlift: 2 x 8 per side",
+    "Rear-delt raise plus cable row: 2 x 12-15 each",
+    "Farmer carry or anti-rotation hold: 3 rounds",
+  ];
+  const defaultPrimer = [
+    "Neutral-grip dumbbell bench: 3 x 6-10",
+    "Chest-supported row: 4 x 6-10",
+    "Half-kneeling dumbbell press: 3 x 8 per side",
+    "Pull-up or lat pulldown: 3 x 6-10",
+    "Lateral raise plus rear-delt raise: 2 x 12-15 each",
+    "Pallof press or dead bug: 3 x 8-12 per side",
+  ];
+
+  let title;
+  let detail;
+  let steps;
+  let duration;
+  let placement;
+  if (protectWeekend) {
+    title = day === 0 ? "Protect the long run; lift next early week" : "Upper-body strength without weekend leg cost";
+    detail = day === 0
+      ? "Sunday remains the long-run anchor. Strength shifts to the next early-week window, when moderate leg work has time to clear before Saturday quality."
+      : "The weekend running block is close, so today's useful lift keeps the upper-body emphasis and removes soreness-producing lower-body volume.";
+    steps = upperPrimer.length ? upperPrimer : defaultPrimer;
+    duration = day === 0 ? "Next: 45-55 min" : "35-45 min";
+    placement = "Weekend-protected";
+  } else if (earlyWeek) {
+    title = "Strength A: upper strength plus runner legs";
+    detail = "This is the best weekly slot for the heavier lower-body dose: enough posterior-chain and unilateral work to build resilience, with several days before weekend quality running.";
+    steps = sessionA.length ? sessionA : defaultA;
+    duration = "45-55 min";
+    placement = "Early-week primary";
+  } else {
+    title = "Strength B: upper physique plus light unilateral work";
+    detail = "Use the second weekly lift for shoulders, back, and upper-body volume while keeping the leg dose small enough to preserve running quality.";
+    steps = sessionB.length ? sessionB : defaultB;
+    duration = "40-50 min";
+    placement = "Midweek secondary";
+  }
+
+  if (recoveryConstrained) {
+    steps = steps.slice(0, 4).map((step) => step.replace(/\b[34] x\b/i, "2 x"));
+    duration = "25-35 min";
+    detail += " Garmin load or recovery context is elevated, so this version removes two accessories and caps every movement at two work sets.";
+  }
+
+  const wristAware = constraints.includes("wrist");
+  return {
+    kind: "strength",
+    tag: `Strength intelligence - ${placement}`,
+    title,
+    detail,
+    duration,
+    steps,
+    progression: compactText(
+      profile.progression,
+      "Add 2.5-5 lb only after every work set reaches the top of its rep range with two clean reps still available. Lower-body progression never outranks weekend run quality.",
+    ),
+    fallback: wristAware
+      ? "Use neutral grips and cable or dumbbell substitutions if the wrist objects. Stop the movement rather than training through joint pain."
+      : "If a joint objects or recovery feels worse than the dashboard suggests, use a pain-free variation and remove one work set.",
+    evidence: [
+      compactText(profile.source, "Private training profile"),
+      `${running.weeklyLoad?.distanceMiles ?? "--"} mi rolling run load`,
+      placement,
+    ].join(" - "),
+    weeklyPlan: [
+      { label: "Strength A", timing: "Mon/Tue", focus: "Upper strength + moderate runner legs" },
+      { label: "Strength B", timing: "Wed/Thu", focus: "Upper physique + light unilateral work" },
+    ],
+  };
+}
+
 function decodePacketHashValue(value) {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
@@ -2553,6 +2650,7 @@ function renderTodayWorkout() {
   }
   target.hidden = false;
   const decision = buildTrainingIntelligence();
+  const strength = buildStrengthIntelligence();
   const quickSignals = decision.rules.slice(0, 2);
 
   target.innerHTML = `
@@ -2562,6 +2660,11 @@ function renderTodayWorkout() {
     </div>
     <h3>${escapeHtml(decision.title)}</h3>
     <p>${escapeHtml(decision.detail)}</p>
+    <div class="fitness-secondary-call">
+      <span>Strength placement</span>
+      <strong>${escapeHtml(strength.title)}</strong>
+      <p>${escapeHtml(strength.detail)}</p>
+    </div>
     ${quickSignals.length ? `<div class="mini-fact-grid">${quickSignals.map((signal) => `<span><strong>${escapeHtml(signal.value)}</strong>${escapeHtml(signal.label)}</span>`).join("")}</div>` : ""}
     <span class="source-badge">${escapeHtml(decision.source)}</span>
   `;
@@ -2847,12 +2950,13 @@ function renderWorkouts() {
       fallback: "If effort or breathing feels abnormal in the warm-up, switch to 20-30 minutes of walking and mobility.",
     });
   }
+  workouts.unshift(buildStrengthIntelligence());
   target.innerHTML = workouts.slice(0, 4)
     .map(
       (workout) => `
-        <article class="glass-card workout-detail-card module-training">
+        <article class="glass-card workout-detail-card ${workout.kind === "strength" ? "module-strength" : "module-training"}">
           <div class="module-header">
-            <span class="module-icon training-icon" aria-hidden="true">Run</span>
+            <span class="module-icon ${workout.kind === "strength" ? "strength-icon" : "training-icon"}" aria-hidden="true">${workout.kind === "strength" ? "Lift" : "Run"}</span>
             <p class="eyebrow">${escapeHtml(workout.tag || "Recommended session")}${workout.meta ? ` · ${escapeHtml(workout.meta)}` : ""}</p>
           </div>
           <div class="workout-detail-head">
@@ -2870,6 +2974,15 @@ function renderWorkouts() {
               <p>${escapeHtml(workout.fallback || workout.adjustment || "Use the grounded recommendation above.")}</p>
             </div>
           </div>
+          ${workout.progression ? `<div class="strength-progression"><span>Progression rule</span><p>${escapeHtml(workout.progression)}</p></div>` : ""}
+          ${
+            workout.weeklyPlan
+              ? `<div class="strength-week-plan">${workout.weeklyPlan
+                  .map((item) => `<span><b>${escapeHtml(item.label)}</b><strong>${escapeHtml(item.timing)}</strong><small>${escapeHtml(item.focus)}</small></span>`)
+                  .join("")}</div>`
+              : ""
+          }
+          ${workout.evidence ? `<p class="workout-evidence">Based on ${escapeHtml(workout.evidence)}</p>` : ""}
         </article>
       `,
     )
@@ -3055,12 +3168,20 @@ function buildLiveInsights() {
 
   if (hasTrainingContext()) {
     const training = buildTrainingIntelligence();
+    const strength = buildStrengthIntelligence();
     insights.push({
       tone: "training",
       label: "Training interpretation",
       title: training.title,
       detail: training.detail,
       evidence: training.metrics.slice(0, 3).map((metric) => `${metric.value} ${metric.label}`).join(" - ") || training.source,
+    });
+    insights.push({
+      tone: "training",
+      label: "Strength placement",
+      title: strength.title,
+      detail: `${strength.detail} Progression: ${strength.progression}`,
+      evidence: strength.evidence,
     });
   }
 
