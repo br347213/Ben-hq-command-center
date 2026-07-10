@@ -2,6 +2,58 @@
   "generatedAt": "2026-07-10T09:30:00-04:00",
   "stories": [
     {
+      "title": "OpenAI launches ChatGPT Work as a cross-device desktop agent",
+      "factualSummary": "Superhuman AI's July 10 briefing reports that ChatGPT Work can act across a computer or phone, draw context from files, and stay focused on one project for extended periods inside a new unified desktop app.",
+      "takeaways": [
+        "The product is positioned as an action-taking agent rather than another chat surface.",
+        "OpenAI is consolidating ChatGPT, Work, and Codex into one desktop environment while keeping the app available across plan levels."
+      ],
+      "source": "Superhuman AI",
+      "url": "https://www.superhuman.ai/p/openai-launches-chatgpt-work-a-new-desktop-agent",
+      "publishedAt": "2026-07-10T11:00:00Z",
+      "tags": ["AI agents", "OpenAI", "personal tech", "automation"],
+      "image": ""
+    },
+    {
+      "title": "GPT-Live, Monogram, and Grok 4.5 widen the model competition",
+      "factualSummary": "Superhuman AI's July 9 briefing groups three shifts: OpenAI's simultaneous voice model, Monogram's visual-first interface, and a new Grok model focused on coding and agentic work.",
+      "takeaways": [
+        "AI interaction is expanding beyond turn-based text chat into simultaneous voice and generated interfaces.",
+        "Frontier competition is increasingly about the surrounding experience and integrations, not only benchmark scores."
+      ],
+      "source": "Superhuman AI",
+      "url": "https://www.superhuman.ai/p/the-model-wars-are-raging-on",
+      "publishedAt": "2026-07-09T11:00:00Z",
+      "tags": ["AI", "voice", "interfaces", "models"],
+      "image": ""
+    },
+    {
+      "title": "Meta brings Muse image generation into its social apps",
+      "factualSummary": "Meta is rolling Muse Image into Meta AI, Instagram Stories, and WhatsApp while previewing a video model and expanding its paid model strategy.",
+      "takeaways": [
+        "Distribution through Meta's existing apps could matter as much as raw image-model ranking.",
+        "The release ties generation directly to social context such as friends, photos, and trending content."
+      ],
+      "source": "Superhuman AI",
+      "url": "https://www.superhuman.ai/p/meta-s-new-image-model-outranks-competitors",
+      "publishedAt": "2026-07-08T11:00:00Z",
+      "tags": ["AI images", "Meta", "Instagram", "personal tech"],
+      "image": ""
+    },
+    {
+      "title": "GPT-5.6 Sol demo brings high-speed agentic modeling into Blender",
+      "factualSummary": "A Digg Tech cluster highlights a demo of GPT-5.6 Sol operating Blender for rapid 3D modeling, an example of model speed becoming useful inside a complex visual tool rather than only in chat.",
+      "takeaways": [
+        "The notable shift is direct manipulation of a professional application, not the generated object by itself.",
+        "High token throughput matters when an agent must observe, decide, and revise repeatedly inside interactive software."
+      ],
+      "source": "Digg Tech",
+      "url": "https://di.gg/ai/0fdp9fef",
+      "publishedAt": "2026-07-10T10:00:00Z",
+      "tags": ["AI agents", "3D", "Blender", "models"],
+      "image": ""
+    },
+    {
       "title": "OpenAI says GPT-5.6 is the preferred model for Microsoft Copilot 365 amid breakup chatter",
       "factualSummary": "OpenAI says its new GPT-5.6 family will continue powering Microsoft Copilot 365 even as questions persist about the companies' broader partnership.",
       "takeaways": [
@@ -12,7 +64,7 @@
       "url": "https://techcrunch.com/2026/07/09/openai-says-gpt-5-6-is-the-preferred-model-for-microsoft-copilot-amid-breakup-chatter/",
       "publishedAt": "2026-07-10T00:16:54Z",
       "tags": ["AI", "OpenAI", "Microsoft", "Copilot"],
-      "image": "https://techcrunch.com/wp-content/uploads/2024/04/GettyImages-2041281128-e1712563728365.jpg?w=680"
+      "image": "assets/news/copilot.jpg"
     },
     {
       "title": "Fidji Simo steps down from OpenAI's No. 2 role",
@@ -25,7 +77,7 @@
       "url": "https://techcrunch.com/2026/07/09/fidji-simo-steps-down-from-openais-no-2-role/",
       "publishedAt": "2026-07-09T23:38:00Z",
       "tags": ["AI", "OpenAI", "leadership"],
-      "image": "https://techcrunch.com/wp-content/uploads/2026/07/Fidji-Simo.jpg?w=680"
+      "image": "assets/news/fidji-simo.jpg"
     },
     {
       "title": "An AI agent startup let its own agent run a $100 million fundraise",
@@ -38,7 +90,7 @@
       "url": "https://techcrunch.com/2026/07/09/an-ai-agent-startup-just-let-its-agent-run-its-100-million-fundraise/",
       "publishedAt": "2026-07-09T22:08:58Z",
       "tags": ["AI agents", "startups", "fundraising"],
-      "image": "https://techcrunch.com/wp-content/uploads/2026/07/Lyzr-graphic.png?w=680"
+      "image": "assets/news/lyzr.png"
     },
     {
       "title": "OpenAI is shutting down Atlas while moving browser features elsewhere",
@@ -51,7 +103,7 @@
       "url": "https://techcrunch.com/2026/07/09/openai-is-shutting-down-atlas-but-its-ai-browser-ambitions-are-still-growing/",
       "publishedAt": "2026-07-09T22:03:54Z",
       "tags": ["AI", "browsers", "OpenAI", "agents"],
-      "image": "https://techcrunch.com/wp-content/uploads/2026/07/chatgpt-app-browser.jpg?w=680"
+      "image": "assets/news/atlas.jpg"
     },
     {
       "title": "OpenAI launches its new GPT-5.6 model family",
@@ -64,7 +116,7 @@
       "url": "https://techcrunch.com/2026/07/09/openai-launches-its-new-family-of-models-with-gpt-5-6/",
       "publishedAt": "2026-07-09T22:24:24Z",
       "tags": ["AI", "OpenAI", "models", "cybersecurity"],
-      "image": "https://techcrunch.com/wp-content/uploads/2025/09/GettyImages-2224158119.jpg?w=680"
+      "image": "assets/news/gpt-56.jpg"
     },
     {
       "title": "Shared API keys expose AI-agent fleets at 69% of surveyed enterprises",
@@ -103,7 +155,7 @@
       "url": "https://www.bbc.co.uk/news/articles/c8j2dje3pldo",
       "publishedAt": "2026-07-10T12:02:40Z",
       "tags": ["Meta", "social media", "EU", "regulation"],
-      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/07d0/live/f2f84510-7c54-11f1-ad56-219c1e341d26.jpg"
+      "image": "assets/news/meta-eu.jpg"
     },
     {
       "title": "Big tech may have to address scam ads under Ofcom proposals",
@@ -116,7 +168,7 @@
       "url": "https://www.bbc.co.uk/news/articles/c9q2rznjqwwo",
       "publishedAt": "2026-07-10T09:59:19Z",
       "tags": ["online scams", "advertising", "platforms", "regulation"],
-      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/f656/live/df041af0-7c42-11f1-8ccc-df652c9169a7.jpg"
+      "image": "assets/news/scam-ads.jpg"
     },
     {
       "title": "Fake portable air-conditioner claims are spreading online",
@@ -129,7 +181,7 @@
       "url": "https://www.bbc.co.uk/news/articles/cj6g41pzy41o",
       "publishedAt": "2026-07-10T01:33:45Z",
       "tags": ["consumer tech", "scams", "advertising"],
-      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/40f4/live/3731f960-7c3c-11f1-9510-1546718f668b.jpg"
+      "image": "assets/news/air-conditioner.jpg"
     },
     {
       "title": "Meta faces criticism over AI images made from public Instagram profile photos",
@@ -142,7 +194,7 @@
       "url": "https://www.bbc.co.uk/news/articles/cp9lee19y1yo",
       "publishedAt": "2026-07-08T12:28:03Z",
       "tags": ["Meta", "AI images", "privacy", "Instagram"],
-      "image": "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/2fa5/live/3d76fa30-7adb-11f1-bee8-53ce494e1abc.png"
+      "image": "assets/news/instagram-ai.png"
     },
     {
       "title": "YouTube's Ask Studio offers creators tailored ideas and channel analysis",

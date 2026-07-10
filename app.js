@@ -5,7 +5,7 @@ const navItems = [
   { id: "news", label: "News", icon: "news" },
   { id: "pokemon", label: "Pokemon GO", icon: "game" },
   { id: "chess", label: "Chess", icon: "chess" },
-  { id: "prompts", label: "AI Tools", icon: "spark" },
+  { id: "prompts", label: "Insights", icon: "spark" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
@@ -507,6 +507,7 @@ let weatherState = {
   wind: "--",
   rain: "--",
   updated: "",
+  daily: [],
 };
 let lichessState = {
   status: "loading",
@@ -602,22 +603,22 @@ const dailyFallbackPuzzles = [
   },
 ];
 
-const chessPieceGlyphs = {
+const chessPieceAssets = {
   white: {
-    K: "&#9812;",
-    Q: "&#9813;",
-    R: "&#9814;",
-    B: "&#9815;",
-    N: "&#9816;",
-    p: "&#9817;",
+    K: "assets/chess-pieces/wK.svg",
+    Q: "assets/chess-pieces/wQ.svg",
+    R: "assets/chess-pieces/wR.svg",
+    B: "assets/chess-pieces/wB.svg",
+    N: "assets/chess-pieces/wN.svg",
+    p: "assets/chess-pieces/wP.svg",
   },
   black: {
-    K: "&#9818;",
-    Q: "&#9819;",
-    R: "&#9820;",
-    B: "&#9821;",
-    N: "&#9822;",
-    p: "&#9823;",
+    K: "assets/chess-pieces/bK.svg",
+    Q: "assets/chess-pieces/bQ.svg",
+    R: "assets/chess-pieces/bR.svg",
+    B: "assets/chess-pieces/bB.svg",
+    N: "assets/chess-pieces/bN.svg",
+    p: "assets/chess-pieces/bP.svg",
   },
 };
 
@@ -625,8 +626,7 @@ const starterDailyPacket = {
   app: "My Command Center",
   kind: "daily-packet",
   generatedAt: new Date().toISOString(),
-  summary:
-    "Starter private packet loaded. Use this as the shape for Gmail, Calendar, Drive, Notes, Garmin, Apple Health, and ChatGPT summaries.",
+  summary: "Preview data is active. Personal details remain on this device.",
   sources: [
     { name: "Google Calendar", status: "starter", detail: "Replace with personal calendar bridge" },
     { name: "Gmail", status: "starter", detail: "Replace with personal inbox summary" },
@@ -704,13 +704,7 @@ const starterDailyPacket = {
     lastWorkout: "Starter import",
     rule: "Protect tomorrow",
   },
-  recommendations: [
-    {
-      title: "Set up one real source next",
-      detail: "Copy the Google script, deploy it, then paste the Web App URL into My Command Center.",
-      source: "Starter packet",
-    },
-  ],
+  recommendations: [],
 };
 
 const googleBridgeScriptTemplate = `const BEN_HQ_VERSION = "2026-07-04-bridge-helper-1";
@@ -1406,7 +1400,13 @@ function normalizePokemonEvent(event, today = new Date()) {
     end: endDate,
     window: formatEventWindow(startDate, endDate),
     source: compactText(event.source, "PogoInfo public JSON"),
-    summary: [spawns && `Spawns: ${spawns}`, raids && `Raids: ${raids}`, shiny && `Shiny checks: ${shiny}`, bonuses[0]].filter(Boolean).join(". "),
+    summary: compactText(
+      event.factualSummary ||
+        event.summary ||
+        [spawns && `Spawns: ${spawns}`, raids && `Raids: ${raids}`, shiny && `Shiny checks: ${shiny}`, bonuses[0]]
+          .filter(Boolean)
+          .join(". "),
+    ),
     bonuses,
     actions,
     url: compactText(event.url || event.link || event.website),
@@ -1661,8 +1661,9 @@ function renderNewsMedia(item, compact = false) {
   const label = newsVisualLabel(item);
   if (item?.image) {
     return `
-      <div class="news-media ${compact ? "is-compact" : ""}">
-        <img src="${escapeHtml(item.image)}" alt="" loading="lazy" />
+      <div class="news-media has-image ${compact ? "is-compact" : ""}">
+        <img src="${escapeHtml(item.image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('image-failed')" />
+        <div class="news-media-fallback ${newsVisualClass(item)}" aria-hidden="true"><i></i><b></b></div>
         <span>${escapeHtml(label)}</span>
       </div>
     `;
@@ -1678,8 +1679,9 @@ function renderNewsMedia(item, compact = false) {
 
 function pokemonArtworkForEvent(event) {
   const title = `${event?.title || ""} ${event?.summary || ""}`.toLowerCase();
+  if (title.includes("go fest") || title.includes("mewtwo")) return "assets/pokemon/mewtwo.png";
   if (title.includes("sobble")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/816.png";
-  if (title.includes("anniversary") || title.includes("pikachu")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png";
+  if (title.includes("anniversary") || title.includes("pikachu")) return "assets/pokemon/pikachu.png";
   if (title.includes("lucario")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png";
   if (title.includes("articuno")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/144.png";
   if (title.includes("zapdos")) return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/145.png";
@@ -1863,6 +1865,9 @@ function buildTrainingIntelligence() {
     detail,
     duration: firstText(recommendedObject.duration, training.duration),
     fallback,
+    loadDelta,
+    weeklyLoad,
+    lastWorkoutDetail,
     rules: [...packetInsights, ...derivedSignals].slice(0, 6),
     metrics,
     hasVerifiedMetrics: availableRecoveryMetrics > 0 || Boolean(lastWorkout),
@@ -2215,6 +2220,7 @@ function refreshLocalSurfaces() {
   renderTodayNews();
   renderCalendar();
   renderTrainingOverview();
+  renderWorkouts();
   renderPrivatePulse();
   renderContextReview();
   renderBridgePanel();
@@ -2424,10 +2430,9 @@ function buildTodayPriorities() {
 
   const event = primaryPokemonEvent();
   if (event) {
-    const action = pokemonActionPlan(event)[0];
     priorities.push({
-      title: event.isActive ? `Use the ${event.title} window` : `Prepare for ${event.title}`,
-      meta: [event.window, action].filter(Boolean).join(" - "),
+      title: event.title,
+      meta: [event.isActive ? `Ends in ${pokemonEventCountdown(event)}` : `Starts in ${pokemonEventCountdown(event)}`, summarizePokemonEvent(event)].filter(Boolean).join(" - "),
     });
   }
 
@@ -2554,13 +2559,13 @@ function renderTodayPokemon() {
     return;
   }
   target.hidden = false;
-  const actions = pokemonActionPlan(event).slice(0, 2);
+  const highlights = asArray(event.bonuses).slice(0, 2);
   const source = compactText(event?.source, pokemonLiveState.sourceNote || "Public event plan");
   const windowText = compactText(event?.window, "Check event timing");
-  const artwork = pokemonArtworkForEvent(event);
+  const artwork = event.image || pokemonArtworkForEvent(event);
 
   target.innerHTML = `
-    <div class="pokemon-visual" aria-hidden="true">
+    <div class="pokemon-visual ${event.image ? "has-banner" : ""}" aria-hidden="true">
       <img src="${escapeHtml(artwork)}" alt="" loading="lazy" />
       <span>${escapeHtml(event?.isActive ? "Live" : "Plan")}</span>
     </div>
@@ -2570,13 +2575,11 @@ function renderTodayPokemon() {
     </div>
     <h3>${escapeHtml(event?.title || "Pokemon GO plan")}</h3>
     <div class="mini-fact-grid">
-      <span><strong>${escapeHtml(event?.isActive ? "Now" : "Next")}</strong> status</span>
+      <span><strong>${escapeHtml(event?.isActive ? `Ends ${pokemonEventCountdown(event)}` : pokemonEventCountdown(event))}</strong> timing</span>
       <span><strong>${escapeHtml(windowText)}</strong> window</span>
-      <span><strong>${escapeHtml(pokemonLiveState.raids)}</strong> raids</span>
+      <span><strong>${escapeHtml(event.type)}</strong> event</span>
     </div>
-    <ul class="compact-action-list">
-      ${actions.map((action) => `<li>${escapeHtml(action)}</li>`).join("")}
-    </ul>
+    ${highlights.length ? `<ul class="compact-action-list">${highlights.map((highlight) => `<li>${escapeHtml(highlight)}</li>`).join("")}</ul>` : `<p>${escapeHtml(summarizePokemonEvent(event))}</p>`}
     <span class="source-badge">${escapeHtml(source)}</span>
   `;
 }
@@ -2637,21 +2640,81 @@ function renderTasks() {
     .join("");
 }
 
+function localDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function calendarEventDate(event, fallback) {
+  const candidate = firstText(event.date, event.start, event.startTime, event.datetime);
+  const parsed = candidate ? parseLocalEventDate(candidate) : null;
+  return parsed || fallback;
+}
+
 function renderCalendar() {
-  const privateEvents = privateDaily.calendarEvents.slice(0, 8);
+  const target = document.getElementById("calendarGrid");
+  if (!target) return;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const calendarSource = privateDaily.sources.find((source) => /calendar/i.test(source.name));
-  document.getElementById("calendarGrid").innerHTML = privateEvents.length
-    ? `
-        <article class="day-card module-calendar calendar-live-day">
-          <strong>Upcoming</strong>
-          ${privateEvents.map((event) => `<span class="calendar-chip"><b>${escapeHtml(event.time)}</b>${escapeHtml(event.title)}${event.detail ? `<small>${escapeHtml(event.detail)}</small>` : ""}</span>`).join("")}
+  const pokemonEvents = currentPokemonEvents();
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + index);
+    const key = localDateKey(date);
+    const weather = weatherState.daily.find((item) => item.date === key);
+    const personal = privateDaily.calendarEvents
+      .filter((event) => localDateKey(calendarEventDate(event, today)) === key)
+      .map((event) => ({
+        tone: "personal",
+        time: compactText(event.time, "Personal"),
+        title: compactText(event.title, "Calendar event"),
+        detail: compactText(event.detail),
+      }));
+    const game = pokemonEvents
+      .filter((event) => (index === 0 && event.isActive) || localDateKey(event.start) === key)
+      .slice(0, 3)
+      .map((event) => ({
+        tone: "pokemon",
+        time: event.isActive ? "Live" : event.start?.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) || "Event",
+        title: event.title,
+        detail: event.isActive ? `Ends in ${pokemonEventCountdown(event)}` : event.window,
+      }));
+    return { date, weather, items: [...personal, ...game] };
+  });
+
+  target.innerHTML = days
+    .map(
+      ({ date, weather, items }, index) => `
+        <article class="day-card calendar-day ${index === 0 ? "is-today" : ""}">
+          <header class="calendar-day-head">
+            <div><span>${escapeHtml(date.toLocaleDateString(undefined, { weekday: "short" }))}</span><strong>${escapeHtml(date.toLocaleDateString(undefined, { month: "short", day: "numeric" }))}</strong></div>
+            ${weather ? `<div class="calendar-weather"><strong>${escapeHtml(`${weather.high} / ${weather.low}`)}</strong><span>${escapeHtml(`${weather.rain}% rain`)}</span></div>` : ""}
+          </header>
+          <div class="calendar-day-events">
+            ${
+              items.length
+                ? items
+                    .map(
+                      (item) => `
+                        <div class="calendar-chip ${item.tone}">
+                          <b>${escapeHtml(item.time)}</b>
+                          <span>${escapeHtml(item.title)}</span>
+                          ${item.detail ? `<small>${escapeHtml(item.detail)}</small>` : ""}
+                        </div>
+                      `,
+                    )
+                    .join("")
+                : `<span class="calendar-open">Open day</span>`
+            }
+          </div>
         </article>
-      `
-    : calendarSource
-      ? `<article class="glass-panel calendar-empty-live"><p class="eyebrow">Personal calendar checked</p><h3>No upcoming events</h3><p>Your connected personal calendar is clear in the current briefing window.</p></article>`
-      : "";
+      `,
+    )
+    .join("");
   const freshness = document.getElementById("calendarFreshness");
-  if (freshness) freshness.textContent = calendarSource ? privateDailyFreshness() : "Personal calendar only";
+  if (freshness) freshness.textContent = calendarSource ? `${privateDailyFreshness()} + live events` : "7-day live horizon";
 }
 
 function renderTrainingOverview() {
@@ -2665,14 +2728,24 @@ function renderTrainingOverview() {
   if (!hasPrivateTraining) {
     if (summaryCard) {
       summaryCard.hidden = false;
-      summaryCard.innerHTML = `<p class="eyebrow">Verified data only</p><h3>No Garmin analysis available today</h3><p>Fitness stays quiet until the private sync produces real health or activity metrics.</p>`;
+      summaryCard.classList.add("training-private-state");
+      summaryCard.innerHTML = `
+        <div class="training-private-mark" aria-hidden="true"><span></span></div>
+        <div>
+          <p class="eyebrow">Private fitness</p>
+          <h3>Your Garmin briefing is available in your private app session.</h3>
+          <p>Open My Command Center from Safari or your Home Screen to see verified recovery, load, and workout analysis. Personal health data is never exposed on the public page.</p>
+        </div>
+      `;
     }
     if (readinessCard) readinessCard.hidden = true;
     if (workoutStack) workoutStack.innerHTML = "";
     const freshness = document.getElementById("trainingFreshness");
-    if (freshness) freshness.textContent = "No verified metrics";
+    if (freshness) freshness.textContent = "Private session";
     return;
   }
+
+  summaryCard?.classList.remove("training-private-state");
 
   const decision = buildTrainingIntelligence();
   if (!decision.title) {
@@ -2735,6 +2808,27 @@ function renderWorkouts() {
   const recommendedObject = typeof recommended === "object" && recommended ? recommended : recommended ? { title: recommended } : null;
   const workouts = asArray(training.workouts || training.plan || training.sessions);
   if (recommendedObject?.title) workouts.unshift(recommendedObject);
+  if (!workouts.length) {
+    const decision = buildTrainingIntelligence();
+    const currentMiles = parseMetricNumber(decision.weeklyLoad?.distanceMiles);
+    const previousMiles = parseMetricNumber(decision.weeklyLoad?.previousDistanceMiles);
+    const lighter = decision.loadDelta !== null && decision.loadDelta <= -20;
+    const heavier = decision.loadDelta !== null && decision.loadDelta >= 25;
+    workouts.push({
+      tag: "Next session decision",
+      title: lighter ? "Rebuild frequency before intensity" : heavier ? "Absorb the load increase" : "Continue without adding bonus volume",
+      detail: lighter
+        ? `Your rolling distance fell from ${previousMiles?.toFixed(1) || "the prior window"} to ${currentMiles?.toFixed(1) || "the current window"} miles. The useful move is another easy aerobic touch, not a hard workout meant to make up the gap.`
+        : heavier
+          ? `Your seven-day load rose ${signedPercent(decision.loadDelta)}. Preserve adaptation by keeping the next session easy or taking a recovery day.`
+          : "The available load signal does not justify an extra workout. Keep the existing plan and let the warm-up decide the final volume.",
+      duration: lighter ? "30-40 min" : "Easy / recovery",
+      steps: lighter
+        ? ["Run at conversational effort with no pace target", "Use the first 10 minutes as the readiness check", "Finish at 30-40 minutes; do not chase the prior weekly total"]
+        : ["Keep effort clearly aerobic", "Avoid adding intervals or bonus mileage", "Reassess after the next overnight recovery reading"],
+      fallback: "If effort or breathing feels abnormal in the warm-up, switch to 20-30 minutes of walking and mobility.",
+    });
+  }
   target.innerHTML = workouts.slice(0, 4)
     .map(
       (workout) => `
@@ -2771,63 +2865,70 @@ function renderPokemon() {
     const bonuses = asArray(event.bonuses).slice(0, 3);
     const artwork = event.image || pokemonArtworkForEvent(event);
     return `
-        <article class="glass-card action-card module-pokemon pokemon-event-card ${event.isActive ? "is-active" : ""}">
-          <div class="pokemon-card-art" aria-hidden="true">
-            <img src="${escapeHtml(artwork)}" alt="" loading="lazy" />
-            <span>${escapeHtml(event.isActive ? "Happening now" : `Starts in ${pokemonEventCountdown(event)}`)}</span>
-          </div>
-          <div class="module-header">
-            <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
-            <p class="eyebrow">${escapeHtml(event.type)} · ${escapeHtml(event.window)}</p>
-          </div>
-          <h3>${escapeHtml(event.title)}</h3>
-          <p>${escapeHtml(summarizePokemonEvent(event))}</p>
-          ${
-            bonuses.length
-              ? `<div class="pokemon-bonus-list">${bonuses.map((bonus) => `<span>${escapeHtml(bonus)}</span>`).join("")}</div>`
-              : ""
-          }
-          ${event.url ? `<a class="text-button" href="${escapeHtml(event.url)}" target="_blank" rel="noreferrer">Event details</a>` : ""}
-        </article>
-      `;
+      <article class="glass-card action-card module-pokemon pokemon-event-card ${event.isActive ? "is-active" : ""}">
+        <div class="pokemon-card-art ${event.image ? "has-banner" : ""}">
+          <img src="${escapeHtml(artwork)}" alt="" loading="lazy" />
+          <span>${escapeHtml(event.isActive ? "Happening now" : `Starts in ${pokemonEventCountdown(event)}`)}</span>
+        </div>
+        <div class="module-header">
+          <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
+          <p class="eyebrow">${escapeHtml(event.type)} - ${escapeHtml(event.window)}</p>
+        </div>
+        <h3>${escapeHtml(event.title)}</h3>
+        <p>${escapeHtml(summarizePokemonEvent(event))}</p>
+        ${bonuses.length ? `<div class="pokemon-bonus-list">${bonuses.map((bonus) => `<span>${escapeHtml(bonus)}</span>`).join("")}</div>` : ""}
+        ${event.url ? `<a class="text-button" href="${escapeHtml(event.url)}" target="_blank" rel="noreferrer">Event details</a>` : ""}
+      </article>
+    `;
   });
 
   const todayBrief = featuredEvent
     ? `
-        <article class="liquid-panel action-card module-pokemon pokemon-brief-card pokemon-event-hero">
-          <div class="pokemon-brief-art" aria-hidden="true">
-            <img src="${escapeHtml(featuredEvent.image || pokemonArtworkForEvent(featuredEvent))}" alt="" loading="lazy" />
-            <span></span>
-          </div>
+      <article class="liquid-panel module-pokemon pokemon-feature">
+        <div class="pokemon-feature-media">
+          <img src="${escapeHtml(featuredEvent.image || pokemonArtworkForEvent(featuredEvent))}" alt="" loading="lazy" />
+          <span>${escapeHtml(featuredEvent.isActive ? "Happening now" : `Starts in ${pokemonEventCountdown(featuredEvent)}`)}</span>
+        </div>
+        <div class="pokemon-feature-content">
           <div class="module-header">
             <span class="module-icon pokemon-icon" aria-hidden="true">GO</span>
-            <p class="eyebrow">${escapeHtml(featuredEvent.isActive ? "Happening now" : "Next major event")}</p>
+            <p class="eyebrow">${escapeHtml(featuredEvent.isActive ? "Live event" : "Next major event")}</p>
           </div>
           <h3>${escapeHtml(featuredEvent.title)}</h3>
           <p>${escapeHtml(summarizePokemonEvent(featuredEvent))}</p>
+          ${
+            asArray(featuredEvent.bonuses).length
+              ? `<div class="pokemon-bonus-list">${asArray(featuredEvent.bonuses)
+                  .slice(0, 4)
+                  .map((bonus) => `<span>${escapeHtml(bonus)}</span>`)
+                  .join("")}</div>`
+              : ""
+          }
           <div class="pokemon-decision-grid">
-            <span><strong>${escapeHtml(featuredEvent.isActive ? `Ends in ${pokemonEventCountdown(featuredEvent)}` : `Starts in ${pokemonEventCountdown(featuredEvent)}`)}</strong> countdown</span>
-            <span><strong>${escapeHtml(featuredEvent.window)}</strong> local time</span>
+            <span><strong>${escapeHtml(featuredEvent.isActive ? `Ends in ${pokemonEventCountdown(featuredEvent)}` : `Starts in ${pokemonEventCountdown(featuredEvent)}`)}</strong> timing</span>
+            <span><strong>${escapeHtml(featuredEvent.window)}</strong> local window</span>
             <span><strong>${escapeHtml(featuredEvent.type)}</strong> event type</span>
           </div>
-        </article>
-      `
+          ${featuredEvent.url ? `<a class="text-button" href="${escapeHtml(featuredEvent.url)}" target="_blank" rel="noreferrer">Full event details</a>` : ""}
+        </div>
+      </article>
+    `
     : "";
 
   const newsCard = `
-        <article class="glass-card action-card module-pokemon pokemon-news-card">
-          <div class="module-header">
-            <span class="module-icon pokemon-icon" aria-hidden="true">Nw</span>
-            <p class="eyebrow">News & calendars</p>
-          </div>
-          <h3>Follow the live game</h3>
-          <p>Official announcements and two event calendars for deeper details beyond this briefing.</p>
-          <div class="pokemon-link-list">
-            <a href="https://pokemongolive.com/news?hl=en" target="_blank" rel="noreferrer"><strong>Official Pokemon GO news</strong><span>Announcements and feature updates</span></a>
-            <a href="https://leekduck.com/events/" target="_blank" rel="noreferrer"><strong>Leek Duck events</strong><span>Visual current-event coverage</span></a>
-            <a href="https://pogocalendar.com/" target="_blank" rel="noreferrer"><strong>PoGO Calendar</strong><span>Month and event timeline</span></a>
-          </div>
-        </article>
+    <article class="glass-card action-card module-pokemon pokemon-news-card">
+      <div class="module-header">
+        <span class="module-icon pokemon-icon" aria-hidden="true">Nw</span>
+        <p class="eyebrow">Live sources</p>
+      </div>
+      <h3>Keep the event feed current</h3>
+      <p>Official announcements plus two visual calendars for raid, bonus, and event-window detail.</p>
+      <div class="pokemon-link-list">
+        <a href="https://pokemongolive.com/news?hl=en" target="_blank" rel="noreferrer"><strong>Official Pokemon GO news</strong><span>Announcements and feature updates</span></a>
+        <a href="https://leekduck.com/events/" target="_blank" rel="noreferrer"><strong>Leek Duck events</strong><span>Visual current-event coverage</span></a>
+        <a href="https://pogocalendar.com/" target="_blank" rel="noreferrer"><strong>PoGO Calendar</strong><span>Month and event timeline</span></a>
+      </div>
+    </article>
   `;
 
   document.getElementById("pokemonCards").innerHTML = [todayBrief, ...eventCards, newsCard].join("");
@@ -2878,7 +2979,7 @@ function renderNews() {
     </article>
   `;
 
-  const storyCards = items.slice(1, 13).map((item) => {
+  const storyCards = items.slice(1, 16).map((item) => {
     const takeaways = newsKeyTakeaways(item);
     return `
       <article class="glass-card action-card module-news news-story-card">
@@ -2919,38 +3020,91 @@ function renderLearning() {
     .join("");
 }
 
-function renderPrompts(filter = "") {
-  const normalizedFilter = filter.trim().toLowerCase();
-  const prompts = seed.prompts.filter((prompt) =>
-    [prompt.title, prompt.category, prompt.useWhen, prompt.output, prompt.body, prompt.tags.join(" ")].join(" ").toLowerCase().includes(normalizedFilter),
-  );
-  document.getElementById("promptGrid").innerHTML = prompts
+function buildLiveInsights() {
+  const insights = [];
+  const event = primaryPokemonEvent();
+  if (event) {
+    const eventDay = localDateKey(event.start || new Date());
+    const forecast = weatherState.daily.find((day) => day.date === eventDay);
+    insights.push({
+      tone: "pokemon",
+      label: "Event horizon",
+      title: `${event.title} ${event.isActive ? "is live" : `starts in ${pokemonEventCountdown(event)}`}`,
+      detail: [summarizePokemonEvent(event), forecast ? `Forecast: ${forecast.high}/${forecast.low} with ${forecast.rain}% rain.` : ""].filter(Boolean).join(" "),
+      evidence: `${event.source}${forecast ? " + Open-Meteo" : ""}`,
+    });
+  }
+
+  if (hasTrainingContext()) {
+    const training = buildTrainingIntelligence();
+    insights.push({
+      tone: "training",
+      label: "Training interpretation",
+      title: training.title,
+      detail: training.detail,
+      evidence: training.metrics.slice(0, 3).map((metric) => `${metric.value} ${metric.label}`).join(" - ") || training.source,
+    });
+  }
+
+  if (newsState.items.length) {
+    const counts = new Map();
+    newsState.items.forEach((item) => (item.tags || []).forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1)));
+    const [theme, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] || ["technology", 0];
+    const sourceCount = new Set(newsState.items.map((item) => item.source)).size;
+    const lead = newsState.items[0];
+    insights.push({
+      tone: "news",
+      label: "News pattern",
+      title: `${theme} is the strongest thread across ${count} stories`,
+      detail: `${newsBriefSummary(lead)} The briefing currently spans ${newsState.items.length} stories from ${sourceCount} editorial sources, so the pattern is broader than one headline.`,
+      evidence: `${lead.source} leads the current briefing`,
+    });
+  }
+
+  if (privateDaily.calendarEvents.length) {
+    insights.push({
+      tone: "calendar",
+      label: "Schedule pressure",
+      title: `${privateDaily.calendarEvents.length} personal anchor${privateDaily.calendarEvents.length === 1 ? "" : "s"} in the current window`,
+      detail: privateDaily.calendarEvents.slice(0, 3).map((item) => `${item.time || "Next"}: ${item.title}`).join(" - "),
+      evidence: privateDailyFreshness(),
+    });
+  }
+
+  if (weatherState.daily.length) {
+    const driest = [...weatherState.daily].sort((a, b) => a.rain - b.rain)[0];
+    insights.push({
+      tone: "weather",
+      label: "Best outdoor window",
+      title: `${new Date(`${driest.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "long" })} has the lowest rain risk`,
+      detail: `${driest.high}/${driest.low} with a ${driest.rain}% precipitation chance. This is the cleanest current outdoor option in the seven-day forecast.`,
+      evidence: "Open-Meteo 7-day forecast",
+    });
+  }
+  return insights.slice(0, 6);
+}
+
+function renderPrompts() {
+  const target = document.getElementById("promptGrid");
+  if (!target) return;
+  const insights = buildLiveInsights();
+  target.innerHTML = insights
     .map(
-      (prompt) => `
-        <article class="glass-card prompt-card module-ai">
+      (insight, index) => `
+        <article class="glass-card insight-card module-${escapeHtml(insight.tone)} ${index === 0 ? "insight-lead" : ""}">
           <div class="module-header">
-            <span class="module-icon ai-icon" aria-hidden="true">AI</span>
-            <p class="eyebrow">${prompt.category}</p>
+            <span class="module-icon ${escapeHtml(insight.tone)}-icon" aria-hidden="true">${index === 0 ? "AI" : String(index + 1).padStart(2, "0")}</span>
+            <p class="eyebrow">${escapeHtml(insight.label)}</p>
           </div>
-          <h3>${prompt.title}</h3>
-          <div class="prompt-utility">
-            <span>Use when</span>
-            <p>${prompt.useWhen}</p>
-            <span>Delivers</span>
-            <p>${prompt.output}</p>
-          </div>
-          <details class="prompt-details">
-            <summary>View full prompt</summary>
-            <p class="prompt-body">${prompt.body}</p>
-          </details>
-          <div class="tag-row">
-            ${prompt.tags.map((tag) => `<span class="tag-pill">${tag}</span>`).join("")}
-          </div>
-          <button class="secondary-button">Copy prompt</button>
+          <h3>${escapeHtml(insight.title)}</h3>
+          <p>${escapeHtml(insight.detail)}</p>
+          <div class="insight-evidence"><span>Based on</span><strong>${escapeHtml(insight.evidence)}</strong></div>
         </article>
       `,
     )
     .join("");
+  const freshness = document.getElementById("insightFreshness");
+  if (freshness) freshness.textContent = `${insights.length} live analyses`;
 }
 
 function renderLibrary() {
@@ -3323,7 +3477,7 @@ function renderDailySignals() {
 
   document.getElementById("priorityCount").textContent = priorities.length;
   const priorityLabel = document.getElementById("priorityLabel");
-  if (priorityLabel) priorityLabel.textContent = priorities.length === 1 ? "priority" : "priorities";
+  if (priorityLabel) priorityLabel.textContent = priorities.length === 1 ? "signal" : "signals";
   document.getElementById("weatherSignal").textContent = weatherWord;
   const newsSignal = document.getElementById("newsSignal");
   if (newsSignal) newsSignal.textContent = newsWord;
@@ -3342,6 +3496,7 @@ function renderIntelligence() {
   renderTodayNews();
   renderRecommendation();
   renderCommandBrief();
+  renderPrompts();
 }
 
 function renderSources() {
@@ -3932,6 +4087,7 @@ async function refreshPokemonLiveData() {
   renderTodayInsights();
   renderTodayPokemon();
   renderPokemon();
+  renderCalendar();
   renderIntelligence();
 }
 
@@ -3994,6 +4150,32 @@ async function refreshNewsLiveData() {
   renderIntelligence();
 }
 
+function weatherStateFromForecast(data, sourceName) {
+  const current = data.current;
+  const daily = data.daily;
+  const rainChance = daily?.precipitation_probability_max?.[0];
+  const high = daily?.temperature_2m_max?.[0];
+  const low = daily?.temperature_2m_min?.[0];
+  const updated = new Date(current.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const forecast = asArray(daily?.time).slice(0, 7).map((date, index) => ({
+    date,
+    high: `${Math.round(daily.temperature_2m_max?.[index])}F`,
+    low: `${Math.round(daily.temperature_2m_min?.[index])}F`,
+    rain: Math.round(daily.precipitation_probability_max?.[index] || 0),
+  }));
+  return {
+    status: "live",
+    source: sourceName,
+    summary: `${weatherCodeLabel(current.weather_code)}. High ${Math.round(high)} / low ${Math.round(low)}.`,
+    temp: `${Math.round(current.temperature_2m)}F`,
+    feelsLike: `${Math.round(current.apparent_temperature)}F`,
+    wind: `${Math.round(current.wind_speed_10m)} mph`,
+    rain: `${rainChance ?? 0}%`,
+    updated,
+    daily: forecast,
+  };
+}
+
 async function refreshWeather() {
   sourceHealthState.weather = "loading";
   weatherState = {
@@ -4005,27 +4187,25 @@ async function refreshWeather() {
   renderWeather();
   renderIntelligence();
 
+  let hasSnapshot = false;
+  try {
+    const snapshot = await fetchSameOriginSnapshot("data/weather.json");
+    weatherState = weatherStateFromForecast(snapshot, "Open-Meteo daily snapshot");
+    hasSnapshot = true;
+    sourceHealthState.weather = "live";
+    renderWeather();
+    renderCalendar();
+    renderIntelligence();
+  } catch (error) {}
+
   try {
     const data = await sourceAdapters.weather.fetch();
-    const current = data.current;
-    const daily = data.daily;
-    const rainChance = daily?.precipitation_probability_max?.[0];
-    const high = daily?.temperature_2m_max?.[0];
-    const low = daily?.temperature_2m_min?.[0];
-    const updated = new Date(current.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-
-    weatherState = {
-      status: "live",
-      source: sourceAdapters.weather.name,
-      summary: `${weatherCodeLabel(current.weather_code)}. High ${Math.round(high)} / low ${Math.round(low)}.`,
-      temp: `${Math.round(current.temperature_2m)}F`,
-      feelsLike: `${Math.round(current.apparent_temperature)}F`,
-      wind: `${Math.round(current.wind_speed_10m)} mph`,
-      rain: `${rainChance ?? 0}%`,
-      updated,
-    };
+    weatherState = weatherStateFromForecast(data, sourceAdapters.weather.name);
     sourceHealthState.weather = "live";
   } catch (error) {
+    if (hasSnapshot) {
+      sourceHealthState.weather = "live";
+    } else {
     weatherState = {
       status: "offline",
       source: sourceAdapters.weather.name,
@@ -4035,11 +4215,14 @@ async function refreshWeather() {
       wind: "--",
       rain: "--",
       updated: "",
+      daily: [],
     };
     sourceHealthState.weather = "offline";
+    }
   }
 
   renderWeather();
+  renderCalendar();
   renderIntelligence();
 }
 
@@ -4078,10 +4261,15 @@ function renderChessPuzzleCopy() {
   const description = document.getElementById("chessPuzzleDescription");
   const side = document.getElementById("chessPuzzleSide");
   const goal = document.getElementById("chessPuzzleGoal");
+  const patternTitle = document.getElementById("chessPatternTitle");
+  const patternDetail = document.getElementById("chessPatternDetail");
   if (title) title.textContent = chessPuzzle.title;
   if (description) description.textContent = chessPuzzle.description;
   if (side) side.innerHTML = `<strong>${chessPuzzle.orientation === "black" ? "Black" : "White"}</strong> to move`;
   if (goal) goal.innerHTML = `<strong>${escapeHtml(chessPuzzle.goal.split(" ")[0])}</strong> ${escapeHtml(chessPuzzle.goal.split(" ").slice(1).join(" ") || "puzzle")}`;
+  const theme = asArray(chessPuzzle.themes)[0] || (/mate/i.test(chessPuzzle.goal) ? "Mating net" : "Forcing sequence");
+  if (patternTitle) patternTitle.textContent = `${theme.charAt(0).toUpperCase()}${theme.slice(1)} pattern`;
+  if (patternDetail) patternDetail.textContent = `${chessPuzzle.hint} After solving, reset once and name the defender or escape square that makes the move work.`;
 }
 
 function configureChessPuzzle(game, metadata) {
@@ -4131,6 +4319,7 @@ async function loadLichessPuzzleIntoBoard(data) {
     goal: mateTheme ? "Find mate" : "Find best move",
     description: `${puzzle.rating ? `Rated ${puzzle.rating}. ` : ""}${themeLabels.length ? `Today's themes: ${themeLabels.join(", ")}.` : "Find the forcing continuation."}`,
     hint: mateTheme ? "Start with checks, then remove the king's escape squares." : "Start with checks, captures, and direct threats. Look for the move that changes the position immediately.",
+    themes: themeLabels,
     solution,
   });
 }
@@ -4151,8 +4340,10 @@ function renderChessBoard() {
         const shade = (fileIndex + rank) % 2 === 0 ? "light" : "dark";
         const selected = selectedChessSquare === square ? " selected" : "";
         const solvedTarget = chessSolved && square === chessPuzzle.lastMoveTo ? " solved" : "";
-        const icon = piece ? chessPieceGlyphs[piece.side][piece.label] : "";
-        const content = piece ? `<span class="piece ${piece.side}" aria-hidden="true">${icon}</span>` : "";
+        const icon = piece ? chessPieceAssets[piece.side][piece.label] : "";
+        const content = piece
+          ? `<img class="piece-image ${piece.side}" src="${escapeHtml(icon)}" alt="" draggable="false" />`
+          : "";
         const rankLabel = displayFileIndex === 0 ? `<span class="coord coord-rank">${rank}</span>` : "";
         const fileLabel = rank === ranks[ranks.length - 1] ? `<span class="coord coord-file">${file}</span>` : "";
         return `
@@ -4377,9 +4568,7 @@ function wireEvents() {
     bodyInput.value = "";
   });
 
-  document.getElementById("promptSearch").addEventListener("input", (event) => {
-    renderPrompts(event.target.value);
-  });
+  document.getElementById("promptSearch")?.addEventListener("input", renderPrompts);
 
   document.getElementById("resetChessPuzzle")?.addEventListener("click", resetChessPuzzle);
   document.getElementById("showChessHint")?.addEventListener("click", () => {
