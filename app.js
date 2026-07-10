@@ -1,18 +1,45 @@
 const navItems = [
-  { id: "today", label: "Today", icon: "T" },
-  { id: "tasks", label: "Tasks", icon: "K" },
-  { id: "calendar", label: "Calendar", icon: "C" },
-  { id: "training", label: "Training", icon: "R" },
-  { id: "pokemon", label: "Pokemon GO", icon: "P" },
-  { id: "news", label: "News", icon: "Nw" },
-  { id: "chess", label: "Chess", icon: "Ch" },
-  { id: "learn", label: "Learn", icon: "L" },
-  { id: "prompts", label: "Prompts", icon: "A" },
-  { id: "library", label: "Library", icon: "N" },
-  { id: "review", label: "Review", icon: "W" },
-  { id: "sources", label: "Sources", icon: "Src" },
-  { id: "settings", label: "Settings", icon: "S" },
+  { id: "today", label: "Today", icon: "home" },
+  { id: "calendar", label: "Calendar", icon: "calendar" },
+  { id: "tasks", label: "Tasks", icon: "check" },
+  { id: "training", label: "Fitness", icon: "activity" },
+  { id: "news", label: "News & Learning", icon: "news" },
+  { id: "pokemon", label: "Pokemon GO", icon: "game" },
+  { id: "chess", label: "Chess", icon: "chess" },
+  { id: "library", label: "Knowledge", icon: "library" },
+  { id: "prompts", label: "AI Tools", icon: "spark" },
+  { id: "review", label: "Review", icon: "review" },
+  { id: "sources", label: "Sources", icon: "database" },
+  { id: "settings", label: "Settings", icon: "settings" },
 ];
+
+const mobileNavItems = [
+  navItems.find((item) => item.id === "today"),
+  navItems.find((item) => item.id === "calendar"),
+  navItems.find((item) => item.id === "tasks"),
+  navItems.find((item) => item.id === "training"),
+  { id: "more", label: "More", icon: "more" },
+];
+
+const navIconPaths = {
+  home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path>',
+  check: '<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8 12 2.5 2.5L16 9"></path>',
+  activity: '<path d="M4 13h3l2-7 4 12 2-5h5"></path>',
+  news: '<path d="M5 4h14v16H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path>',
+  game: '<path d="M8 7h8a5 5 0 0 1 4.8 6.4l-1.1 3.8a2 2 0 0 1-3.2 1l-2.2-1.7H9.7l-2.2 1.7a2 2 0 0 1-3.2-1l-1.1-3.8A5 5 0 0 1 8 7Z"></path><path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"></path>',
+  chess: '<path d="M8 4h8l-1 5 2 3-2 2H9l-2-2 2-3-1-5Z"></path><path d="M9 14h6l2 6H7l2-6Z"></path>',
+  library: '<path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V4Z"></path><path d="M7 16h12M9 8h6"></path>',
+  spark: '<path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"></path><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path>',
+  review: '<path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5"></path><path d="M4 4v4.5h4.5"></path><path d="M12 8v4l3 2"></path>',
+  database: '<ellipse cx="12" cy="5" rx="7" ry="3"></ellipse><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"></path>',
+  settings: '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"></path>',
+  more: '<circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle>',
+};
+
+function navIcon(name) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${navIconPaths[name] || navIconPaths.more}</svg>`;
+}
 
 const seed = {
   priorities: [
@@ -185,7 +212,7 @@ const seed = {
   news: [
     {
       title: "AI, startups, personal tech, and useful internet shifts",
-      source: "Ben HQ relevance model",
+      source: "My Command Center relevance model",
       summary:
         "The news surface should answer: what changed, why Ben might care, and whether it deserves attention today.",
       tags: ["AI", "Startups", "Tools", "YouTube"],
@@ -315,7 +342,7 @@ const seed = {
       tone: "learning",
       icon: "GPT",
       source: "Export/import or approved summaries",
-      summary: "A way for Ben HQ to learn from your personal ChatGPT history without silently ingesting everything.",
+      summary: "A way for My Command Center to learn from your personal ChatGPT history without silently ingesting everything.",
       next: "Create memory cards with approve, edit, ignore, and delete actions.",
     },
     {
@@ -370,7 +397,7 @@ const seed = {
       icon: "Nw",
       source: "TechCrunch, VentureBeat, BBC via GDELT, Hacker News, YouTube links",
       summary: "A public-source briefing for AI, startups, useful personal tech, platforms, gaming, and internet shifts worth noticing.",
-      next: "Add saved interests and YouTube channel feeds once Ben HQ has a stronger personal profile.",
+      next: "Add saved interests and YouTube channel feeds once My Command Center has a stronger personal profile.",
     },
     {
       title: "Direct finance accounts",
@@ -378,7 +405,7 @@ const seed = {
       tone: "calendar",
       icon: "Off",
       source: "Not in scope",
-      summary: "Direct finance connections are intentionally excluded from Ben HQ for now.",
+      summary: "Direct finance connections are intentionally excluded from My Command Center for now.",
       next: "Manual notes or high-level reminders only if useful later.",
     },
   ],
@@ -503,7 +530,7 @@ const chessPieceGlyphs = {
 };
 
 const starterDailyPacket = {
-  app: "Ben HQ",
+  app: "My Command Center",
   kind: "daily-packet",
   generatedAt: new Date().toISOString(),
   summary:
@@ -588,7 +615,7 @@ const starterDailyPacket = {
   recommendations: [
     {
       title: "Set up one real source next",
-      detail: "Copy the Google script, deploy it, then paste the Web App URL into Ben HQ.",
+      detail: "Copy the Google script, deploy it, then paste the Web App URL into My Command Center.",
       source: "Starter packet",
     },
   ],
@@ -600,7 +627,7 @@ function doGet(event) {
   const configuredKey = PropertiesService.getScriptProperties().getProperty("BEN_HQ_PASSCODE");
   const providedKey = event && event.parameter ? event.parameter.key : "";
   if (configuredKey && providedKey !== configuredKey) {
-    return jsonOutput({ app: "Ben HQ", error: "Unauthorized" });
+    return jsonOutput({ app: "My Command Center", error: "Unauthorized" });
   }
   return jsonOutput(buildBenHqDailyPacket());
 }
@@ -608,7 +635,7 @@ function doGet(event) {
 function buildBenHqDailyPacket() {
   const now = new Date();
   return {
-    app: "Ben HQ",
+    app: "My Command Center",
     kind: "daily-packet",
     version: BEN_HQ_VERSION,
     generatedAt: now.toISOString(),
@@ -625,7 +652,7 @@ function buildBenHqDailyPacket() {
       {
         title: "Scan the private pulse first",
         detail: "Review calendar anchors and reply-needed mail before adding new tasks.",
-        source: "Ben HQ bridge"
+        source: "My Command Center bridge"
       }
     ]
   };
@@ -775,11 +802,12 @@ const sourceAdapters = {
 
 function renderNav(targetId) {
   const target = document.getElementById(targetId);
+  if (!target) return;
   target.innerHTML = navItems
     .map(
       (item) => `
         <button class="nav-button ${item.id === currentView ? "active" : ""}" data-view="${item.id}">
-          <span class="nav-icon">${item.icon}</span>
+          <span class="nav-icon">${navIcon(item.icon)}</span>
           <span>${item.label}</span>
         </button>
       `,
@@ -787,14 +815,39 @@ function renderNav(targetId) {
     .join("");
 }
 
+function renderMobileBottomNav() {
+  const target = document.getElementById("mobileBottomNav");
+  if (!target) return;
+  target.innerHTML = mobileNavItems
+    .map((item) => {
+      const active = item.id === currentView || (item.id === "more" && !mobileNavItems.some((entry) => entry.id === currentView));
+      const action = item.id === "more" ? 'data-action="toggle-mobile-nav"' : `data-view="${item.id}"`;
+      return `
+        <button class="nav-button ${active ? "active" : ""}" ${action} type="button">
+          <span class="nav-icon">${navIcon(item.icon)}</span>
+          <span>${item.label}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function greetingLabel() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning, Ben.";
+  if (hour < 18) return "Good afternoon, Ben.";
+  return "Good evening, Ben.";
+}
+
 function navigate(viewId) {
   currentView = viewId;
   document.querySelectorAll(".page-view").forEach((view) => view.classList.remove("active"));
   document.getElementById(`view-${viewId}`).classList.add("active");
-  document.getElementById("pageTitle").textContent = navItems.find((item) => item.id === viewId).label;
+  document.getElementById("pageTitle").textContent = viewId === "today" ? greetingLabel() : navItems.find((item) => item.id === viewId).label;
   document.getElementById("mobileNavDrawer").classList.remove("open");
   renderNav("desktopNav");
   renderNav("mobileNav");
+  renderMobileBottomNav();
   if (viewId === "chess") {
     renderChessBoard();
   }
@@ -1242,7 +1295,7 @@ const youtubeRadarLinks = [
   {
     title: "AI tools and personal workflow",
     url: "https://www.youtube.com/results?search_query=AI+tools+productivity+workflow&sp=CAISAhAB",
-    detail: "Sorted toward recent uploads. Useful for spotting tools that may be worth testing in Ben HQ.",
+    detail: "Sorted toward recent uploads. Useful for spotting tools that may be worth testing in My Command Center.",
   },
   {
     title: "Startup and tech analysis",
@@ -1396,7 +1449,7 @@ function newsBriefSummary(item) {
   if (item.tags?.includes("Startups")) return `${title} is a startup and market-structure signal: funding, acquisitions, new products, or company momentum worth tracking.`;
   if (item.tags?.includes("Personal tech")) return `${title} may affect the apps, devices, platforms, or services people actually use day to day.`;
   if (item.tags?.includes("Security")) return `${title} is a security/privacy story with practical implications for accounts, devices, or software trust.`;
-  return `${title} is a current tech story surfaced because it overlaps with the briefing lanes Ben HQ is watching.`;
+  return `${title} is a current tech story surfaced because it overlaps with the briefing lanes My Command Center is watching.`;
 }
 
 function newsKeyTakeaways(item) {
@@ -1505,7 +1558,7 @@ function weatherVisualClass() {
 }
 
 function primaryPokemonEvent() {
-  return currentPokemonEvents()[0] || normalizePokemonEvent(seed.pokemon[0]);
+  return currentPokemonEvents()[0] || null;
 }
 
 function pokemonActionPlan(event) {
@@ -1728,7 +1781,7 @@ function importPacketFromLocationHash() {
     }
     return loaded;
   } catch (error) {
-    alert("That Ben HQ packet link could not be read.");
+    alert("That My Command Center packet link could not be read.");
     return false;
   }
 }
@@ -1757,7 +1810,7 @@ async function refreshEncryptedAutoSync() {
     if (!response.ok) throw new Error(`Encrypted packet request failed: ${response.status}`);
     const envelope = await response.json();
     const packet = await decryptAutoSyncEnvelope(envelope);
-    if (!applyPrivateDailyPacket(packet, "auto")) throw new Error("Packet did not contain usable Ben HQ data");
+    if (!applyPrivateDailyPacket(packet, "auto")) throw new Error("Packet did not contain usable My Command Center data");
     autoSyncSettings.status = "live";
     autoSyncSettings.lastSyncAt = new Date().toISOString();
     autoSyncSettings.error = "";
@@ -1938,7 +1991,7 @@ function extractChatGptExportInsights(payload, fileName = "") {
 
 function localDataSnapshot() {
   return {
-    app: "Ben HQ",
+    app: "My Command Center",
     version: 1,
     exportedAt: new Date().toISOString(),
     captures: capturedItems,
@@ -2018,7 +2071,7 @@ function buildProactiveBrief() {
         ? contextPreview(nextMemory.body)
         : privateSourceCount
           ? `${privateSourceCount} private sources are available for recommendations.`
-          : "Drop in a ChatGPT export or personal summary so Ben HQ can start finding patterns.",
+          : "Drop in a ChatGPT export or personal summary so My Command Center can start finding patterns.",
       source: nextMemory?.source || (privateSourceCount ? privateDailyFreshness() : "Local-only intake"),
     },
   ];
@@ -2083,7 +2136,7 @@ function buildCommandBrief() {
       label: "Ignore",
       title: "What not to spend energy on",
       detail: ignore,
-      source: "Ben HQ filter",
+      source: "Personal relevance filter",
     },
   ];
 }
@@ -2103,7 +2156,13 @@ function taskKey(task) {
 }
 
 function renderPriorities() {
-  document.getElementById("priorityList").innerHTML = seed.priorities
+  const priorities = buildTodayPriorities();
+  const list = document.getElementById("priorityList");
+  const panel = list?.closest(".command-priority-panel");
+  const isQuiet = priorities.length === 1 && priorities[0].title === "No urgent personal signal surfaced";
+  if (panel) panel.hidden = isQuiet;
+  panel?.parentElement?.classList.toggle("is-quiet", isQuiet);
+  list.innerHTML = priorities
     .map(
       (priority, index) => `
         <li class="priority-item">
@@ -2118,11 +2177,64 @@ function renderPriorities() {
     .join("");
 }
 
+function hasTrainingContext() {
+  return Boolean(Object.keys(privateDaily.training || {}).length || Object.keys(privateDaily.health || {}).length);
+}
+
+function buildTodayPriorities() {
+  const priorities = [];
+  privateDaily.recommendations.slice(0, 2).forEach((item) => {
+    priorities.push({ title: item.title, meta: item.detail || "Personal recommendation" });
+  });
+
+  const nextAgenda = [...privateDaily.agenda, ...privateDaily.calendarEvents][0];
+  if (nextAgenda) {
+    priorities.push({
+      title: nextAgenda.title,
+      meta: [nextAgenda.time, nextAgenda.detail].filter(Boolean).join(" - "),
+    });
+  }
+
+  const event = primaryPokemonEvent();
+  if (event) {
+    const action = pokemonActionPlan(event)[0];
+    priorities.push({
+      title: event.isActive ? `Use the ${event.title} window` : `Prepare for ${event.title}`,
+      meta: [event.window, action].filter(Boolean).join(" - "),
+    });
+  }
+
+  if (hasTrainingContext()) {
+    const training = buildTrainingIntelligence();
+    priorities.push({ title: training.title, meta: `${training.duration} - ${training.detail}` });
+  }
+
+  if (!priorities.length) {
+    priorities.push({
+      title: "No urgent personal signal surfaced",
+      meta: "Your visible calendar and live event windows are quiet right now.",
+    });
+  }
+
+  return priorities.slice(0, 3);
+}
+
 function renderTodayInsights() {
   const target = document.getElementById("todayInsightGrid");
   if (!target) return;
   const event = primaryPokemonEvent();
+  const agenda = [...privateDaily.agenda, ...privateDaily.calendarEvents][0];
+  const training = hasTrainingContext() ? buildTrainingIntelligence() : null;
   const insights = [
+    ...(agenda
+      ? [{ label: "Next", value: agenda.time || "Today", detail: agenda.title }]
+      : []),
+    ...(weatherState.status === "live"
+      ? [{ label: "Arden", value: weatherState.temp, detail: weatherState.summary }]
+      : []),
+    ...(training
+      ? [{ label: "Fitness", value: training.readiness, detail: training.title }]
+      : []),
     ...(event
       ? [
           {
@@ -2132,8 +2244,11 @@ function renderTodayInsights() {
           },
         ]
       : []),
-    ...seed.todayInsights,
+    ...(newsState.items[0]
+      ? [{ label: "News", value: newsState.items[0].source, detail: newsState.items[0].title }]
+      : []),
   ].slice(0, 3);
+  target.hidden = !insights.length;
   target.innerHTML = insights
     .map(
       (item) => `
@@ -2151,8 +2266,10 @@ function renderTodayAgenda() {
   const target = document.getElementById("todayAgendaCard");
   if (!target) return;
   const privateAgenda = [...privateDaily.agenda, ...privateDaily.calendarEvents].slice(0, 4);
-  const agendaItems = privateAgenda.length ? privateAgenda : seed.todayAgenda;
-  const heading = privateAgenda.length ? "Personal agenda loaded" : "High-signal plan";
+  const agendaItems = privateAgenda.length
+    ? privateAgenda
+    : [{ time: "Today", title: "Open day", detail: "No fixed personal commitment has surfaced.", tone: "calendar" }];
+  const heading = privateAgenda.length ? "Your next commitments" : "No schedule pressure";
   target.innerHTML = `
     <div class="module-header">
       <span class="module-icon calendar-icon" aria-hidden="true">Cal</span>
@@ -2181,6 +2298,11 @@ function renderTodayAgenda() {
 function renderTodayWorkout() {
   const target = document.getElementById("todayWorkoutCard");
   if (!target) return;
+  if (!hasTrainingContext()) {
+    target.hidden = true;
+    return;
+  }
+  target.hidden = false;
   const decision = buildTrainingIntelligence();
 
   target.innerHTML = `
@@ -2192,7 +2314,7 @@ function renderTodayWorkout() {
     </div>
     <div class="module-header">
       <span class="module-icon training-icon" aria-hidden="true">Run</span>
-      <p class="eyebrow">Today's workout</p>
+      <p class="eyebrow">Fitness decision</p>
     </div>
     <h3>${escapeHtml(decision.title)}</h3>
     <div class="mini-fact-grid">
@@ -2208,6 +2330,11 @@ function renderTodayPokemon() {
   const target = document.getElementById("todayPokemonCard");
   if (!target) return;
   const event = primaryPokemonEvent();
+  if (!event) {
+    target.hidden = true;
+    return;
+  }
+  target.hidden = false;
   const actions = pokemonActionPlan(event).slice(0, 2);
   const source = compactText(event?.source, pokemonLiveState.sourceNote || "Public event plan");
   const windowText = compactText(event?.window, "Check event timing");
@@ -2238,19 +2365,24 @@ function renderTodayPokemon() {
 function renderTodayNews() {
   const target = document.getElementById("todayNewsCard");
   if (!target) return;
-  const items = newsState.items.length ? newsState.items.slice(0, 2) : fallbackNewsItems().slice(0, 2);
+  const items = newsState.items.slice(0, 2);
+  if (!items.length) {
+    target.hidden = true;
+    return;
+  }
+  target.hidden = false;
   const freshness = newsState.updated ? `Updated ${newsState.updated}` : "Current briefing";
   target.innerHTML = `
     ${renderNewsMedia(items[0], true)}
     <div class="module-header">
       <span class="module-icon news-icon" aria-hidden="true">Nw</span>
-      <p class="eyebrow">Current news</p>
+      <p class="eyebrow">News spotlight</p>
     </div>
     <h3>${escapeHtml(items[0]?.title || "Current briefing loading")}</h3>
     <p>${escapeHtml(buildCompactNewsOverview(items))}</p>
     <div class="source-row">
       <span class="source-badge">${escapeHtml(freshness)}</span>
-      <button class="text-button" data-view="news" type="button">News room</button>
+      <button class="text-button" data-view="news" type="button">View briefing</button>
     </div>
   `;
 }
@@ -2512,7 +2644,21 @@ function renderNews() {
   if (freshness) {
     freshness.textContent = newsState.updated ? `Updated ${newsState.updated}` : "Updating";
   }
-  const items = newsState.items.length ? newsState.items : fallbackNewsItems();
+  const items = newsState.items;
+
+  if (!items.length) {
+    target.innerHTML = `
+      <article class="liquid-panel action-card module-news news-brief-card">
+        <div class="module-header">
+          <span class="module-icon news-icon" aria-hidden="true">Nw</span>
+          <p class="eyebrow">Current briefing</p>
+        </div>
+        <h3>No story has earned the spotlight yet.</h3>
+        <p>The briefing stays quiet when there is nothing current and relevant enough to surface.</p>
+      </article>
+    `;
+    return;
+  }
 
   const overviewCard = `
     <article class="liquid-panel action-card module-news news-brief-card">
@@ -2556,30 +2702,7 @@ function renderNews() {
     `,
   );
 
-  const youtubeCard = `
-    <article class="glass-card action-card module-news news-youtube-card">
-      <div class="module-header">
-        <span class="module-icon news-icon" aria-hidden="true">YT</span>
-        <p class="eyebrow">YouTube radar</p>
-      </div>
-      <h3>Fresh video lanes to scan</h3>
-      <p>YouTube needs either channel choices or an API key for true automatic ingestion. For now, these open recency-sorted searches in your interest lanes.</p>
-      <div class="news-mini-list">
-        ${youtubeRadarLinks
-          .map(
-            (link) => `
-              <a class="news-mini-item" href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer">
-                <strong>${escapeHtml(link.title)}</strong>
-                <span>${escapeHtml(link.detail)}</span>
-              </a>
-            `,
-          )
-          .join("")}
-      </div>
-    </article>
-  `;
-
-  target.innerHTML = [overviewCard, ...storyCards, youtubeCard].join("");
+  target.innerHTML = [overviewCard, ...storyCards].join("");
 }
 
 function renderLearning() {
@@ -2731,6 +2854,11 @@ function weatherCodeLabel(code) {
 function renderWeather() {
   const weatherCard = document.getElementById("weatherCard");
   if (!weatherCard) return;
+  if (weatherState.status !== "live") {
+    weatherCard.hidden = true;
+    return;
+  }
+  weatherCard.hidden = false;
 
   weatherCard.innerHTML = `
     <div class="weather-visual ${weatherVisualClass()}" aria-hidden="true">
@@ -2979,19 +3107,27 @@ function renderDailySignals() {
   const weatherWord = weatherState.status === "live" ? weatherState.temp : "--";
   const newsWord = newsState.items.length ? newsState.items.length : "--";
   const pokemonEvent = primaryPokemonEvent();
-  const eventBrief = pokemonEvent
-    ? `${pokemonEvent.title}: ${summarizePokemonEvent(pokemonEvent)}`
-    : "Pokemon GO events will appear here when the public feed or curated fallback has a current window.";
-  const trainingDecision = buildTrainingIntelligence();
+  const trainingDecision = hasTrainingContext() ? buildTrainingIntelligence() : null;
+  const nextAgenda = [...privateDaily.agenda, ...privateDaily.calendarEvents][0];
+  const briefParts = [
+    nextAgenda ? `${nextAgenda.time || "Next"}: ${nextAgenda.title}.` : "",
+    pokemonEvent ? `${pokemonEvent.title} ${pokemonEvent.isActive ? "is active" : `is next ${pokemonEvent.window}`}.` : "",
+    trainingDecision ? `Fitness: ${trainingDecision.title} (${trainingDecision.readiness} readiness).` : "",
+    weatherState.status === "live" ? `Arden is ${weatherState.temp} with ${weatherState.summary.toLowerCase()}` : "",
+  ].filter(Boolean);
+  const priorities = buildTodayPriorities();
 
-  document.getElementById("priorityCount").textContent = seed.priorities.length;
+  document.getElementById("priorityCount").textContent = priorities.length;
   document.getElementById("weatherSignal").textContent = weatherWord;
   const newsSignal = document.getElementById("newsSignal");
   if (newsSignal) newsSignal.textContent = newsWord;
   document.getElementById("dailySignalScore").textContent = todayModeLabel();
   document.getElementById("dailyBrief").textContent =
     privateDaily.summary ||
-    `${eventBrief} Training: ${trainingDecision.title}. Keep the day concrete: one useful workout choice, one event plan, and one small personal loop.`;
+    briefParts.join(" ") ||
+    "No time-sensitive personal signal is competing for attention right now.";
+  renderPriorities();
+  renderTodayInsights();
 }
 
 function renderIntelligence() {
@@ -3263,7 +3399,7 @@ function importLocalData(file) {
     try {
       const payload = JSON.parse(String(reader.result || "{}"));
       if (!Array.isArray(payload.captures) || !Array.isArray(payload.completedTasks)) {
-        throw new Error("Invalid Ben HQ export");
+        throw new Error("Invalid My Command Center export");
       }
       capturedItems = payload.captures.map(normalizeCapturedItem).filter(Boolean);
       completedTasks = new Set(payload.completedTasks.filter((item) => typeof item === "string"));
@@ -3279,7 +3415,7 @@ function importLocalData(file) {
       refreshLocalSurfaces();
       navigate("library");
     } catch (error) {
-      alert("That file does not look like a Ben HQ local data export.");
+      alert("That file does not look like a My Command Center local data export.");
     }
   });
   reader.readAsText(file);
@@ -3288,7 +3424,7 @@ function importLocalData(file) {
 function applyPrivateDailyPacket(payload, origin = "import") {
   const normalized = normalizePrivateDailyPacket(payload, origin);
   if (!hasPrivateDailyData(normalized)) {
-    alert("That file did not contain a readable Ben HQ daily packet.");
+    alert("That file did not contain a readable My Command Center daily packet.");
     return false;
   }
   privateDaily = {
@@ -3454,7 +3590,7 @@ function clearAutoSync() {
 }
 
 function resetLocalData() {
-  if (!confirm("Reset local Ben HQ captures and checkmarks on this device?")) return;
+  if (!confirm("Reset local My Command Center captures and checkmarks on this device?")) return;
   removeStoredItem(storageKeys.captures);
   removeStoredItem(storageKeys.completed);
   removeStoredItem(storageKeys.contextImports);
@@ -3618,27 +3754,24 @@ async function refreshNewsLiveData() {
     const data = await sourceAdapters.news.fetch();
     const normalized = normalizeNewsResults(data);
     const liveSources = normalized.sources.filter((source) => source.status === "live");
-    const items = normalized.items.length ? normalized.items : fallbackNewsItems();
+    const items = liveSources.length ? normalized.items : [];
     newsState = {
       status: liveSources.length ? "live" : "offline",
       updated: formatShortTime(),
       overview: buildNewsOverview(items),
       items,
       sources: normalized.sources,
-      sourceNote: liveSources.length
-        ? `${liveSources.length} public news source${liveSources.length === 1 ? "" : "s"} live`
-        : "Public feeds blocked or unavailable; showing fallback lanes",
+      sourceNote: liveSources.length ? "Current briefing refreshed" : "",
     };
     sourceHealthState.news = liveSources.length ? "live" : "offline";
   } catch (error) {
-    const items = fallbackNewsItems();
     newsState = {
       status: "offline",
       updated: "",
-      overview: buildNewsOverview(items),
-      items,
+      overview: "",
+      items: [],
       sources: [],
-      sourceNote: "Public news feeds unavailable; showing fallback lanes",
+      sourceNote: "",
     };
     sourceHealthState.news = "offline";
   }
@@ -3791,6 +3924,9 @@ function wireEvents() {
     }
 
     const actionButton = event.target.closest("[data-action]");
+    if (actionButton?.dataset.action === "toggle-mobile-nav") {
+      document.getElementById("mobileNavDrawer")?.classList.toggle("open");
+    }
     if (actionButton?.dataset.action === "open-review") {
       navigate("review");
     }
@@ -3951,11 +4087,13 @@ function formatToday() {
   });
   document.getElementById("todayLabel").textContent = label;
   document.getElementById("heroDate").textContent = label;
+  if (currentView === "today") document.getElementById("pageTitle").textContent = greetingLabel();
 }
 
 function init() {
   renderNav("desktopNav");
   renderNav("mobileNav");
+  renderMobileBottomNav();
   renderPriorities();
   renderTodayInsights();
   renderTodayAgenda();
