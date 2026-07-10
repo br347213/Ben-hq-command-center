@@ -2989,6 +2989,15 @@ body::after {
   font-weight: 700;
 }
 
+.pokemon-visual.has-banner img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  filter: none;
+}
+
 .profile-button img {
   width: 34px;
   height: 34px;
@@ -3781,5 +3790,435 @@ body::after {
   .mobile-bottom-nav {
     background: #102333;
     backdrop-filter: none;
+  }
+}
+
+/* Product polish: live horizon, standardized chess, and cross-source insights. */
+.profile-button,
+.profile-button:hover {
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.profile-button img {
+  width: 40px;
+  height: 40px;
+}
+
+.calendar-grid {
+  grid-template-columns: repeat(7, minmax(132px, 1fr));
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+}
+
+.calendar-day {
+  min-height: 286px;
+  padding: 0;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.calendar-day.is-today {
+  border-color: rgba(43, 200, 232, 0.52);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22), inset 0 2px 0 rgba(43, 200, 232, 0.5);
+}
+
+.calendar-day-head {
+  min-height: 78px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(174, 235, 224, 0.045);
+}
+
+.calendar-day-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.calendar-day-head span,
+.calendar-weather span {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.calendar-day-head strong,
+.calendar-weather strong {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.calendar-weather {
+  display: grid;
+  align-content: start;
+  justify-items: end;
+  gap: 3px;
+}
+
+.calendar-day-events {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+}
+
+.calendar-day .calendar-chip {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 10px;
+}
+
+.calendar-day .calendar-chip span {
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.calendar-day .calendar-chip.pokemon {
+  border-left-color: #ffd166;
+  background: rgba(255, 209, 102, 0.08);
+}
+
+.calendar-day .calendar-chip.personal {
+  border-left-color: var(--teal);
+}
+
+.calendar-open {
+  padding: 10px 2px;
+  color: var(--dim);
+  font-size: 0.76rem;
+}
+
+.training-private-state {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+}
+
+.training-private-state h3 {
+  margin-top: 3px;
+}
+
+.training-private-state p:not(.eyebrow) {
+  max-width: 720px;
+  margin-top: 8px;
+}
+
+.training-private-mark {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(43, 200, 232, 0.28);
+  border-radius: 50%;
+  background: rgba(23, 179, 166, 0.1);
+}
+
+.training-private-mark::before,
+.training-private-mark::after,
+.training-private-mark span {
+  content: "";
+  grid-area: 1 / 1;
+}
+
+.training-private-mark::before {
+  width: 36px;
+  height: 42px;
+  border: 2px solid var(--sea-glass);
+  border-radius: 18px 18px 10px 10px;
+}
+
+.training-private-mark::after {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--teal);
+  transform: translateY(5px);
+}
+
+.pokemon-feature {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(320px, 1.12fr) minmax(320px, 0.88fr);
+  min-height: 430px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pokemon-feature-media {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  background: radial-gradient(circle at 70% 30%, rgba(255, 209, 102, 0.2), transparent 34%), #102333;
+}
+
+.pokemon-feature-media img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.pokemon-feature-media span {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(7, 16, 25, 0.66);
+  backdrop-filter: blur(14px);
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.pokemon-feature-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 26px;
+}
+
+.pokemon-feature-content > p {
+  color: #c8d8e8;
+}
+
+.pokemon-feature-content .text-button {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.pokemon-event-card .pokemon-card-art {
+  height: 190px;
+  min-height: 190px;
+  margin: -17px -17px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 209, 102, 0.18);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.pokemon-event-card .pokemon-card-art img {
+  right: 50%;
+  bottom: 4px;
+  width: min(58%, 170px);
+  max-height: 174px;
+  transform: translateX(50%);
+}
+
+.pokemon-event-card .pokemon-card-art.has-banner img {
+  inset: 0;
+  width: 100%;
+  max-height: none;
+  height: 100%;
+  object-fit: cover;
+  transform: none;
+  filter: none;
+}
+
+.piece-image {
+  position: relative;
+  z-index: 2;
+  width: 84%;
+  height: 84%;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.24));
+}
+
+.piece-image.white,
+.piece-image.black {
+  color: initial;
+}
+
+.prompt-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.insight-card {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insight-card.insight-lead {
+  grid-column: 1 / -1;
+  min-height: 230px;
+  background:
+    linear-gradient(120deg, rgba(23, 179, 166, 0.2), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent),
+    var(--panel);
+}
+
+.insight-card > p {
+  color: #c8d8e8;
+  line-height: 1.6;
+}
+
+.insight-evidence {
+  display: grid;
+  gap: 3px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.insight-evidence span {
+  color: var(--dim);
+  font-size: 0.68rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.insight-evidence strong {
+  color: var(--sea-glass);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.news-media-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  background:
+    linear-gradient(135deg, rgba(23, 179, 166, 0.3), transparent 56%),
+    #102333;
+}
+
+.news-media.image-failed img {
+  display: none;
+}
+
+.news-media.image-failed .news-media-fallback {
+  display: block;
+}
+
+.news-media-fallback::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 18%;
+  height: 2px;
+  background: rgba(174, 235, 224, 0.32);
+  box-shadow: 0 -28px 0 rgba(43, 200, 232, 0.18), 0 -56px 0 rgba(174, 235, 224, 0.1);
+}
+
+.news-media-fallback i,
+.news-media-fallback b {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  background: rgba(43, 200, 232, 0.22);
+}
+
+.news-media-fallback i {
+  width: 26%;
+  aspect-ratio: 1;
+  right: 14%;
+  top: 18%;
+}
+
+.news-media-fallback b {
+  width: 10%;
+  aspect-ratio: 1;
+  left: 18%;
+  bottom: 23%;
+}
+
+@media (max-width: 920px) {
+  .pokemon-feature {
+    grid-template-columns: 1fr;
+  }
+
+  .pokemon-feature-media {
+    min-height: 300px;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+@media (max-width: 640px) {
+  .calendar-grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(248px, 78vw);
+    contain: inline-size;
+  }
+
+  .calendar-day {
+    min-height: 330px;
+  }
+
+  .training-private-state {
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: start;
+    gap: 13px;
+    padding: 18px;
+  }
+
+  .training-private-mark {
+    width: 48px;
+    height: 48px;
+  }
+
+  .training-private-mark::before {
+    width: 24px;
+    height: 29px;
+  }
+
+  .pokemon-feature {
+    min-height: 0;
+  }
+
+  .pokemon-feature-media {
+    min-height: 0;
+    aspect-ratio: 16 / 10;
+  }
+
+  .pokemon-feature-content {
+    padding: 18px;
+  }
+
+  .pokemon-feature-content .pokemon-decision-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pokemon-feature-content .pokemon-decision-grid span:last-child {
+    display: none;
+  }
+
+  .prompt-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-card.insight-lead {
+    grid-column: 1;
+  }
+
+  .piece-image {
+    width: 88%;
+    height: 88%;
   }
 }

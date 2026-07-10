@@ -5,6 +5,7 @@
                    {
                        "title":  "Pokemon GO Fest 2026: Global",
                        "type":  "global",
+                       "source":  "Pokemon GO official event briefing",
                        "start":  "2026-07-11T10:00:00-04:00",
                        "end":  "2026-07-12T19:00:00-04:00",
                        "factualSummary":  "The free global event runs from 10:00 a.m. to 7:00 p.m. local time on July 11 and 12, featuring rotating type habitats, Mega Mewtwo raids, and Special Research for Zeraora.",
@@ -16,11 +17,12 @@
                                        "Mega Mewtwo X on Saturday and Mega Mewtwo Y on Sunday"
                                    ],
                        "url":  "https://pokemongo.com/en/gofest/global",
-                       "image":  "https://lh3.googleusercontent.com/hVKF8PFZYHdTWgAoT-I-OstjGyNkew6s7ZstHXV2Yigkv2KuacHhXIB-i88sAc4bbt-bjNTL7TxFbZroq1Qn0pYB6mEvMZsf61sNy6_LIQ=s0-e365"
+                       "image":  "assets/pokemon/go-fest-2026-global.jpg"
                    },
                    {
                        "title":  "Special Anniversary Pikachu Celebration",
                        "type":  "anniversary",
+                       "source":  "Pokemon GO official event briefing",
                        "start":  "2026-07-13T10:00:00-04:00",
                        "end":  "2026-07-20T20:00:00-04:00",
                        "factualSummary":  "Three consecutive celebration windows feature costumed Pikachu in the wild, raids, and Field Research, alongside a limited-time GO Pass.",
@@ -31,7 +33,7 @@
                                        "Event-themed Field Research encounters"
                                    ],
                        "url":  "https://pokemongo.com/en/news/special-anniversary-pikachu-celebration",
-                       "image":  "https://lh3.googleusercontent.com/_wmbb-BxDJJlIHsXHCSooc_6Qn1gZPpAI4CtjnfljzglihAOpJb6pkTP_vm3mviOE9Pv5n-ZiUKsugb6K42IImo0JBsCoLdj7lmxEVfFNFo=s0-e365"
+                       "image":  "assets/pokemon/anniversary-pikachu-2026.jpg"
                    }
                ]
 }

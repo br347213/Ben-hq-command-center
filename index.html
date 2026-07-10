@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b1320" />
     <title>My Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260710-intelligence-1" />
+    <link rel="stylesheet" href="styles.css?v=20260710-depth-2" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -57,7 +57,7 @@
                   Your briefing is assembling the most relevant personal signals for today.
                 </p>
                 <div class="hero-stat-row" aria-label="Today signals">
-                  <span><strong id="priorityCount">3</strong> <i id="priorityLabel">priorities</i></span>
+                  <span><strong id="priorityCount">3</strong> <i id="priorityLabel">signals</i></span>
                   <span><strong id="weatherSignal">--</strong> weather</span>
                   <span><strong id="newsSignal">--</strong> stories</span>
                 </div>
@@ -74,7 +74,7 @@
                   <span class="line-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4"></circle><path d="m12 3 2.2 3.8"></path></svg>
                   </span>
-                  <div><p class="eyebrow">Command brief</p><h3>Do these next</h3></div>
+                  <div><p class="eyebrow">Priority lens</p><h3>Attention window</h3></div>
                 </div>
               </div>
               <ul class="priority-list" id="priorityList"></ul>
@@ -158,7 +158,7 @@
             </div>
             <span class="freshness" id="calendarFreshness">Personal calendar</span>
           </div>
-          <div class="calendar-grid" id="calendarGrid"></div>
+          <div class="calendar-grid" id="calendarGrid" aria-live="polite"></div>
         </section>
 
         <section class="page-view" id="view-training">
@@ -229,13 +229,13 @@
                 <div class="chess-board" id="chessBoard" aria-label="Interactive chess puzzle board"></div>
               </div>
             </article>
-            <article class="glass-card action-card module-chess">
+            <article class="glass-card action-card module-chess" id="chessPatternCard">
               <div class="module-header">
                 <span class="module-icon chess-icon" aria-hidden="true">Tip</span>
-                <p class="eyebrow">Chess tip</p>
+                <p class="eyebrow">Pattern review</p>
               </div>
-              <h3>Checks, captures, threats</h3>
-              <p>Before choosing a move, scan forcing moves in that order. It is a simple habit that catches a lot of tactics.</p>
+              <h3 id="chessPatternTitle">Read the position first</h3>
+              <p id="chessPatternDetail">The review cue will update with today's puzzle.</p>
             </article>
             <article class="glass-card action-card module-chess" id="lichessDailyCard" aria-live="polite" hidden>
               <div class="module-header">
@@ -244,24 +244,16 @@
               </div>
               <h3>Daily position</h3>
             </article>
-            <article class="glass-card action-card module-learning">
-              <div class="module-header">
-                <span class="module-icon learning-icon" aria-hidden="true">Plan</span>
-                <p class="eyebrow">Study rhythm</p>
-              </div>
-              <h3>Keep it tiny</h3>
-              <p>One puzzle and one reviewed mistake beats a long session you never repeat.</p>
-            </article>
           </div>
         </section>
 
         <section class="page-view" id="view-prompts">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Structured personal workflows</p>
-              <h2>AI Tools</h2>
+              <p class="eyebrow">Cross-source analysis</p>
+              <h2>Insight Lab</h2>
             </div>
-            <input class="search-input" id="promptSearch" type="search" placeholder="Search prompts" />
+            <span class="freshness" id="insightFreshness">Live synthesis</span>
           </div>
           <div class="prompt-grid" id="promptGrid"></div>
         </section>
@@ -305,6 +297,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260710-intelligence-1"></script>
+    <script src="app.js?v=20260710-depth-2"></script>
   </body>
 </html>
