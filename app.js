@@ -1037,8 +1037,21 @@ function loadBridgeSettings() {
 
 function loadAutoSyncSettings() {
   const stored = readJson(storageKeys.autoSync, {});
+  let cookieKey = "";
+  try {
+    const storedCookie = document.cookie
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith("ben-hq-private-key="))
+      ?.split("=")
+      .slice(1)
+      .join("=");
+    cookieKey = storedCookie ? decodeURIComponent(storedCookie) : "";
+  } catch (error) {
+    cookieKey = "";
+  }
   return {
-    key: typeof stored.key === "string" ? stored.key : "",
+    key: typeof stored.key === "string" && stored.key ? stored.key : cookieKey,
     lastSyncAt: typeof stored.lastSyncAt === "string" ? stored.lastSyncAt : "",
     status: typeof stored.status === "string" ? stored.status : "not configured",
     error: typeof stored.error === "string" ? stored.error : "",
@@ -1067,6 +1080,10 @@ function saveBridgeSettings() {
 
 function saveAutoSyncSettings() {
   writeJson(storageKeys.autoSync, autoSyncSettings);
+  if (autoSyncSettings.key) {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `ben-hq-private-key=${encodeURIComponent(autoSyncSettings.key)}; Max-Age=31536000; Path=/; SameSite=Strict${secure}`;
+  }
 }
 
 function removeStoredItem(key) {
@@ -2732,9 +2749,10 @@ function renderTrainingOverview() {
       summaryCard.innerHTML = `
         <div class="training-private-mark" aria-hidden="true"><span></span></div>
         <div>
-          <p class="eyebrow">Private fitness</p>
-          <h3>Your Garmin briefing is available in your private app session.</h3>
-          <p>Open My Command Center from Safari or your Home Screen to see verified recovery, load, and workout analysis. Personal health data is never exposed on the public page.</p>
+          <p class="eyebrow">Private fitness locked</p>
+          <h3>This browser has not been paired with your Garmin briefing.</h3>
+          <p>Use your private restore link once in this browser. My Command Center will remember the unlock here without exposing health data on the public page.</p>
+          <button class="secondary-button private-unlock-button" data-action="enter-private-key" type="button">Enter private access key</button>
         </div>
       `;
     }
@@ -3931,6 +3949,8 @@ function clearAutoSync() {
     error: "",
   };
   removeStoredItem(storageKeys.autoSync);
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `ben-hq-private-key=; Max-Age=0; Path=/; SameSite=Strict${secure}`;
   renderBridgePanel();
   renderIntelligence();
 }
@@ -4420,8 +4440,36 @@ function resetChessPuzzle() {
   renderChessBoard();
 }
 
+function revealChessSolution() {
+  if (!chessGame || !chessInitialFen || !chessPuzzle.solution.length) {
+    setChessFeedback("The answer is not available for this position yet.", "error");
+    return;
+  }
+  chessGame.load(chessInitialFen);
+  const notation = [];
+  chessPuzzle.solution.forEach((moveCode) => {
+    const move = chessGame.move({ from: moveCode.slice(0, 2), to: moveCode.slice(2, 4), promotion: moveCode[4] || "q" });
+    if (move?.san) notation.push(move.san);
+  });
+  chessSolutionIndex = chessPuzzle.solution.length;
+  chessSolved = true;
+  selectedChessSquare = null;
+  chessPuzzle.lastMoveTo = chessPuzzle.solution[chessPuzzle.solution.length - 1].slice(2, 4);
+  chessPuzzle.pieces = chessPiecesFromGame(chessGame);
+  setChessFeedback(`Answer: ${notation.join(" ")}. Reset the board to try it yourself.`, "success");
+  renderChessBoard();
+}
+
 function wireEvents() {
   document.body.addEventListener("click", (event) => {
+    const mobileDrawer = document.getElementById("mobileNavDrawer");
+    if (
+      mobileDrawer?.classList.contains("open") &&
+      !event.target.closest("#mobileNavDrawer") &&
+      !event.target.closest("#mobileMenuButton")
+    ) {
+      mobileDrawer.classList.remove("open");
+    }
     const viewButton = event.target.closest("[data-view]");
     if (viewButton) {
       navigate(viewButton.dataset.view);
@@ -4463,6 +4511,14 @@ function wireEvents() {
     }
     if (actionButton?.dataset.action === "clear-auto-sync") {
       clearAutoSync();
+    }
+    if (actionButton?.dataset.action === "enter-private-key") {
+      const key = window.prompt("Enter your My Command Center private access key");
+      if (key?.trim()) {
+        autoSyncSettings = { ...autoSyncSettings, key: key.trim(), status: "configured", error: "" };
+        saveAutoSyncSettings();
+        refreshEncryptedAutoSync();
+      }
     }
     if (actionButton?.dataset.action === "clear-private-daily") {
       clearPrivateDaily();
@@ -4574,6 +4630,7 @@ function wireEvents() {
   document.getElementById("showChessHint")?.addEventListener("click", () => {
     setChessFeedback(chessPuzzle.hint, "");
   });
+  document.getElementById("revealChessSolution")?.addEventListener("click", revealChessSolution);
 }
 
 function formatToday() {
