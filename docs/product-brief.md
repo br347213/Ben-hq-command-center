@@ -1,8 +1,8 @@
-# Ben HQ Product Brief
+# My Command Center Product Brief
 
 ## Purpose
 
-Ben HQ is a private personal daily command center. It should reduce recurring decisions, surface useful next actions, and make capture/review easier without becoming a maintenance-heavy system.
+My Command Center is a private personal operating system. It should reduce recurring decisions, surface grounded next actions, and make a large personal context feel calm and controllable without becoming a maintenance-heavy system.
 
 ## Daily Questions
 
@@ -12,6 +12,10 @@ Ben HQ is a private personal daily command center. It should reduce recurring de
 - What is coming up that needs preparation?
 - What did I capture that needs processing?
 - What recommendation is actually useful right now?
+
+## Acceptance Test
+
+Every surfaced sentence must clear one test: could this exact sentence have been written without knowing anything specific about Ben today? If yes, it does not ship. Unavailable or insufficiently grounded modules stay out of the briefing instead of showing setup states or generic placeholders.
 
 ## Version One Modules
 
@@ -31,11 +35,11 @@ Ben HQ is a private personal daily command center. It should reduce recurring de
 - Learning queue
 - Prompt library
 - Personal knowledge library
-- Settings and source status center
+- Settings and source diagnostics center
 
 ## Living Knowledge Vault Direction
 
-Ben HQ should evolve into a living personal knowledge vault: a system that can absorb personal context, organize it, and surface useful next actions before Ben has to go looking.
+My Command Center should evolve into a living personal knowledge vault: a system that can absorb personal context, organize it, and surface useful next actions before Ben has to go looking.
 
 Near-term product ideas:
 

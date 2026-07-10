@@ -2,7 +2,7 @@
 
 ## Project Intent
 
-Ben HQ is a private personal command center. Keep the product focused on daily usefulness, low-friction capture, training support, family/personal planning, Pokemon GO planning, learning, prompts, and future read-only summaries.
+My Command Center is a private personal operating system. Keep the product focused on daily usefulness, grounded recommendations, training support, family/personal planning, Pokemon GO planning, chess improvement, learning, and approved read-only personal summaries.
 
 ## Hard Boundary
 
@@ -12,20 +12,25 @@ Do not access or connect workplace files, workplace email, workplace apps, or wo
 
 - The Today page is the core product.
 - Action beats passive information.
-- Keep dashboards compact and explain why recommendations appear.
-- Use seeded or manually entered data until integrations are explicitly added.
-- Label mock, stale, or imported data clearly.
+- Every surfaced recommendation must cite something specific about Ben today. If the same sentence could apply to anyone, it does not ship.
+- Compute clean domain aggregates before AI reasoning; do not use hardcoded recommendation trees or pass raw noisy data directly to a model.
+- Keep a structured notebook for every domain where progression matters.
+- Use a light frequent signal check and a deeper reasoning pass at the domain's natural boundary.
+- If a live feature is unavailable or not specific enough, hold the card instead of exposing setup language or a placeholder.
+- Keep integration diagnostics in Sources or Settings, never on Today.
 - Require approval before any future external write action.
 - Keep finance features read-only and later-phase only.
 
 ## Design Rules
 
-- Dark liquid glass theme.
+- Use the My Command Center identity, ship-and-wheel mark, and deep navy/command teal palette.
+- Dark, restrained liquid glass theme.
 - Calm, dense, modern, and practical.
 - Avoid generic SaaS dashboard styling.
 - Avoid large empty marketing sections.
-- Prefer small, scannable modules with clear next actions.
+- Prefer one or two focal modules and concise supporting cards with clear next actions.
 - Keep mobile behavior first-class.
+- Use one consistent command-teal accent treatment instead of category-colored borders.
 
 ## Future Technical Direction
 
@@ -34,7 +39,8 @@ Do not access or connect workplace files, workplace email, workplace apps, or wo
 - Supabase Auth and PostgreSQL
 - Feature-folder architecture
 - Zod validation for user input and integration payloads
-- Rule-based training plan engine before AI explanations
+- Verified domain aggregates plus tool-using expert reasoning
+- Structured domain notebooks for training, chess, Pokemon GO, news, and future life planning
 - Adapter pattern for all external integrations
 - Unit tests for training rules, recurrence, dates, dashboard prioritization, and adapters
 - Playwright smoke tests for core flows
@@ -50,3 +56,5 @@ The current version is a local static prototype:
 - `icons/icon.svg`
 
 It should be treated as the visual and interaction baseline, not the final framework implementation.
+
+The standing product and visual directives live in `docs/ai-operating-philosophy.md` and `docs/design-system.md`.
