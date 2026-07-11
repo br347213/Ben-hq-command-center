@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b1320" />
     <title>My Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=20260710-persistence-5" />
+    <link rel="stylesheet" href="styles.css?v=20260710-signals-6" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -57,27 +57,23 @@
                   Your briefing is assembling the most relevant personal signals for today.
                 </p>
                 <div class="hero-stat-row" aria-label="Today signals">
-                  <span><strong id="priorityCount">3</strong> <i id="priorityLabel">signals</i></span>
+                  <span><strong id="signalCount">3</strong> <i id="signalLabel">signals</i></span>
                   <span><strong id="weatherSignal">--</strong> weather</span>
                   <span><strong id="newsSignal">--</strong> stories</span>
                 </div>
               </div>
-              <div class="command-mode" aria-label="Today operating mode">
-                <span>Today</span>
-                <strong id="dailySignalScore">Focus</strong>
-              </div>
             </article>
 
-            <article class="glass-panel priority-panel command-priority-panel">
+            <article class="glass-panel signal-panel command-signal-panel">
               <div class="section-heading compact-heading">
                 <div class="section-title-with-icon">
                   <span class="line-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4"></circle><path d="m12 3 2.2 3.8"></path></svg>
                   </span>
-                  <div><p class="eyebrow">Priority lens</p><h3>Attention window</h3></div>
+                  <div><p class="eyebrow">Current signals</p><h3>Worth knowing</h3></div>
                 </div>
               </div>
-              <ul class="priority-list" id="priorityList"></ul>
+              <ul class="signal-list" id="signalList"></ul>
             </article>
           </div>
 
@@ -298,6 +294,6 @@
         </section>
       </main>
     </div>
-    <script src="app.js?v=20260710-persistence-5"></script>
+    <script src="app.js?v=20260710-signals-6"></script>
   </body>
 </html>

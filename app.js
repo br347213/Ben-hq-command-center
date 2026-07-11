@@ -294,9 +294,9 @@ const seed = {
       title: "Pokemon event optimizer",
       category: "Pokemon GO",
       useWhen: "An event has too many bonuses and you want one deliberate play window.",
-      output: "Priority stack, prep minimum, stop condition",
+      output: "Signal stack, prep minimum, stop condition",
       body: "Use the current event schedule and bonuses plus any stated collection, raid, PvP, or family-play goals. Rank the event's opportunities by expected personal value. Give the minimum preparation, the best play window, what to ignore, and a stop condition that prevents completionist grinding. Flag any time-sensitive evolution, raid, trade, or research requirement.",
-      tags: ["pokemon", "events", "priorities"],
+      tags: ["pokemon", "events", "ranking"],
     },
     {
       title: "Chess mistake compressor",
@@ -2474,8 +2474,16 @@ function buildProactiveBrief() {
   return items;
 }
 
+function visiblePrivateRecommendations() {
+  return privateDaily.recommendations.filter((item) => {
+    const text = `${item?.title || ""} ${item?.detail || ""}`.toLowerCase();
+    return !/clear calendar|zero events|no events|without fixed calendar anchors/.test(text);
+  });
+}
+
 function buildCommandBrief() {
   const recommendation = buildRecommendation();
+  const privateRecommendation = visiblePrivateRecommendations()[0];
   const trainingDecision = buildTrainingIntelligence();
   const pokemonEvent = primaryPokemonEvent();
   const pendingImports = pendingContextImports();
@@ -2493,8 +2501,8 @@ function buildCommandBrief() {
     : privateDaily.summary || (topNews ? `${topNews.source}: ${topNews.title}` : `${trainingDecision.title} is the useful training choice. ${sourceLine}.`);
 
   const eventActions = pokemonEvent?.isActive ? pokemonActionPlan(pokemonEvent) : [];
-  const action = privateDaily.recommendations[0]?.title
-    ? `${privateDaily.recommendations[0].title}: ${privateDaily.recommendations[0].detail || "Use the private packet recommendation."}`
+  const action = privateRecommendation?.title
+    ? `${privateRecommendation.title}: ${privateRecommendation.detail || "Use the private packet recommendation."}`
     : eventActions.length
       ? `Use one deliberate ${pokemonEvent.title} window`
       : topNews
@@ -2504,7 +2512,7 @@ function buildCommandBrief() {
         : recommendation.title;
 
   const actionDetail =
-    privateDaily.recommendations[0]?.detail ||
+    privateRecommendation?.detail ||
     (eventActions.length ? eventActions.slice(0, 3).join(" Then ") : topNews ? newsBriefSummary(topNews) : recommendation.body || trainingDecision.detail);
   const ignore = weatherConstraint
     ? "Ignore exact pace or mileage if rain closes the window."
@@ -2536,35 +2544,25 @@ function buildCommandBrief() {
   ];
 }
 
-function todayModeLabel() {
-  const trainingDecision = buildTrainingIntelligence();
-  const pokemonEvent = primaryPokemonEvent();
-  if (pendingContextImports().length > 0) return "Review";
-  if (trainingDecision.readiness === "Low") return "Recover";
-  if (pokemonEvent?.isActive) return "Event";
-  if (hasPrivateDailyData()) return "Act";
-  return "Focus";
-}
-
 function taskKey(task) {
   return encodeURIComponent(taskId(task));
 }
 
-function renderPriorities() {
-  const priorities = buildTodayPriorities();
-  const list = document.getElementById("priorityList");
-  const panel = list?.closest(".command-priority-panel");
-  const isQuiet = priorities.length === 1 && priorities[0].title === "No urgent personal signal surfaced";
+function renderTodaySignals() {
+  const signals = buildTodaySignals();
+  const list = document.getElementById("signalList");
+  const panel = list?.closest(".command-signal-panel");
+  const isQuiet = signals.length === 1 && signals[0].title === "No urgent personal signal surfaced";
   if (panel) panel.hidden = isQuiet;
   panel?.parentElement?.classList.toggle("is-quiet", isQuiet);
-  list.innerHTML = priorities
+  list.innerHTML = signals
     .map(
-      (priority, index) => `
-        <li class="priority-item">
-          <span class="priority-rank">${index + 1}</span>
+      (signal, index) => `
+        <li class="signal-item">
+          <span class="signal-rank">${index + 1}</span>
           <div>
-            <strong>${priority.title}</strong>
-            <p class="item-meta">${priority.meta}</p>
+            <strong>${signal.title}</strong>
+            <p class="item-meta">${signal.meta}</p>
           </div>
         </li>
       `,
@@ -2599,15 +2597,15 @@ function hasTrainingContext() {
   );
 }
 
-function buildTodayPriorities() {
-  const priorities = [];
-  privateDaily.recommendations.slice(0, 2).forEach((item) => {
-    priorities.push({ title: item.title, meta: item.detail || "Personal recommendation" });
+function buildTodaySignals() {
+  const signals = [];
+  visiblePrivateRecommendations().slice(0, 2).forEach((item) => {
+    signals.push({ title: item.title, meta: item.detail || "Personal recommendation" });
   });
 
   const nextAgenda = [...privateDaily.agenda, ...privateDaily.calendarEvents][0];
   if (nextAgenda) {
-    priorities.push({
+    signals.push({
       title: nextAgenda.title,
       meta: [nextAgenda.time, nextAgenda.detail].filter(Boolean).join(" - "),
     });
@@ -2615,7 +2613,7 @@ function buildTodayPriorities() {
 
   const event = primaryPokemonEvent();
   if (event) {
-    priorities.push({
+    signals.push({
       title: event.title,
       meta: [event.isActive ? `Ends in ${pokemonEventCountdown(event)}` : `Starts in ${pokemonEventCountdown(event)}`, summarizePokemonEvent(event)].filter(Boolean).join(" - "),
     });
@@ -2623,17 +2621,17 @@ function buildTodayPriorities() {
 
   if (hasTrainingContext()) {
     const training = buildTrainingIntelligence();
-    if (training.title) priorities.push({ title: training.title, meta: [training.duration, training.detail].filter(Boolean).join(" - ") });
+    if (training.title) signals.push({ title: training.title, meta: [training.duration, training.detail].filter(Boolean).join(" - ") });
   }
 
-  if (!priorities.length) {
-    priorities.push({
+  if (!signals.length) {
+    signals.push({
       title: "No urgent personal signal surfaced",
       meta: "Your visible calendar and live event windows are quiet right now.",
     });
   }
 
-  return priorities.slice(0, 3);
+  return signals.slice(0, 3);
 }
 
 function renderTodayInsights() {
@@ -3607,8 +3605,9 @@ function buildRecommendation() {
     };
   }
 
-  if (privateDaily.recommendations.length > 0) {
-    const item = privateDaily.recommendations[0];
+  const privateRecommendation = visiblePrivateRecommendations()[0];
+  if (privateRecommendation) {
+    const item = privateRecommendation;
     return {
       title: item.title,
       body: item.detail || "Private bridge found a useful next action for today.",
@@ -3683,20 +3682,19 @@ function renderDailySignals() {
     trainingDecision?.title ? `Fitness: ${trainingDecision.title} (${trainingDecision.readiness} readiness).` : "",
     weatherState.status === "live" ? `Arden is ${weatherState.temp} with ${weatherState.summary.toLowerCase()}` : "",
   ].filter(Boolean);
-  const priorities = buildTodayPriorities();
+  const signals = buildTodaySignals();
 
-  document.getElementById("priorityCount").textContent = priorities.length;
-  const priorityLabel = document.getElementById("priorityLabel");
-  if (priorityLabel) priorityLabel.textContent = priorities.length === 1 ? "signal" : "signals";
+  document.getElementById("signalCount").textContent = signals.length;
+  const signalLabel = document.getElementById("signalLabel");
+  if (signalLabel) signalLabel.textContent = signals.length === 1 ? "signal" : "signals";
   document.getElementById("weatherSignal").textContent = weatherWord;
   const newsSignal = document.getElementById("newsSignal");
   if (newsSignal) newsSignal.textContent = newsWord;
-  document.getElementById("dailySignalScore").textContent = todayModeLabel();
   document.getElementById("dailyBrief").textContent =
     privateDaily.summary ||
     briefParts.join(" ") ||
     "No time-sensitive personal signal is competing for attention right now.";
-  renderPriorities();
+  renderTodaySignals();
   renderTodayInsights();
 }
 
@@ -3757,7 +3755,7 @@ function renderBridgePanel() {
       <span><strong>${sourceCount}</strong> sources</span>
       <span><strong>${privateDaily.calendarEvents.length}</strong> events</span>
       <span><strong>${privateDaily.mail.needsReply.length}</strong> replies</span>
-      <span><strong>${privateDaily.recommendations.length}</strong> recs</span>
+      <span><strong>${visiblePrivateRecommendations().length}</strong> recs</span>
     </div>
     <p class="item-meta">${
       hasPacket
@@ -4845,7 +4843,7 @@ async function init() {
   renderNav("desktopNav");
   renderNav("mobileNav");
   renderMobileBottomNav();
-  renderPriorities();
+  renderTodaySignals();
   renderTodayInsights();
   renderTodayAgenda();
   renderTodayWorkout();
