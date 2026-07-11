@@ -1,213 +1,174 @@
-{
-  "generatedAt": "2026-07-10T09:30:00-04:00",
+﻿{
+  "generatedAt": "2026-07-11T00:00:00Z",
   "stories": [
     {
-      "title": "OpenAI launches ChatGPT Work as a cross-device desktop agent",
-      "factualSummary": "Superhuman AI's July 10 briefing reports that ChatGPT Work can act across a computer or phone, draw context from files, and stay focused on one project for extended periods inside a new unified desktop app.",
+      "title": "US cybersecurity agency CISA had to build its incident playbook during the incident, agency reveals",
+      "factualSummary": "CISA said it lacked a ready response plan when a contractor exposure surfaced and had to assemble its incident playbook during the early stages of the response.",
       "takeaways": [
-        "The product is positioned as an action-taking agent rather than another chat surface.",
-        "OpenAI is consolidating ChatGPT, Work, and Codex into one desktop environment while keeping the app available across plan levels."
-      ],
-      "source": "Superhuman AI",
-      "url": "https://www.superhuman.ai/p/openai-launches-chatgpt-work-a-new-desktop-agent",
-      "publishedAt": "2026-07-10T11:00:00Z",
-      "tags": ["AI agents", "OpenAI", "personal tech", "automation"],
-      "image": ""
-    },
-    {
-      "title": "GPT-Live, Monogram, and Grok 4.5 widen the model competition",
-      "factualSummary": "Superhuman AI's July 9 briefing groups three shifts: OpenAI's simultaneous voice model, Monogram's visual-first interface, and a new Grok model focused on coding and agentic work.",
-      "takeaways": [
-        "AI interaction is expanding beyond turn-based text chat into simultaneous voice and generated interfaces.",
-        "Frontier competition is increasingly about the surrounding experience and integrations, not only benchmark scores."
-      ],
-      "source": "Superhuman AI",
-      "url": "https://www.superhuman.ai/p/the-model-wars-are-raging-on",
-      "publishedAt": "2026-07-09T11:00:00Z",
-      "tags": ["AI", "voice", "interfaces", "models"],
-      "image": ""
-    },
-    {
-      "title": "Meta brings Muse image generation into its social apps",
-      "factualSummary": "Meta is rolling Muse Image into Meta AI, Instagram Stories, and WhatsApp while previewing a video model and expanding its paid model strategy.",
-      "takeaways": [
-        "Distribution through Meta's existing apps could matter as much as raw image-model ranking.",
-        "The release ties generation directly to social context such as friends, photos, and trending content."
-      ],
-      "source": "Superhuman AI",
-      "url": "https://www.superhuman.ai/p/meta-s-new-image-model-outranks-competitors",
-      "publishedAt": "2026-07-08T11:00:00Z",
-      "tags": ["AI images", "Meta", "Instagram", "personal tech"],
-      "image": ""
-    },
-    {
-      "title": "GPT-5.6 Sol demo brings high-speed agentic modeling into Blender",
-      "factualSummary": "A Digg Tech cluster highlights a demo of GPT-5.6 Sol operating Blender for rapid 3D modeling, an example of model speed becoming useful inside a complex visual tool rather than only in chat.",
-      "takeaways": [
-        "The notable shift is direct manipulation of a professional application, not the generated object by itself.",
-        "High token throughput matters when an agent must observe, decide, and revise repeatedly inside interactive software."
-      ],
-      "source": "Digg Tech",
-      "url": "https://di.gg/ai/0fdp9fef",
-      "publishedAt": "2026-07-10T10:00:00Z",
-      "tags": ["AI agents", "3D", "Blender", "models"],
-      "image": ""
-    },
-    {
-      "title": "OpenAI says GPT-5.6 is the preferred model for Microsoft Copilot 365 amid breakup chatter",
-      "factualSummary": "OpenAI says its new GPT-5.6 family will continue powering Microsoft Copilot 365 even as questions persist about the companies' broader partnership.",
-      "takeaways": [
-        "The model relationship is continuing inside Microsoft's productivity suite despite wider partnership tension.",
-        "GPT-5.6 is being positioned as the preferred Copilot model rather than a separate optional experiment."
+        "Incident response breaks down quickly when playbooks do not exist for the exact scenario.",
+        "The report is a reminder that government security teams still need rehearsed, written procedures before a crisis starts."
       ],
       "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/09/openai-says-gpt-5-6-is-the-preferred-model-for-microsoft-copilot-amid-breakup-chatter/",
-      "publishedAt": "2026-07-10T00:16:54Z",
-      "tags": ["AI", "OpenAI", "Microsoft", "Copilot"],
-      "image": "assets/news/copilot.jpg"
+      "url": "https://techcrunch.com/2026/07/10/us-cyber-agency-cisa-had-to-build-its-incident-playbook-during-the-incident-agency-reveals/",
+      "publishedAt": "2026-07-11T01:01:00Z",
+      "tags": ["security", "government", "incident response"],
+      "image": "https://techcrunch.com/wp-content/uploads/2026/05/cisa-2240293485.jpg?w=1024"
     },
     {
-      "title": "Fidji Simo steps down from OpenAI's No. 2 role",
-      "factualSummary": "Fidji Simo is leaving her full-time operating role at OpenAI after an extended medical leave, creating a leadership gap as the company faces enterprise competition and possible IPO planning.",
+      "title": "Meta removes controversial AI feature on Instagram after backlash",
+      "factualSummary": "Meta pulled a feature that let people generate AI images from public Instagram accounts after backlash over consent, privacy, and notification gaps.",
       "takeaways": [
-        "The departure removes a senior operating leader during a strategically busy period for OpenAI.",
-        "The immediate story is organizational continuity, not a change to a specific model or product."
+        "Opt-out controls were not enough to make the feature acceptable once public criticism intensified.",
+        "Consumer AI features built on social identity data are moving faster than most users can evaluate their privacy impact."
       ],
       "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/09/fidji-simo-steps-down-from-openais-no-2-role/",
-      "publishedAt": "2026-07-09T23:38:00Z",
-      "tags": ["AI", "OpenAI", "leadership"],
-      "image": "assets/news/fidji-simo.jpg"
+      "url": "https://techcrunch.com/2026/07/10/meta-removes-controversial-ai-feature-on-instagram-after-backlash/",
+      "publishedAt": "2026-07-10T23:55:00Z",
+      "tags": ["AI", "privacy", "Instagram"],
+      "image": "https://techcrunch.com/wp-content/uploads/2026/05/instagram-header.jpg?w=1024"
     },
     {
-      "title": "An AI agent startup let its own agent run a $100 million fundraise",
-      "factualSummary": "Enterprise-agent startup Lyzr used one of its own AI agents during a $100 million fundraising process, presenting the raise as a live demonstration of the product's capabilities.",
+      "title": "Bluesky's interim CEO, Toni Schneider, drops the 'interim'",
+      "factualSummary": "Toni Schneider moved from interim to permanent CEO at Bluesky and said he wants to emphasize smaller spaces and more private communities.",
       "takeaways": [
-        "The company turned a high-stakes internal workflow into a product proof point.",
-        "The useful question is how much of the process the agent completed versus assisted, which the headline alone does not establish."
+        "The company is signaling leadership continuity after a short transition period.",
+        "Bluesky appears to be leaning into private-community features rather than pure scale chasing."
       ],
       "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/09/an-ai-agent-startup-just-let-its-agent-run-its-100-million-fundraise/",
-      "publishedAt": "2026-07-09T22:08:58Z",
-      "tags": ["AI agents", "startups", "fundraising"],
-      "image": "assets/news/lyzr.png"
+      "url": "https://techcrunch.com/2026/07/10/blueskys-interim-ceo-toni-schneider-drops-the-interim/",
+      "publishedAt": "2026-07-10T21:51:00Z",
+      "tags": ["social media", "leadership", "startups"],
+      "image": "https://techcrunch.com/wp-content/uploads/2026/01/bluesky-GettyImages-2185144073.jpg?w=1024"
     },
     {
-      "title": "OpenAI is shutting down Atlas while moving browser features elsewhere",
-      "factualSummary": "OpenAI is sunsetting its Atlas AI browser after less than a year while moving parts of its agentic browsing work into the desktop app and a Chrome extension.",
+      "title": "Apple sues OpenAI over alleged trade secret theft",
+      "factualSummary": "Apple filed suit against OpenAI alleging trade secret theft and breach of contract, pushing the companies' AI relationship into a legal dispute.",
       "takeaways": [
-        "The standalone browser is ending, but OpenAI is not abandoning agentic web interaction.",
-        "The product strategy is shifting toward features inside surfaces people already use."
+        "A major platform-vs-model conflict now has a courtroom dimension.",
+        "The case could affect how tightly major device and AI ecosystems stay coupled."
       ],
       "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/09/openai-is-shutting-down-atlas-but-its-ai-browser-ambitions-are-still-growing/",
-      "publishedAt": "2026-07-09T22:03:54Z",
-      "tags": ["AI", "browsers", "OpenAI", "agents"],
-      "image": "assets/news/atlas.jpg"
+      "url": "https://techcrunch.com/2026/07/10/apple-sues-openai-over-alleged-trade-secret-theft/",
+      "publishedAt": "2026-07-10T21:00:00Z",
+      "tags": ["AI", "Apple", "OpenAI"],
+      "image": "https://techcrunch.com/wp-content/uploads/2026/07/tim-cook-sam-altman-GettyImages-2233062347.jpg?w=1024"
     },
     {
-      "title": "OpenAI launches its new GPT-5.6 model family",
-      "factualSummary": "OpenAI introduced GPT-5.6 in multiple variants aimed at coding, cybersecurity, scientific research, and general AI workloads.",
+      "title": "Disney+ is considering a free streaming tier, report says",
+      "factualSummary": "Disney+ is reportedly weighing a free tier with selected content as streaming services keep looking for ways to compete with ad-supported alternatives.",
       "takeaways": [
-        "The release uses multiple performance and cost tiers instead of one universal configuration.",
-        "Coding efficiency and defensive cybersecurity are central parts of the positioning."
+        "Free or lightly monetized tiers remain an important growth lever for streaming platforms.",
+        "The exact catalog and launch timing still appear undecided."
       ],
       "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/09/openai-launches-its-new-family-of-models-with-gpt-5-6/",
-      "publishedAt": "2026-07-09T22:24:24Z",
-      "tags": ["AI", "OpenAI", "models", "cybersecurity"],
-      "image": "assets/news/gpt-56.jpg"
+      "url": "https://techcrunch.com/2026/07/10/disney-is-considering-a-free-streaming-tier-report-says/",
+      "publishedAt": "2026-07-10T16:29:00Z",
+      "tags": ["streaming", "consumer tech", "media"],
+      "image": "https://techcrunch.com/wp-content/uploads/2022/08/GettyImages-1233058211.jpg?w=1024"
     },
     {
-      "title": "Shared API keys expose AI-agent fleets at 69% of surveyed enterprises",
-      "factualSummary": "VentureBeat reports that 69% of 107 surveyed enterprises share credentials somewhere in their agent deployments, weakening attribution and increasing the blast radius of a compromised agent.",
+      "title": "Five ways to use YouTube Shorts to grow your channel",
+      "factualSummary": "YouTube outlines interactive stickers, polls, Q&A, add-yours prompts, and video replies as ways to turn Shorts viewers into a community.",
       "takeaways": [
-        "Shared credentials make it difficult to determine which agent performed an action after an incident.",
-        "Scoped identities and sandbox isolation remain less common than prompt and output guardrails."
-      ],
-      "source": "VentureBeat",
-      "url": "https://venturebeat.com/security/shared-api-keys-expose-ai-agent-fleets-venturebeat-research",
-      "publishedAt": "2026-07-09T20:45:43Z",
-      "tags": ["AI agents", "security", "identity", "research"],
-      "image": ""
-    },
-    {
-      "title": "Multi-model AI systems may underestimate shared failure rates by 2.25x",
-      "factualSummary": "Research covered by VentureBeat argues that model-routing systems often overestimate the benefit of combining models because they fail to measure prompts that make every model fail together.",
-      "takeaways": [
-        "Low pairwise error correlation does not guarantee that a pool of models will outperform its strongest member.",
-        "Teams should measure the co-failure ceiling before paying the latency and governance cost of orchestration."
-      ],
-      "source": "VentureBeat",
-      "url": "https://venturebeat.com/orchestration/enterprises-using-multiple-ai-models-are-underestimating-failure-rates-by-2-25x",
-      "publishedAt": "2026-07-09T18:46:56Z",
-      "tags": ["AI", "model routing", "reliability", "research"],
-      "image": ""
-    },
-    {
-      "title": "EU threatens Meta with fines over addictive Facebook and Instagram design",
-      "factualSummary": "European regulators say features including infinite scroll may contribute to compulsive use and unhealthy habits, putting Meta at risk of fines under digital-platform rules.",
-      "takeaways": [
-        "The scrutiny targets product mechanics and user behavior, not only content moderation.",
-        "The case could influence how large social platforms design feeds and stopping cues in Europe."
-      ],
-      "source": "BBC Technology",
-      "url": "https://www.bbc.co.uk/news/articles/c8j2dje3pldo",
-      "publishedAt": "2026-07-10T12:02:40Z",
-      "tags": ["Meta", "social media", "EU", "regulation"],
-      "image": "assets/news/meta-eu.jpg"
-    },
-    {
-      "title": "Big tech may have to address scam ads under Ofcom proposals",
-      "factualSummary": "Ofcom is proposing stronger obligations for major platforms after finding that more than half of UK adults have encountered potentially fraudulent advertising online.",
-      "takeaways": [
-        "The proposal shifts more responsibility for fraudulent advertising toward the platforms distributing it.",
-        "Implementation details will determine whether platforms must prevent ads before publication or mainly respond faster afterward."
-      ],
-      "source": "BBC Technology",
-      "url": "https://www.bbc.co.uk/news/articles/c9q2rznjqwwo",
-      "publishedAt": "2026-07-10T09:59:19Z",
-      "tags": ["online scams", "advertising", "platforms", "regulation"],
-      "image": "assets/news/scam-ads.jpg"
-    },
-    {
-      "title": "Fake portable air-conditioner claims are spreading online",
-      "factualSummary": "The UK's advertising regulator says ads claiming that small portable devices can cool a room in about 90 seconds are misleading and substantially overstate what the products can do.",
-      "takeaways": [
-        "The products are being marketed with performance claims that exceed their physical cooling capability.",
-        "The story is a practical warning about highly promoted direct-to-consumer gadgets during hot weather."
-      ],
-      "source": "BBC Technology",
-      "url": "https://www.bbc.co.uk/news/articles/cj6g41pzy41o",
-      "publishedAt": "2026-07-10T01:33:45Z",
-      "tags": ["consumer tech", "scams", "advertising"],
-      "image": "assets/news/air-conditioner.jpg"
-    },
-    {
-      "title": "Meta faces criticism over AI images made from public Instagram profile photos",
-      "factualSummary": "Meta is allowing users to generate AI images from some public Instagram profile pictures, prompting criticism from privacy campaigners despite an available opt-out.",
-      "takeaways": [
-        "The default treatment of public profile imagery is at the center of the backlash.",
-        "An opt-out does not resolve concerns when users may not know the feature exists before their image is used."
-      ],
-      "source": "BBC Technology",
-      "url": "https://www.bbc.co.uk/news/articles/cp9lee19y1yo",
-      "publishedAt": "2026-07-08T12:28:03Z",
-      "tags": ["Meta", "AI images", "privacy", "Instagram"],
-      "image": "assets/news/instagram-ai.png"
-    },
-    {
-      "title": "YouTube's Ask Studio offers creators tailored ideas and channel analysis",
-      "factualSummary": "YouTube published a practical guide to Ask Studio, a creator tool designed to answer channel-specific questions, suggest ideas, and help interpret audience data.",
-      "takeaways": [
-        "The tool is positioned around channel context rather than generic content brainstorming.",
-        "YouTube recommends specific questions and iterative prompting to make the output more actionable."
+        "The platform is pushing creators toward engagement loops rather than simple reach.",
+        "Audience participation features are becoming a core growth tactic for Shorts."
       ],
       "source": "YouTube Blog",
-      "url": "https://blog.youtube/creator-and-artist-stories/youtube-ask-studio-creator-guide/",
-      "publishedAt": "2026-06-30T22:00:00Z",
-      "tags": ["YouTube", "creators", "AI tools", "analytics"],
-      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/creator-insider-ask-studio-vod-.max-600x600.format-webp.webp"
+      "url": "https://blog.youtube/creator-and-artist-stories/grow-youtube-channel-interactive-shorts/",
+      "publishedAt": "2026-07-07T00:00:00Z",
+      "tags": ["creator platforms", "YouTube", "short-form video"],
+      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/CI-Creator-Strategy-Thumbnail-.max-100x3000.format-webp.webp"
+    },
+    {
+      "title": "Building for families in Turkiye and MENA with new kid accounts",
+      "factualSummary": "YouTube introduced supervised kid accounts in Turkiye and MENA with parent-led settings, default protections, and a Shorts feed timer.",
+      "takeaways": [
+        "Family safety controls are becoming more region-specific and more configurable.",
+        "Short-form consumption is now part of the parental-control design surface."
+      ],
+      "source": "YouTube Blog",
+      "url": "https://blog.youtube/news-and-events/youtube-supervised-kid-accounts-middle-east/",
+      "publishedAt": "2026-07-01T00:00:00Z",
+      "tags": ["YouTube", "family safety", "consumer tech"],
+      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/unnamed-11.max-700x3000.format.max-100x3000.format-webp.webp"
+    },
+    {
+      "title": "How to watch the 2026 FIFA World Cup on YouTube",
+      "factualSummary": "YouTube mapped out how fans can follow the 2026 FIFA World Cup through official broadcasters, live coverage, Shorts, highlights, and creator content.",
+      "takeaways": [
+        "YouTube is using the tournament to reinforce its role as both a live-sports and highlights platform.",
+        "Creators and official media partners are being treated as complementary distribution layers."
+      ],
+      "source": "YouTube Blog",
+      "url": "https://blog.youtube/news-and-events/watch-fifa-world-cup-youtube/",
+      "publishedAt": "2026-06-10T00:00:00Z",
+      "tags": ["sports", "creator platforms", "YouTube"],
+      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/Shorts_GFX_CreatorsCup_KeyVisual_GIF_853x480p_051926.gif"
+    },
+    {
+      "title": "Anthropic's browser agent got hijacked 31.5% of the time before safeguards engaged",
+      "factualSummary": "VentureBeat compared frontier prompt-injection disclosures and found that Anthropic's browser agent still had a high attack success rate before safeguards were applied.",
+      "takeaways": [
+        "Browser-facing agents remain one of the most exposed surfaces for prompt injection.",
+        "Vendor disclosure formats still make apples-to-apples security comparison difficult."
+      ],
+      "source": "VentureBeat",
+      "url": "https://venturebeat.com/security/anthropic-browser-agent-hijacked-31-percent-before-safeguards-engaged",
+      "publishedAt": "2026-06-01T15:50:00Z",
+      "tags": ["AI security", "agents", "prompt injection"],
+      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F5HR9mWnZxw8XGdOeF4fQ8X%2F7c1c8f2f1c0b8f0f0d8a6d0b7a6f2c5a%2FHERO.png%3Fw%3D1000%26q%3D100&w=3840"
+    },
+    {
+      "title": "MeMo's memory model lets teams upgrade their LLM without retraining it - and performance jumps 26%",
+      "factualSummary": "Researchers behind MeMo separate memory from reasoning so teams can add knowledge without full retraining, then swap reasoning models without rebuilding the memory layer.",
+      "takeaways": [
+        "The architecture points to a modular alternative to full retraining or heavy RAG stacks.",
+        "Memory and reasoning can evolve on different schedules if the interface stays stable."
+      ],
+      "source": "VentureBeat",
+      "url": "https://venturebeat.com/orchestration/memo-memory-model-teams-upgrade-llm-without-retraining",
+      "publishedAt": "2026-05-29T19:28:00Z",
+      "tags": ["AI", "memory", "orchestration"],
+      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2FuNG5np6loL4mLiU9LKH0s%2F7525aad6eda1c42caffcb84af89bce26%2FLLM_memory_module.jpg%3Fw%3D1000%26q%3D100&w=3840"
+    },
+    {
+      "title": "Pinterest cut AI costs 90% by gutting a frontier model's vision layer",
+      "factualSummary": "Pinterest cut image-recommendation costs by replacing a frontier model's vision encoder with proprietary embeddings and tuning for its own discovery graph.",
+      "takeaways": [
+        "Model efficiency gains can come from architecture changes rather than a brand-new model family.",
+        "Custom embeddings can be more valuable than raw model size when the use case is highly specialized."
+      ],
+      "source": "VentureBeat",
+      "url": "https://venturebeat.com/orchestration/pinterest-cut-ai-costs-90-by-gutting-a-frontier-models-vision-layer",
+      "publishedAt": "2026-05-29T16:24:00Z",
+      "tags": ["AI efficiency", "orchestration", "recommendations"],
+      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F4q0SyXNOt4Bdaw9T4HWo7uQ%2Fd114520ee379949d6f7f8aaf591e7754%2FOpen-source.png%3Fw%3D1000%26q%3D100&w=3840"
+    },
+    {
+      "title": "Mistral AI launches Vibe, expands into industrial AI and announces data center push to challenge OpenAI",
+      "factualSummary": "Mistral used its conference to announce an industrial-AI expansion, a new data center push, and a rebranding of its consumer assistant as it targets enterprise customers.",
+      "takeaways": [
+        "Infrastructure ownership remains central to enterprise AI positioning.",
+        "The company is broadening beyond model releases into full-stack deployment and industrial use cases."
+      ],
+      "source": "VentureBeat",
+      "url": "https://venturebeat.com/technology/mistral-ai-launches-vibe-expands-into-industrial-ai-and-announces-data-center-push-to-challenge-openai",
+      "publishedAt": "2026-05-28T20:54:00Z",
+      "tags": ["AI", "infrastructure", "enterprise"],
+      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F64vl7LlTNGuZeHkUFTvu1Z%2Ff7a5d77afb596fa3342837a14d05f644%2FNuneybits_Vector_art_of_Paris_server_skyline_in_burnt_orange_ccb4ba92-3ffa-49fc-8eeb-223c3b174750.webp%3Fw%3D1000%26q%3D100&w=3840"
+    },
+    {
+      "title": "How DeepSeek's radical architecture is shattering Silicon Valley's token moat",
+      "factualSummary": "DeepSeek's permanent price cuts and cache-focused architecture are pressuring frontier-model economics and undercutting Western token pricing.",
+      "takeaways": [
+        "Infrastructure efficiency is now a major competitive lever in model markets.",
+        "Token pricing pressure can reshape the economics of enterprise AI adoption."
+      ],
+      "source": "VentureBeat",
+      "url": "https://venturebeat.com/infrastructure/how-deepseeks-radical-architecture-is-shattering-silicon-valleys-token-moat",
+      "publishedAt": "2026-05-28T16:57:00Z",
+      "tags": ["AI", "infrastructure", "pricing"],
+      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F5f6tA2TPIBdaw9T4HWo7uQ%2Fd114520ee379949d6f7f8aaf591e7754%2FGemini_Generated_Image_a6l659a6l659a6l6.png%3Fw%3D1000%26q%3D100&w=3840"
     }
   ]
 }
