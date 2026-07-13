@@ -1,174 +1,277 @@
-﻿{
-  "generatedAt": "2026-07-11T00:00:00Z",
-  "stories": [
-    {
-      "title": "US cybersecurity agency CISA had to build its incident playbook during the incident, agency reveals",
-      "factualSummary": "CISA said it lacked a ready response plan when a contractor exposure surfaced and had to assemble its incident playbook during the early stages of the response.",
-      "takeaways": [
-        "Incident response breaks down quickly when playbooks do not exist for the exact scenario.",
-        "The report is a reminder that government security teams still need rehearsed, written procedures before a crisis starts."
-      ],
-      "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/10/us-cyber-agency-cisa-had-to-build-its-incident-playbook-during-the-incident-agency-reveals/",
-      "publishedAt": "2026-07-11T01:01:00Z",
-      "tags": ["security", "government", "incident response"],
-      "image": "https://techcrunch.com/wp-content/uploads/2026/05/cisa-2240293485.jpg?w=1024"
-    },
-    {
-      "title": "Meta removes controversial AI feature on Instagram after backlash",
-      "factualSummary": "Meta pulled a feature that let people generate AI images from public Instagram accounts after backlash over consent, privacy, and notification gaps.",
-      "takeaways": [
-        "Opt-out controls were not enough to make the feature acceptable once public criticism intensified.",
-        "Consumer AI features built on social identity data are moving faster than most users can evaluate their privacy impact."
-      ],
-      "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/10/meta-removes-controversial-ai-feature-on-instagram-after-backlash/",
-      "publishedAt": "2026-07-10T23:55:00Z",
-      "tags": ["AI", "privacy", "Instagram"],
-      "image": "https://techcrunch.com/wp-content/uploads/2026/05/instagram-header.jpg?w=1024"
-    },
-    {
-      "title": "Bluesky's interim CEO, Toni Schneider, drops the 'interim'",
-      "factualSummary": "Toni Schneider moved from interim to permanent CEO at Bluesky and said he wants to emphasize smaller spaces and more private communities.",
-      "takeaways": [
-        "The company is signaling leadership continuity after a short transition period.",
-        "Bluesky appears to be leaning into private-community features rather than pure scale chasing."
-      ],
-      "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/10/blueskys-interim-ceo-toni-schneider-drops-the-interim/",
-      "publishedAt": "2026-07-10T21:51:00Z",
-      "tags": ["social media", "leadership", "startups"],
-      "image": "https://techcrunch.com/wp-content/uploads/2026/01/bluesky-GettyImages-2185144073.jpg?w=1024"
-    },
-    {
-      "title": "Apple sues OpenAI over alleged trade secret theft",
-      "factualSummary": "Apple filed suit against OpenAI alleging trade secret theft and breach of contract, pushing the companies' AI relationship into a legal dispute.",
-      "takeaways": [
-        "A major platform-vs-model conflict now has a courtroom dimension.",
-        "The case could affect how tightly major device and AI ecosystems stay coupled."
-      ],
-      "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/10/apple-sues-openai-over-alleged-trade-secret-theft/",
-      "publishedAt": "2026-07-10T21:00:00Z",
-      "tags": ["AI", "Apple", "OpenAI"],
-      "image": "https://techcrunch.com/wp-content/uploads/2026/07/tim-cook-sam-altman-GettyImages-2233062347.jpg?w=1024"
-    },
-    {
-      "title": "Disney+ is considering a free streaming tier, report says",
-      "factualSummary": "Disney+ is reportedly weighing a free tier with selected content as streaming services keep looking for ways to compete with ad-supported alternatives.",
-      "takeaways": [
-        "Free or lightly monetized tiers remain an important growth lever for streaming platforms.",
-        "The exact catalog and launch timing still appear undecided."
-      ],
-      "source": "TechCrunch",
-      "url": "https://techcrunch.com/2026/07/10/disney-is-considering-a-free-streaming-tier-report-says/",
-      "publishedAt": "2026-07-10T16:29:00Z",
-      "tags": ["streaming", "consumer tech", "media"],
-      "image": "https://techcrunch.com/wp-content/uploads/2022/08/GettyImages-1233058211.jpg?w=1024"
-    },
-    {
-      "title": "Five ways to use YouTube Shorts to grow your channel",
-      "factualSummary": "YouTube outlines interactive stickers, polls, Q&A, add-yours prompts, and video replies as ways to turn Shorts viewers into a community.",
-      "takeaways": [
-        "The platform is pushing creators toward engagement loops rather than simple reach.",
-        "Audience participation features are becoming a core growth tactic for Shorts."
-      ],
-      "source": "YouTube Blog",
-      "url": "https://blog.youtube/creator-and-artist-stories/grow-youtube-channel-interactive-shorts/",
-      "publishedAt": "2026-07-07T00:00:00Z",
-      "tags": ["creator platforms", "YouTube", "short-form video"],
-      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/CI-Creator-Strategy-Thumbnail-.max-100x3000.format-webp.webp"
-    },
-    {
-      "title": "Building for families in Turkiye and MENA with new kid accounts",
-      "factualSummary": "YouTube introduced supervised kid accounts in Turkiye and MENA with parent-led settings, default protections, and a Shorts feed timer.",
-      "takeaways": [
-        "Family safety controls are becoming more region-specific and more configurable.",
-        "Short-form consumption is now part of the parental-control design surface."
-      ],
-      "source": "YouTube Blog",
-      "url": "https://blog.youtube/news-and-events/youtube-supervised-kid-accounts-middle-east/",
-      "publishedAt": "2026-07-01T00:00:00Z",
-      "tags": ["YouTube", "family safety", "consumer tech"],
-      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/unnamed-11.max-700x3000.format.max-100x3000.format-webp.webp"
-    },
-    {
-      "title": "How to watch the 2026 FIFA World Cup on YouTube",
-      "factualSummary": "YouTube mapped out how fans can follow the 2026 FIFA World Cup through official broadcasters, live coverage, Shorts, highlights, and creator content.",
-      "takeaways": [
-        "YouTube is using the tournament to reinforce its role as both a live-sports and highlights platform.",
-        "Creators and official media partners are being treated as complementary distribution layers."
-      ],
-      "source": "YouTube Blog",
-      "url": "https://blog.youtube/news-and-events/watch-fifa-world-cup-youtube/",
-      "publishedAt": "2026-06-10T00:00:00Z",
-      "tags": ["sports", "creator platforms", "YouTube"],
-      "image": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/Shorts_GFX_CreatorsCup_KeyVisual_GIF_853x480p_051926.gif"
-    },
-    {
-      "title": "Anthropic's browser agent got hijacked 31.5% of the time before safeguards engaged",
-      "factualSummary": "VentureBeat compared frontier prompt-injection disclosures and found that Anthropic's browser agent still had a high attack success rate before safeguards were applied.",
-      "takeaways": [
-        "Browser-facing agents remain one of the most exposed surfaces for prompt injection.",
-        "Vendor disclosure formats still make apples-to-apples security comparison difficult."
-      ],
-      "source": "VentureBeat",
-      "url": "https://venturebeat.com/security/anthropic-browser-agent-hijacked-31-percent-before-safeguards-engaged",
-      "publishedAt": "2026-06-01T15:50:00Z",
-      "tags": ["AI security", "agents", "prompt injection"],
-      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F5HR9mWnZxw8XGdOeF4fQ8X%2F7c1c8f2f1c0b8f0f0d8a6d0b7a6f2c5a%2FHERO.png%3Fw%3D1000%26q%3D100&w=3840"
-    },
-    {
-      "title": "MeMo's memory model lets teams upgrade their LLM without retraining it - and performance jumps 26%",
-      "factualSummary": "Researchers behind MeMo separate memory from reasoning so teams can add knowledge without full retraining, then swap reasoning models without rebuilding the memory layer.",
-      "takeaways": [
-        "The architecture points to a modular alternative to full retraining or heavy RAG stacks.",
-        "Memory and reasoning can evolve on different schedules if the interface stays stable."
-      ],
-      "source": "VentureBeat",
-      "url": "https://venturebeat.com/orchestration/memo-memory-model-teams-upgrade-llm-without-retraining",
-      "publishedAt": "2026-05-29T19:28:00Z",
-      "tags": ["AI", "memory", "orchestration"],
-      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2FuNG5np6loL4mLiU9LKH0s%2F7525aad6eda1c42caffcb84af89bce26%2FLLM_memory_module.jpg%3Fw%3D1000%26q%3D100&w=3840"
-    },
-    {
-      "title": "Pinterest cut AI costs 90% by gutting a frontier model's vision layer",
-      "factualSummary": "Pinterest cut image-recommendation costs by replacing a frontier model's vision encoder with proprietary embeddings and tuning for its own discovery graph.",
-      "takeaways": [
-        "Model efficiency gains can come from architecture changes rather than a brand-new model family.",
-        "Custom embeddings can be more valuable than raw model size when the use case is highly specialized."
-      ],
-      "source": "VentureBeat",
-      "url": "https://venturebeat.com/orchestration/pinterest-cut-ai-costs-90-by-gutting-a-frontier-models-vision-layer",
-      "publishedAt": "2026-05-29T16:24:00Z",
-      "tags": ["AI efficiency", "orchestration", "recommendations"],
-      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F4q0SyXNOt4Bdaw9T4HWo7uQ%2Fd114520ee379949d6f7f8aaf591e7754%2FOpen-source.png%3Fw%3D1000%26q%3D100&w=3840"
-    },
-    {
-      "title": "Mistral AI launches Vibe, expands into industrial AI and announces data center push to challenge OpenAI",
-      "factualSummary": "Mistral used its conference to announce an industrial-AI expansion, a new data center push, and a rebranding of its consumer assistant as it targets enterprise customers.",
-      "takeaways": [
-        "Infrastructure ownership remains central to enterprise AI positioning.",
-        "The company is broadening beyond model releases into full-stack deployment and industrial use cases."
-      ],
-      "source": "VentureBeat",
-      "url": "https://venturebeat.com/technology/mistral-ai-launches-vibe-expands-into-industrial-ai-and-announces-data-center-push-to-challenge-openai",
-      "publishedAt": "2026-05-28T20:54:00Z",
-      "tags": ["AI", "infrastructure", "enterprise"],
-      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F64vl7LlTNGuZeHkUFTvu1Z%2Ff7a5d77afb596fa3342837a14d05f644%2FNuneybits_Vector_art_of_Paris_server_skyline_in_burnt_orange_ccb4ba92-3ffa-49fc-8eeb-223c3b174750.webp%3Fw%3D1000%26q%3D100&w=3840"
-    },
-    {
-      "title": "How DeepSeek's radical architecture is shattering Silicon Valley's token moat",
-      "factualSummary": "DeepSeek's permanent price cuts and cache-focused architecture are pressuring frontier-model economics and undercutting Western token pricing.",
-      "takeaways": [
-        "Infrastructure efficiency is now a major competitive lever in model markets.",
-        "Token pricing pressure can reshape the economics of enterprise AI adoption."
-      ],
-      "source": "VentureBeat",
-      "url": "https://venturebeat.com/infrastructure/how-deepseeks-radical-architecture-is-shattering-silicon-valleys-token-moat",
-      "publishedAt": "2026-05-28T16:57:00Z",
-      "tags": ["AI", "infrastructure", "pricing"],
-      "image": "https://venturebeat.com/_next/image?q=85&url=https%3A%2F%2Fimages.ctfassets.net%2Fjdtwqhzvc2n1%2F5f6tA2TPIBdaw9T4HWo7uQ%2Fd114520ee379949d6f7f8aaf591e7754%2FGemini_Generated_Image_a6l659a6l659a6l6.png%3Fw%3D1000%26q%3D100&w=3840"
-    }
-  ]
+{
+    "generatedAt":  "2026-07-13T06:50:03.0282549Z",
+    "stories":  [
+                    {
+                        "title":  "At least 27 killed, 22 critically injured in Bangkok bar fire",
+                        "factualSummary":  "BBC reports a deadly bar fire in Bangkok that killed at least 27 people and critically injured 22.",
+                        "takeaways":  [
+                                          "A fast-moving local disaster is still the dominant story here.",
+                                          "The event is severe enough to merit world-news monitoring."
+                                      ],
+                        "source":  "BBC World",
+                        "url":  "https://www.bbc.co.uk/news/articles/c24yev53q06o?at_medium=RSS\u0026at_campaign=rss",
+                        "publishedAt":  "2026-07-13T06:07:17Z",
+                        "tags":  [
+                                     "world",
+                                     "breaking news",
+                                     "safety"
+                                 ],
+                        "image":  "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/9aa1/live/ac026a50-7e57-11f1-926f-c90d1bcfbc84.jpg"
+                    },
+                    {
+                        "title":  "The SpaceX IPO made history. Is the excitement still there?",
+                        "factualSummary":  "BBC looks at whether SpaceX\u0027s stock market debut is translating into lasting investor enthusiasm.",
+                        "takeaways":  [
+                                          "The market is still testing the story after the debut.",
+                                          "Investor attention is shifting from symbolism to business reality."
+                                      ],
+                        "source":  "BBC Technology",
+                        "url":  "https://www.bbc.co.uk/news/articles/c3wyj6e4210o?at_medium=RSS\u0026at_campaign=rss",
+                        "publishedAt":  "2026-07-13T05:01:54Z",
+                        "tags":  [
+                                     "technology",
+                                     "space",
+                                     "markets"
+                                 ],
+                        "image":  "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/2ab1/live/ee081470-7c79-11f1-b976-0b9c15b0ccfc.png"
+                    },
+                    {
+                        "title":  "Planes sent to tackle wildfires of \u0027exceptional scale\u0027 near Paris",
+                        "factualSummary":  "BBC says France deployed firefighting planes to contain unusually large wildfires near Paris.",
+                        "takeaways":  [
+                                          "Climate-linked extreme fire conditions remain a live European risk.",
+                                          "The response shows how quickly exceptional weather can strain normal firefighting capacity."
+                                      ],
+                        "source":  "BBC Science",
+                        "url":  "https://www.bbc.co.uk/news/articles/clye4z168edo?at_medium=RSS\u0026at_campaign=rss",
+                        "publishedAt":  "2026-07-13T03:36:09Z",
+                        "tags":  [
+                                     "science",
+                                     "climate",
+                                     "wildfires"
+                                 ],
+                        "image":  "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/df6a/live/a52c1460-7e57-11f1-b976-0b9c15b0ccfc.jpg"
+                    },
+                    {
+                        "title":  "British couple return to village at heart of deadly Spanish wildfire",
+                        "factualSummary":  "BBC reports on a British couple returning to a village affected by a deadly wildfire in Spain.",
+                        "takeaways":  [
+                                          "The wildfire has a human-displacement angle, not just a fire-control one.",
+                                          "Britons are directly affected, which broadens the audience relevance."
+                                      ],
+                        "source":  "BBC World",
+                        "url":  "https://www.bbc.co.uk/news/articles/cx24e09x79no?at_medium=RSS\u0026at_campaign=rss",
+                        "publishedAt":  "2026-07-13T00:29:21Z",
+                        "tags":  [
+                                     "world",
+                                     "wildfires",
+                                     "Europe"
+                                 ],
+                        "image":  "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/3502/live/a47f3390-7e4c-11f1-bee8-53ce494e1abc.png"
+                    },
+                    {
+                        "title":  "10 years of Pokémon Go and the millions still trying to catch \u0027em all",
+                        "factualSummary":  "BBC marks Pokémon Go\u0027s tenth anniversary and notes the game still draws millions.",
+                        "takeaways":  [
+                                          "Mobile games can sustain communities for a decade when the social loop is strong.",
+                                          "The story fits the current consumer-tech and creator-social overlap."
+                                      ],
+                        "source":  "BBC Technology",
+                        "url":  "https://www.bbc.co.uk/news/articles/cevlwk4nrm7o?at_medium=RSS\u0026at_campaign=rss",
+                        "publishedAt":  "2026-07-13T00:07:00Z",
+                        "tags":  [
+                                     "consumer tech",
+                                     "games",
+                                     "mobile"
+                                 ],
+                        "image":  "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/c312/live/88ec5440-7be6-11f1-9010-bd4e2d0a26e0.png"
+                    },
+                    {
+                        "title":  "TechCrunch Mobility: A robotaxi ultimatum",
+                        "factualSummary":  "TechCrunch Mobility says the robotaxi market is at an ultimatum point as AI keeps pushing transportation plans.",
+                        "takeaways":  [
+                                          "Robotaxi competition is still about who can ship reliably first.",
+                                          "AI remains a key force in autonomous mobility."
+                                      ],
+                        "source":  "TechCrunch",
+                        "url":  "https://techcrunch.com/2026/07/12/techcrunch-mobility-a-robotaxi-ultimatum/",
+                        "publishedAt":  "2026-07-12T16:07:00Z",
+                        "tags":  [
+                                     "transportation",
+                                     "robotaxi",
+                                     "AI"
+                                 ],
+                        "image":  "https://techcrunch.com/wp-content/uploads/2026/07/waymo-SF-getty.jpg?resize=1200,800"
+                    },
+                    {
+                        "title":  "DeepSeek cut prices 75%. The 100x problem remains",
+                        "factualSummary":  "VentureBeat argues cheaper models do not fix the cost explosion created by multi-step agent workflows.",
+                        "takeaways":  [
+                                          "Token amplification can outrun model price cuts.",
+                                          "Router, prompt, and context discipline now matter as much as model choice."
+                                      ],
+                        "source":  "VentureBeat",
+                        "url":  "https://venturebeat.com/orchestration/deepseek-cut-prices-75-the-100x-problem-remains",
+                        "publishedAt":  "2026-07-12T16:00:00Z",
+                        "tags":  [
+                                     "AI",
+                                     "orchestration",
+                                     "inference costs"
+                                 ],
+                        "image":  "https://images.ctfassets.net/jdtwqhzvc2n1/QmUB8YbWiRnClnsHXcsEG/4cf95f77c77ebb21b0e9c2e1eec38caa/u7277289442_A_series_of_AI_robots_in_the_vein_of_the_evolutio_72348caa-ec35-4c65-8ab2-1402ecc89f91_2.png?w=300\u0026q=30"
+                    },
+                    {
+                        "title":  "Reed Jobs would rather talk about curing cancer than his last name",
+                        "factualSummary":  "Reed Jobs says Yosemite has grown quickly as patent expirations and AI expand biotech opportunities.",
+                        "takeaways":  [
+                                          "Biotech venture capital is being reshaped by a wave of expiring patents.",
+                                          "AI has become part of the firm\u0027s work rather than a curiosity."
+                                      ],
+                        "source":  "TechCrunch",
+                        "url":  "https://techcrunch.com/2026/07/11/reed-jobs-would-rather-talk-about-curing-cancer-than-his-last-name/",
+                        "publishedAt":  "2026-07-12T00:16:06Z",
+                        "tags":  [
+                                     "biotech",
+                                     "venture capital",
+                                     "AI"
+                                 ],
+                        "image":  "https://techcrunch.com/wp-content/uploads/2026/07/Screenshot-2026-07-11-at-5.04.51-PM.png?w=1094"
+                    },
+                    {
+                        "title":  "This slushie machine was a lifesaver during NYC\u0027s heat wave",
+                        "factualSummary":  "Ninja\u0027s slushie machine gets a refresh and looks especially relevant during hot weather.",
+                        "takeaways":  [
+                                          "Consumer appliance reviews still reward small, tangible quality-of-life gains.",
+                                          "Summer heat remains a real demand driver for convenience hardware."
+                                      ],
+                        "source":  "TechCrunch",
+                        "url":  "https://techcrunch.com/2026/07/11/this-slushie-machine-was-a-lifesaver-during-nycs-heat-wave/",
+                        "publishedAt":  "2026-07-11T22:00:00Z",
+                        "tags":  [
+                                     "consumer tech",
+                                     "hardware",
+                                     "review"
+                                 ],
+                        "image":  "https://techcrunch.com/wp-content/uploads/2026/07/Ninja-Slushi-Twist.jpg?w=1200"
+                    },
+                    {
+                        "title":  "Smart glasses without a camera? Even Realities bets productivity beats recording everyone",
+                        "factualSummary":  "Even Realities is pitching camera-free smart glasses at people who spend time in meetings, travel, and multilingual settings.",
+                        "takeaways":  [
+                                          "Some wearables are leaning into utility over capture-first hardware.",
+                                          "Privacy-friendly glasses are being positioned as a productivity tool."
+                                      ],
+                        "source":  "TechCrunch",
+                        "url":  "https://techcrunch.com/2026/07/11/smart-glasses-without-a-camera-even-realities-bets-productivity-beats-recording-everyone/",
+                        "publishedAt":  "2026-07-11T17:30:00Z",
+                        "tags":  [
+                                     "wearables",
+                                     "smart glasses",
+                                     "privacy"
+                                 ],
+                        "image":  "https://techcrunch.com/wp-content/uploads/2026/07/even-g2-a-smart-glasses-front-view-closed-grey.jpeg?resize=1200,1200"
+                    },
+                    {
+                        "title":  "Forget typosquatting; slopsquatting is the software supply chain threat created by AI coding tools",
+                        "factualSummary":  "VentureBeat says hallucinated package names from AI coding tools can become a new supply-chain attack vector.",
+                        "takeaways":  [
+                                          "AI coding assistants can create new malware distribution opportunities.",
+                                          "Dependency hygiene now needs to account for model hallucinations."
+                                      ],
+                        "source":  "VentureBeat",
+                        "url":  "https://venturebeat.com/security/forget-typosquatting-slopsquatting-is-the-software-supply-chain-threat-created-by-ai-coding-tools",
+                        "publishedAt":  "2026-07-11T16:00:00Z",
+                        "tags":  [
+                                     "security",
+                                     "AI",
+                                     "software supply chain"
+                                 ],
+                        "image":  "https://images.ctfassets.net/jdtwqhzvc2n1/2h0wdk2i0wZME0744hQS40/282b7a507e29b9f39dbe33ad85499a8c/Gemini_Generated_Image_nocstvnocstvnocs.png?w=300\u0026q=30"
+                    },
+                    {
+                        "title":  "57% of enterprises have watched AI agents be confidently wrong. The fix is an agentic context layer, but who has one?",
+                        "factualSummary":  "VentureBeat says enterprises are seeing confident wrong answers when agent context is stale or inconsistent.",
+                        "takeaways":  [
+                                          "Context governance is emerging as a core control plane.",
+                                          "The quality issue is often missing business context, not model capability."
+                                      ],
+                        "source":  "VentureBeat",
+                        "url":  "https://venturebeat.com/data/57-of-enterprises-have-watched-ai-agents-be-confidently-wrong-the-fix-is-an-agentic-context-layer-but-who-has-one",
+                        "publishedAt":  "2026-07-10T20:58:32Z",
+                        "tags":  [
+                                     "AI",
+                                     "enterprise",
+                                     "context"
+                                 ],
+                        "image":  "https://images.ctfassets.net/jdtwqhzvc2n1/3nn8GGb6DbEWqByPAqefF2/8be52aec3ad8e0ace9614b990346fe6d/Gemini_Generated_Image_nipooinipooinipo.png?w=300\u0026q=30"
+                    },
+                    {
+                        "title":  "OpenAI introduces ChatGPT Work, a cloud-based AI agent that manages tasks across email, Slack and calendars",
+                        "factualSummary":  "OpenAI launched ChatGPT Work as a cloud-based agent intended to handle routine work across common productivity tools.",
+                        "takeaways":  [
+                                          "Agent products are expanding from chat into task execution.",
+                                          "Email, calendar, and collaboration tooling are becoming battleground surfaces."
+                                      ],
+                        "source":  "VentureBeat",
+                        "url":  "https://venturebeat.com/technology/openai-introduces-chatgpt-work-a-cloud-based-ai-agent-that-manages-tasks-across-email-slack-and-calendars",
+                        "publishedAt":  "2026-07-10T20:20:00Z",
+                        "tags":  [
+                                     "OpenAI",
+                                     "productivity",
+                                     "agents"
+                                 ],
+                        "image":  "https://images.ctfassets.net/jdtwqhzvc2n1/2h0wdk2i0wZME0744hQS40/282b7a507e29b9f39dbe33ad85499a8c/Gemini_Generated_Image_nocstvnocstvnocs.png?w=300\u0026q=30"
+                    },
+                    {
+                        "title":  "How to watch YouTube FIFA Creator Cup",
+                        "factualSummary":  "YouTube explains how to stream the inaugural FIFA Creator Cup from Central Park live and free.",
+                        "takeaways":  [
+                                          "YouTube is blending creator content with live sports distribution.",
+                                          "Event-style programming remains a major platform lever."
+                                      ],
+                        "source":  "YouTube Blog",
+                        "url":  "https://blog.youtube/news-and-events/youtube-fifa-creator-cup-how-to-watch/",
+                        "publishedAt":  "2026-07-10T16:00:00Z",
+                        "tags":  [
+                                     "creator platforms",
+                                     "live sports",
+                                     "YouTube"
+                                 ],
+                        "image":  "https://blog.youtube/static/blog_youtube/images/youtube_social_1200x630.png?version=pr20260624-1707"
+                    },
+                    {
+                        "title":  "IShowSpeed to lead first-ever YouTube FIFA Creator Cup",
+                        "factualSummary":  "YouTube and FIFA are staging an inaugural creator cup in Central Park with IShowSpeed and other creators.",
+                        "takeaways":  [
+                                          "Creator-led sports events are being used as audience magnets.",
+                                          "The creator economy is increasingly crossing into live-event territory."
+                                      ],
+                        "source":  "YouTube Blog",
+                        "url":  "https://blog.youtube/news-and-events/youtube-fifa-creator-cup-central-park/",
+                        "publishedAt":  "2026-07-07T16:30:00Z",
+                        "tags":  [
+                                     "creator economy",
+                                     "sports",
+                                     "YouTube"
+                                 ],
+                        "image":  "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/YT_FIFA_CreatorCup_TalentThumbnail_1920x108.max-1440x810.jpg"
+                    },
+                    {
+                        "title":  "Five ways to use YouTube Shorts to grow your channel",
+                        "factualSummary":  "YouTube is pushing interactive Shorts features like stickers, polls, and video replies as growth tools.",
+                        "takeaways":  [
+                                          "Engagement mechanics are becoming a central growth strategy.",
+                                          "Shorts is being tuned for community, not just reach."
+                                      ],
+                        "source":  "YouTube Blog",
+                        "url":  "https://blog.youtube/creator-and-artist-stories/grow-youtube-channel-interactive-shorts/",
+                        "publishedAt":  "2026-07-07T16:00:00Z",
+                        "tags":  [
+                                     "Shorts",
+                                     "creators",
+                                     "community"
+                                 ],
+                        "image":  "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/CI-Creator-Strategy-Thumbnail-Shorts-Commun.max-1440x810.png"
+                    }
+                ]
 }
