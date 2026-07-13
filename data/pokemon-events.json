@@ -1,39 +1,39 @@
-﻿{
-  "generatedAt": "2026-07-11T00:00:00Z",
-  "timezone": "America/New_York",
-  "events": [
-    {
-      "title": "Pokemon GO Fest 2026: Global",
-      "type": "global",
-      "source": "Pokemon GO official",
-      "start": "2026-07-11T10:00:00-04:00",
-      "end": "2026-07-12T19:00:00-04:00",
-      "factualSummary": "A free global weekend with rotating habitats, Mega Mewtwo raids, Special Research for Zeraora, and expanded daily event hours.",
-      "bonuses": [
-        "Increased chance of encountering Shiny Pokemon",
-        "Nine free Raid Passes per day from Gym Photo Discs",
-        "Up to six Special Trades and half Stardust trade cost",
-        "One-hour Lure Modules and event Incense encounters",
-        "Mega Mewtwo X on Saturday and Mega Mewtwo Y on Sunday"
-      ],
-      "url": "https://pokemongo.com/en/gofest/global",
-      "image": "https://lh3.googleusercontent.com/8QiWYx-63I_R4CpIlsKAAPMKPG5np0EQXRXz_TX2WpG1BpNLx9O31yHgPitazukQwxbsvlaso6uIvqRxgFrJNBywchhox-zNs5Pl%3Ds0-e365"
-    },
-    {
-      "title": "Special Anniversary Pikachu Celebration",
-      "type": "anniversary",
-      "source": "Pokemon GO official",
-      "start": "2026-07-13T10:00:00-04:00",
-      "end": "2026-07-20T20:00:00-04:00",
-      "factualSummary": "Three celebration windows feature costumed Pikachu in the wild, raids, and Field Research alongside event GO Pass milestones.",
-      "bonuses": [
-        "Pikachu appears more frequently and is easier to catch",
-        "GO Pass milestones can unlock double transfer Candy",
-        "GO Pass milestones can unlock double catch Stardust",
-        "Event-themed Field Research encounters"
-      ],
-      "url": "https://pokemongo.com/en/news/special-anniversary-pikachu-celebration",
-      "image": "https://lh3.googleusercontent.com/_wmbb-BxDJJlIHsXHCSooc_6Qn1gZPpAI4CtjnfljzglihAOpJb6pkTP_vm3mviOE9Pv5n-ZiUKsugb6K42IImo0JBsCoLdj7lmxEVfFNFo%3Ds0-e365"
-    }
-  ]
+{
+    "generatedAt":  "2026-07-13T06:50:03.0282549Z",
+    "timezone":  "America/New_York",
+    "events":  [
+                   {
+                       "title":  "Pokemon GO Fest 2026: Global",
+                       "type":  "global",
+                       "source":  "Pokemon GO official",
+                       "start":  "2026-07-11T10:00:00-04:00",
+                       "end":  "2026-07-12T19:00:00-04:00",
+                       "factualSummary":  "A free global weekend with rotating habitats, Mega Mewtwo raids, Special Research for Zeraora, and expanded daily event hours.",
+                       "bonuses":  [
+                                       "Increased chance of encountering Shiny Pokemon",
+                                       "Nine free Raid Passes per day from Gym Photo Discs",
+                                       "Up to six Special Trades and half Stardust trade cost",
+                                       "One-hour Lure Modules and event Incense encounters",
+                                       "Mega Mewtwo X on Saturday and Mega Mewtwo Y on Sunday"
+                                   ],
+                       "url":  "https://pokemongo.com/en/gofest/global",
+                       "image":  "https://lh3.googleusercontent.com/8QiWYx-63I_R4CpIlsKAAPMKPG5np0EQXRXz_TX2WpG1BpNLx9O31yHgPitazukQwxbsvlaso6uIvqRxgFrJNBywchhox-zNs5Pl%3Ds0-e365"
+                   },
+                   {
+                       "title":  "Special Anniversary Pikachu Celebration",
+                       "type":  "anniversary",
+                       "source":  "Pokemon GO official",
+                       "start":  "2026-07-13T10:00:00-04:00",
+                       "end":  "2026-07-20T20:00:00-04:00",
+                       "factualSummary":  "Three celebration windows feature costumed Pikachu in the wild, raids, and Field Research alongside event GO Pass milestones.",
+                       "bonuses":  [
+                                       "Pikachu appears more frequently and is easier to catch",
+                                       "GO Pass milestones can unlock double transfer Candy",
+                                       "GO Pass milestones can unlock double catch Stardust",
+                                       "Event-themed Field Research encounters"
+                                   ],
+                       "url":  "https://pokemongo.com/en/news/special-anniversary-pikachu-celebration",
+                       "image":  "https://lh3.googleusercontent.com/_wmbb-BxDJJlIHsXHCSooc_6Qn1gZPpAI4CtjnfljzglihAOpJb6pkTP_vm3mviOE9Pv5n-ZiUKsugb6K42IImo0JBsCoLdj7lmxEVfFNFo%3Ds0-e365"
+                   }
+               ]
 }
