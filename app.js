@@ -393,11 +393,6 @@ function firstText(...values) {
   return values.find((value) => typeof value === "string" && value.trim())?.trim() || "";
 }
 
-function metricValue(value, suffix = "") {
-  if (value === null || value === undefined || value === "") return "—";
-  return `${value}${suffix}`;
-}
-
 function hasValue(value) {
   return value !== null && value !== undefined && value !== "";
 }
@@ -434,25 +429,29 @@ function renderInsights() {
   const health = privatePacket.health || {};
   const training = privatePacket.training || {};
   const weeklyLoad = training.weeklyLoad || {};
+  const aiInsights = privatePacket.aiInsights || {};
   const recommendation = privatePacket.recommendations?.[0];
   const week = currentWeekStats();
   const hasGarmin = hasHealthData();
 
   document.getElementById("insightFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
-  document.getElementById("insightHeroTitle").textContent = recommendation?.title || (week.active ? "Keep building the ordinary week" : "Consistency comes before optimization");
-  document.getElementById("insightHeroBody").textContent = recommendation?.detail || recommendation?.body || (week.active
+  document.getElementById("insightHeroTitle").textContent = aiInsights.headline || recommendation?.title || (week.active ? "Keep building the ordinary week" : "Personal analysis is refreshing");
+  document.getElementById("insightHeroBody").textContent = aiInsights.summary || recommendation?.detail || recommendation?.body || (week.active
     ? `You have recorded ${week.active} intentional training day${week.active === 1 ? "" : "s"} this week. Stay with the fixed schedule and use the minimum version when life is crowded.`
-    : "Keep following the fixed plan and let the minimum version protect difficult days. The first goal is returning, not maximizing every session.");
+    : "Your Garmin data is connected. The next encrypted OpenAI analysis will connect it to your goals and fixed plan.");
+  document.getElementById("insightHeroSource").textContent = aiInsights.headline ? "ChatGPT analysis • Garmin + your goals + fixed plan" : "Personalized analysis pending";
 
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
-  const hrvValue = health.hrv ?? health.baselines?.hrv7Day;
+  const lastWorkout = training.lastWorkoutDetail || {};
+  const lastWorkoutValue = hasValue(lastWorkout.distanceMiles) ? `${lastWorkout.distanceMiles} mi` : (training.lastWorkout || "Not available");
+  const lastWorkoutDetail = [lastWorkout.type ? String(lastWorkout.type).replaceAll("_", " ") : "", hasValue(lastWorkout.averageHr) ? `Avg HR ${lastWorkout.averageHr}` : ""].filter(Boolean).join(" • ") || "Latest Garmin activity";
   const metrics = [
-    { label: "Sleep", value: metricValue(sleepValue, hasValue(sleepValue) ? " h" : ""), detail: hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "Latest Garmin value" },
-    { label: "Resting HR", value: metricValue(restingHrValue, hasValue(restingHrValue) ? " bpm" : ""), detail: hasValue(health.restingHr) ? (hasValue(health.baselines?.restingHr7Day) ? `7-day ${health.baselines.restingHr7Day}` : "Latest Garmin value") : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "Latest Garmin value" },
-    { label: "HRV", value: metricValue(hrvValue, hasValue(hrvValue) ? " ms" : ""), detail: hasValue(health.hrv) ? (health.hrvStatus || "Latest Garmin value") : hasValue(health.baselines?.hrv7Day) ? "7-day average" : "Latest Garmin value" },
-    { label: "Body Battery", value: metricValue(health.bodyBattery), detail: health.stress !== null && health.stress !== undefined ? `Stress ${health.stress}` : "Latest Garmin value" },
-    { label: "7-day running", value: metricValue(weeklyLoad.distanceMiles, weeklyLoad.distanceMiles !== null && weeklyLoad.distanceMiles !== undefined ? " mi" : ""), detail: weeklyLoad.activities !== undefined ? `${weeklyLoad.activities} activities` : "Latest training load" },
+    { label: "Sleep", value: hasValue(sleepValue) ? `${sleepValue} h` : "Not available", detail: hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "No recent Garmin reading" },
+    { label: "Resting HR", value: hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.restingHr) ? (hasValue(health.baselines?.restingHr7Day) ? `7-day ${health.baselines.restingHr7Day}` : "Latest Garmin value") : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "No recent Garmin reading" },
+    { label: "Body Battery", value: hasValue(health.bodyBattery) ? health.bodyBattery : "Not available", detail: hasValue(health.stress) ? `Stress ${health.stress}` : "No recent Garmin reading" },
+    { label: "7-day running", value: hasValue(weeklyLoad.distanceMiles) ? `${weeklyLoad.distanceMiles} mi` : "Not available", detail: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} activities` : "No recent training load" },
+    { label: "Last workout", value: lastWorkoutValue, detail: lastWorkoutDetail },
   ];
   document.getElementById("healthMetricGrid").innerHTML = metrics.map((metric) => `<article class="metric-card"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.detail)}</small></article>`).join("");
 
@@ -469,18 +468,15 @@ function buildInsightCards(health, training, week, hasGarmin) {
     source: "On-device completion history",
   });
 
-  const load = training.weeklyLoad || {};
-  if (hasGarmin && load.distanceMiles !== undefined && load.distanceMiles !== null) {
-    const change = Number(load.distanceChangePct);
+  const aiCards = Array.isArray(privatePacket.aiInsights?.cards) ? privatePacket.aiInsights.cards : [];
+  if (aiCards.length) {
+    cards.push(...aiCards.slice(0, 3));
+  } else if (hasGarmin) {
     cards.push({
-      label: "Running base",
-      title: `${load.distanceMiles} miles in the latest 7-day window`,
-      body: Number.isFinite(change) && change <= -30
-        ? "Frequency has dipped relative to the prior week. Rebuild with easy runs before adding tempo pressure."
-        : Number.isFinite(change) && change >= 30
-          ? "Running volume has climbed. Keep the next easy day honestly easy so the increase can settle."
-          : "The current load does not call for a dramatic adjustment. Continue the normal weekly rhythm.",
-      source: "Garmin rolling training load",
+      label: "AI analysis",
+      title: "Your Garmin context is ready",
+      body: "The next private OpenAI refresh will connect these signals to your goals, fixed schedule, and current training constraints.",
+      source: "Encrypted analysis pending",
     });
   } else {
     cards.push({
@@ -491,12 +487,6 @@ function buildInsightCards(health, training, week, hasGarmin) {
     });
   }
 
-  cards.push({
-    label: "Strength focus",
-    title: "Arms and core without program sprawl",
-    body: "Friday carries the direct arm work. Short core additions remain optional on lifting days so physique goals do not turn every session into a long checklist.",
-    source: "Your stated goals + fixed plan",
-  });
   cards.push({
     label: "Guardrail",
     title: "Pain is not a motivation problem",
@@ -607,7 +597,7 @@ async function restoreLegacySyncKey() {
 }
 
 function emptyPrivatePacket() {
-  return { generatedAt: "", health: {}, training: {}, recommendations: [], sources: [] };
+  return { generatedAt: "", health: {}, training: {}, recommendations: [], aiInsights: null, sources: [] };
 }
 
 function normalizePacket(packet) {
@@ -617,6 +607,7 @@ function normalizePacket(packet) {
     health: packet.health && typeof packet.health === "object" ? packet.health : {},
     training: packet.training && typeof packet.training === "object" ? packet.training : {},
     recommendations: Array.isArray(packet.recommendations) ? packet.recommendations.filter(Boolean) : [],
+    aiInsights: packet.aiInsights && typeof packet.aiInsights === "object" ? packet.aiInsights : null,
     sources: Array.isArray(packet.sources) ? packet.sources.filter(Boolean) : [],
   };
 }
@@ -632,7 +623,7 @@ function savePrivatePacket() {
 function hasHealthData() {
   const health = privatePacket.health || {};
   const training = privatePacket.training || {};
-  return [health.sleepHours, health.hrv, health.restingHr, health.bodyBattery, training.lastWorkout, training.weeklyLoad?.distanceMiles].some((value) => value !== null && value !== undefined && value !== "");
+  return [health.sleepHours, health.restingHr, health.bodyBattery, training.lastWorkout, training.weeklyLoad?.distanceMiles].some((value) => value !== null && value !== undefined && value !== "");
 }
 
 function decodeBase64UrlBytes(value) {

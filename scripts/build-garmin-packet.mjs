@@ -47,8 +47,8 @@ function buildRecommendations(summary) {
   return recommendations.slice(0, 2);
 }
 
-function readRecommendations(pathArg, summary) {
-  if (!pathArg) return buildRecommendations(summary);
+function readAiAnalysis(pathArg, summary) {
+  if (!pathArg) return { recommendations: buildRecommendations(summary), aiInsights: null };
   const input = JSON.parse(readFileSync(resolve(pathArg), "utf8"));
   const items = Array.isArray(input) ? input : input.recommendations;
   if (!Array.isArray(items)) throw new Error("The recommendations file must contain an array.");
@@ -57,7 +57,24 @@ function readRecommendations(pathArg, summary) {
     detail: typeof item?.detail === "string" ? item.detail.trim() : "",
     source: typeof item?.source === "string" ? item.source.trim() : "",
   })).filter((item) => item.title && item.detail && item.source);
-  return normalized.length ? normalized : buildRecommendations(summary);
+  const cards = Array.isArray(input.cards) ? input.cards.slice(0, 3).map((item) => ({
+    label: typeof item?.label === "string" ? item.label.trim() : "",
+    title: typeof item?.title === "string" ? item.title.trim() : "",
+    body: typeof item?.body === "string" ? item.body.trim() : "",
+    source: typeof item?.source === "string" ? item.source.trim() : "",
+  })).filter((item) => item.label && item.title && item.body && item.source) : [];
+  const headline = typeof input.headline === "string" ? input.headline.trim() : "";
+  const summaryText = typeof input.summary === "string" ? input.summary.trim() : "";
+  return {
+    recommendations: normalized.length ? normalized : buildRecommendations(summary),
+    aiInsights: headline && summaryText && cards.length ? {
+      generatedAt: typeof input.generatedAt === "string" ? input.generatedAt : null,
+      model: typeof input.model === "string" ? input.model : null,
+      headline,
+      summary: summaryText,
+      cards,
+    } : null,
+  };
 }
 
 function main() {
@@ -71,6 +88,7 @@ function main() {
   const secret = readFileSync(keyPath, "utf8").trim();
   if (!secret) throw new Error("The sync key file is empty.");
   if (summary.status !== "ready") throw new Error("The Garmin summary is not ready.");
+  const analysis = readAiAnalysis(recommendationsArg, summary);
 
   const packet = {
     app: "My Fitness Command Center",
@@ -82,10 +100,12 @@ function main() {
       lastWorkoutDetail: summary.training?.lastWorkoutDetail || null,
       weeklyLoad: summary.training?.weeklyLoad || {},
     },
-    recommendations: readRecommendations(recommendationsArg, summary),
+    recommendations: analysis.recommendations,
+    aiInsights: analysis.aiInsights,
     sources: [
       { name: "Garmin Connect", generatedAt: summary.generatedAt || null },
       { name: "Fixed weekly fitness plan", generatedAt: null },
+      ...(analysis.aiInsights ? [{ name: "ChatGPT personalized analysis", generatedAt: analysis.aiInsights.generatedAt }] : []),
     ],
   };
 
