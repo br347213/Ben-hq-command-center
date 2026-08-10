@@ -10,7 +10,7 @@
     <title>My Fitness Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="styles.css?v=20260810-fitness-4" />
+    <link rel="stylesheet" href="styles.css?v=20260810-fitness-5" />
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -71,16 +71,17 @@
             </article>
 
             <div class="today-side-stack">
-              <article class="glass-card month-pulse-card">
-                <div class="card-heading-row">
-                  <div>
-                    <p class="eyebrow">Consistency</p>
-                    <h3 id="monthPulseTitle">This month</h3>
-                  </div>
-                  <div class="month-count"><strong id="monthActiveCount">0</strong><span>active days</span></div>
+              <article class="glass-card year-counter-card" id="yearCounterCard">
+                <div class="year-counter-heading">
+                  <div><p class="eyebrow">The year so far</p><h3 id="yearCounterTitle">2026</h3></div>
+                  <span class="year-counter-badge">Cumulative</span>
                 </div>
-                <div class="mini-month" id="miniMonth" aria-label="This month's workout consistency"></div>
-                <p class="reassurance" id="monthReassurance">There is no streak to lose. Keep returning.</p>
+                <div class="year-counter-main">
+                  <div class="year-number-wrap"><strong id="yearActiveCount">0</strong><span>days done</span></div>
+                  <div class="year-counter-copy"><strong id="yearCounterMessage">Every check stays.</strong><span id="yearCounterDetail">Nothing resets.</span></div>
+                </div>
+                <div class="year-dot-grid" id="yearDotGrid" aria-label="Yearly workout checkoff history"></div>
+                <p class="year-counter-foot"><span id="monthActiveCount">0 this month</span><span>Tap any past day in Progress to check it off.</span></p>
               </article>
 
               <article class="glass-card guidance-card" id="todayGuidanceCard">
@@ -131,12 +132,6 @@
             <div><p class="eyebrow">Fixed rhythm, flexible execution</p><h2 id="planHeading">Your weekly plan</h2></div>
             <span class="freshness">No rescheduling required</span>
           </div>
-          <article class="glass-panel philosophy-strip">
-            <div><strong>Run. Lift. Repeat.</strong><span>The schedule stays put. You decide how today fits real life.</span></div>
-            <div class="plan-rules">
-              <span>No make-up work</span><span>No failure reps</span><span>Minimum counts</span>
-            </div>
-          </article>
           <div class="week-plan" id="weekPlan"></div>
           <article class="glass-panel substitutions-panel">
             <div class="section-heading compact-heading">
@@ -157,9 +152,9 @@
           </div>
           <div class="progress-layout">
             <article class="hero-panel progress-summary-card">
-              <p class="eyebrow" id="progressMonthLabel">This month</p>
+              <p class="eyebrow" id="progressMonthLabel">2026 cumulative total</p>
               <div class="progress-number-row"><strong id="progressActiveDays">0</strong><span>days you intentionally trained</span></div>
-              <div class="progress-bar"><span id="progressBarFill"></span></div>
+              <div class="progress-year-note"><span>One running total.</span><strong>No streak. No reset.</strong></div>
               <div class="progress-stat-row">
                 <div><strong id="fullCount">0</strong><span>complete</span></div>
                 <div><strong id="minimumCount">0</strong><span>minimum</span></div>
@@ -190,17 +185,25 @@
             <span class="freshness" id="insightFreshness">Waiting for Garmin</span>
           </div>
           <article class="hero-panel insight-hero" id="insightHero">
-            <div class="module-icon insight-icon" aria-hidden="true">AI</div>
-            <div><p class="eyebrow">The useful read</p><h3 id="insightHeroTitle">Consistency comes before optimization</h3><p id="insightHeroBody">Keep following the fixed plan and let the minimum version protect difficult days.</p><span class="source-badge" id="insightHeroSource">Waiting for personalized analysis</span></div>
+            <div class="insight-index" aria-hidden="true">01</div>
+            <div><p class="eyebrow">Daily read</p><h3 id="insightHeroTitle">Personal analysis is refreshing</h3><ul class="insight-summary-points" id="insightHeroPoints"></ul><span class="source-badge" id="insightHeroSource">Waiting for personalized analysis</span></div>
           </article>
           <div class="health-metric-grid" id="healthMetricGrid"></div>
-          <div class="insight-grid" id="insightGrid"></div>
+          <section class="insight-section" aria-labelledby="signalsHeading">
+            <div class="insight-section-heading"><div><p class="eyebrow">What the data says</p><h3 id="signalsHeading">Signals worth noticing</h3></div><span>02</span></div>
+            <div class="insight-grid" id="insightGrid"></div>
+          </section>
+          <section class="glass-panel action-panel" aria-labelledby="actionsHeading">
+            <div class="insight-section-heading"><div><p class="eyebrow">What to do</p><h3 id="actionsHeading">Next actions</h3></div><span>03</span></div>
+            <div class="insight-actions" id="insightActions"></div>
+          </section>
           <article class="glass-panel goal-panel">
-            <div class="section-heading compact-heading"><div><p class="eyebrow">Long horizon</p><h3>What the year is building toward</h3></div><span class="source-badge">Direction, not pressure</span></div>
-            <div class="goal-grid">
-              <div><span>Primary goal</span><strong>Healthy consistency</strong><p>Protect motivation, mental health, and a positive relationship with training.</p></div>
-              <div><span>Fitness base</span><strong>Run + lift year-round</strong><p>Return to 6-mile long runs, keep some controlled speed, and build arms and core.</p></div>
-              <div><span>Possible 2027 goal</span><strong>Unweighted Murph</strong><p>A motivating option—not an obligation and not a countdown yet.</p></div>
+            <div class="insight-section-heading"><div><p class="eyebrow">Long horizon</p><h3>Goals this supports</h3></div><span>04</span></div>
+            <div class="goal-chip-grid">
+              <div><span>Primary</span><strong>Healthy consistency</strong></div>
+              <div><span>Aerobic</span><strong>Comfortable 6-mile runs</strong></div>
+              <div><span>Strength</span><strong>Arms + core</strong></div>
+              <div><span>Optional 2027</span><strong>Unweighted Murph</strong></div>
             </div>
           </article>
         </section>
@@ -251,6 +254,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20260810-fitness-4"></script>
+    <script src="app.js?v=20260810-fitness-5"></script>
   </body>
 </html>

@@ -230,9 +230,12 @@ function getOutcome(key) {
 
 function setTodayOutcome(status) {
   const key = localDateKey();
+  const previousStatus = getOutcome(key);
   completions[key] = { status, updatedAt: new Date().toISOString() };
   writeJson(STORAGE.completions, completions);
   renderAllTracking();
+  const becameActive = (status === "completed" || status === "minimum") && previousStatus !== "completed" && previousStatus !== "minimum";
+  if (becameActive) celebrateCompletion(document.querySelector(".completion-button"));
   showToast(status === "rest" ? "Intentional rest recorded. No catching up required." : status === "minimum" ? "Minimum version counted. You showed up." : "Workout marked complete.");
 }
 
@@ -285,26 +288,102 @@ function monthStats(date = new Date()) {
   return { ...counts, active: counts.completed + counts.minimum, intentional: entries.length };
 }
 
-function renderMiniMonth() {
+function yearStats(year = new Date().getFullYear()) {
+  const counts = { completed: 0, minimum: 0, rest: 0 };
+  Object.keys(completions).forEach((key) => {
+    if (!key.startsWith(`${year}-`)) return;
+    const status = getOutcome(key);
+    if (status in counts) counts[status] += 1;
+  });
+  return { ...counts, active: counts.completed + counts.minimum };
+}
+
+function renderYearCounter() {
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth();
-  const days = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
-  const cells = Array.from({ length: firstDay }, () => '<span class="mini-day future"></span>');
-  for (let day = 1; day <= days; day += 1) {
-    const date = new Date(year, month, day);
-    const status = getOutcome(localDateKey(date));
-    const classes = ["mini-day", status === "completed" ? "complete" : status, day === now.getDate() ? "today" : "", date > now ? "future" : ""].filter(Boolean).join(" ");
-    cells.push(`<span class="${classes}" title="${escapeHtml(status ? OUTCOME_LABELS[status] : "No mark")}">${day}</span>`);
+  const totalDays = Math.round((new Date(year + 1, 0, 1) - new Date(year, 0, 1)) / 86400000);
+  const firstDay = new Date(year, 0, 1).getDay();
+  const cells = Array.from({ length: firstDay }, () => '<span class="year-dot blank" aria-hidden="true"></span>');
+  for (let day = 1; day <= totalDays; day += 1) {
+    const date = new Date(year, 0, day);
+    const key = localDateKey(date);
+    const status = getOutcome(key);
+    const classes = ["year-dot", status === "completed" ? "complete" : status, key === localDateKey(now) ? "today" : "", date > now ? "future" : ""].filter(Boolean).join(" ");
+    const label = `${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}: ${status ? OUTCOME_LABELS[status] : date > now ? "Upcoming" : "Not checked"}`;
+    cells.push(`<span class="${classes}" title="${escapeHtml(label)}" aria-hidden="true"></span>`);
   }
-  document.getElementById("miniMonth").innerHTML = cells.join("");
-  const stats = monthStats(now);
-  document.getElementById("monthActiveCount").textContent = stats.active;
-  document.getElementById("monthPulseTitle").textContent = now.toLocaleDateString(undefined, { month: "long" });
-  document.getElementById("monthReassurance").textContent = stats.active
-    ? `${stats.active} day${stats.active === 1 ? "" : "s"} of intentional training. Empty days stay neutral.`
-    : "There is no streak to lose. The next intentional workout is enough.";
+  while (cells.length % 7) cells.push('<span class="year-dot blank" aria-hidden="true"></span>');
+  const stats = yearStats(year);
+  document.getElementById("yearCounterTitle").textContent = year;
+  document.getElementById("yearActiveCount").textContent = stats.active;
+  document.getElementById("yearCounterMessage").textContent = stats.active
+    ? `${stats.active} day${stats.active === 1 ? "" : "s"} you did the thing.`
+    : "The first check is waiting.";
+  document.getElementById("yearCounterDetail").textContent = `Every mark stays in ${year}.`;
+  document.getElementById("yearDotGrid").innerHTML = cells.join("");
+  document.getElementById("monthActiveCount").textContent = monthStats(now).active;
+}
+
+function haptic(pattern = [18, 30, 24]) {
+  try {
+    if ("vibrate" in navigator) navigator.vibrate(pattern);
+  } catch {
+    // Visual feedback remains available when vibration is unsupported.
+  }
+}
+
+function celebrateCompletion(target) {
+  haptic();
+  const button = target?.closest?.(".completion-button") || document.querySelector(".completion-button");
+  const card = document.getElementById("yearCounterCard");
+  const count = document.getElementById("yearActiveCount");
+  [button, card, count].forEach((element) => {
+    if (!element) return;
+    const className = element === button ? "celebrate" : element === card ? "is-celebrating" : "count-pop";
+    element.classList.remove(className);
+    void element.offsetWidth;
+    element.classList.add(className);
+    window.setTimeout(() => element.classList.remove(className), 900);
+  });
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const layer = document.createElement("div");
+  layer.className = "celebration-layer";
+  layer.setAttribute("aria-hidden", "true");
+  for (let index = 0; index < 18; index += 1) {
+    const particle = document.createElement("span");
+    const angle = (Math.PI * 2 * index) / 18;
+    const distance = 85 + (index % 5) * 14;
+    particle.className = "celebration-particle";
+    particle.style.setProperty("--particle-x", `${Math.cos(angle) * distance}px`);
+    particle.style.setProperty("--particle-y", `${Math.sin(angle) * distance}px`);
+    particle.style.setProperty("--particle-rotate", `${120 + index * 23}deg`);
+    particle.style.setProperty("--particle-hue", String(165 + (index % 5) * 28));
+    particle.style.setProperty("--particle-delay", `${(index % 4) * 18}ms`);
+    layer.appendChild(particle);
+  }
+  document.body.appendChild(layer);
+  window.setTimeout(() => layer.remove(), 1000);
+}
+
+function toggleDateCompletion(key, target) {
+  const date = parseLocalDateKey(key);
+  const today = parseLocalDateKey(localDateKey());
+  if (date > today) return;
+  const previousStatus = getOutcome(key);
+  const wasActive = previousStatus === "completed" || previousStatus === "minimum";
+  if (wasActive) {
+    delete completions[key];
+  } else {
+    completions[key] = { status: "completed", updatedAt: new Date().toISOString() };
+  }
+  writeJson(STORAGE.completions, completions);
+  renderAllTracking();
+  if (wasActive) {
+    showToast("Day mark cleared.");
+  } else {
+    celebrateCompletion(target);
+    showToast("Day checked off.");
+  }
 }
 
 function renderPlan() {
@@ -326,39 +405,33 @@ function renderPlan() {
 function renderProgress() {
   const date = calendarCursor;
   const stats = monthStats(date);
-  const isCurrentMonth = monthKey(date) === monthKey(new Date());
-  const daysElapsed = isCurrentMonth ? new Date().getDate() : new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const now = new Date();
+  const annual = yearStats(now.getFullYear());
   const monthLabel = date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  document.getElementById("progressMonthLabel").textContent = monthLabel;
-  document.getElementById("progressActiveDays").textContent = stats.active;
-  document.getElementById("fullCount").textContent = stats.completed;
-  document.getElementById("minimumCount").textContent = stats.minimum;
-  document.getElementById("restCount").textContent = stats.rest;
-  document.getElementById("progressBarFill").style.width = `${Math.min(100, Math.round((stats.active / Math.max(1, daysElapsed)) * 100))}%`;
-  document.getElementById("progressMessage").textContent = progressMessage(stats.active);
+  document.getElementById("progressMonthLabel").textContent = `${now.getFullYear()} cumulative total`;
+  document.getElementById("progressActiveDays").textContent = annual.active;
+  document.getElementById("fullCount").textContent = annual.completed;
+  document.getElementById("minimumCount").textContent = annual.minimum;
+  document.getElementById("restCount").textContent = annual.rest;
+  document.getElementById("progressMessage").textContent = stats.active
+    ? `${stats.active} checked off in ${monthLabel}. Tap any past day to adjust it.`
+    : `No days checked off in ${monthLabel}. Tap any past day to add one.`;
   document.getElementById("calendarMonthTitle").textContent = monthLabel;
 
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   const days = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const todayKey = localDateKey();
-  const now = new Date();
   const cells = Array.from({ length: firstDay }, () => '<span class="calendar-day blank"></span>');
   for (let day = 1; day <= days; day += 1) {
     const cellDate = new Date(date.getFullYear(), date.getMonth(), day);
     const key = localDateKey(cellDate);
     const status = getOutcome(key);
     const classes = ["calendar-day", status === "completed" ? "complete" : status, key === todayKey ? "today" : "", cellDate > now ? "future" : ""].filter(Boolean).join(" ");
-    cells.push(`<span class="${classes}" title="${escapeHtml(status ? OUTCOME_LABELS[status] : "No mark")}">${day}${status ? '<i class="status-mark"></i>' : ""}</span>`);
+    const state = status ? OUTCOME_LABELS[status] : "Not checked";
+    cells.push(`<button class="${classes}" type="button" data-date="${key}" aria-label="${escapeHtml(`${monthLabel} ${day}: ${state}`)}" ${cellDate > now ? "disabled" : ""}>${day}${status ? '<i class="status-mark"></i>' : ""}</button>`);
   }
   document.getElementById("consistencyCalendar").innerHTML = cells.join("");
   renderRecentHistory();
-}
-
-function progressMessage(active) {
-  if (active === 0) return "The next workout is enough. Nothing needs to be made up.";
-  if (active < 4) return "A few honest deposits already matter more than a perfect plan.";
-  if (active < 9) return "A useful rhythm is forming. Keep it ordinary and repeatable.";
-  return "You are returning consistently. Protect that relationship with training.";
 }
 
 function renderRecentHistory() {
@@ -436,9 +509,10 @@ function renderInsights() {
 
   document.getElementById("insightFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
   document.getElementById("insightHeroTitle").textContent = aiInsights.headline || recommendation?.title || (week.active ? "Keep building the ordinary week" : "Personal analysis is refreshing");
-  document.getElementById("insightHeroBody").textContent = aiInsights.summary || recommendation?.detail || recommendation?.body || (week.active
+  const summary = aiInsights.summary || recommendation?.detail || recommendation?.body || (week.active
     ? `You have recorded ${week.active} intentional training day${week.active === 1 ? "" : "s"} this week. Stay with the fixed schedule and use the minimum version when life is crowded.`
-    : "Your Garmin data is connected. The next encrypted OpenAI analysis will connect it to your goals and fixed plan.");
+    : "Your Garmin data is connected. The next personal analysis will connect it to your goals and fixed plan.");
+  document.getElementById("insightHeroPoints").innerHTML = splitInsightSummary(summary).map((point) => `<li>${escapeHtml(point)}</li>`).join("");
   document.getElementById("insightHeroSource").textContent = aiInsights.headline ? "ChatGPT analysis • Garmin + your goals + fixed plan" : "Personalized analysis pending";
 
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
@@ -456,49 +530,42 @@ function renderInsights() {
   document.getElementById("healthMetricGrid").innerHTML = metrics.map((metric) => `<article class="metric-card"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.detail)}</small></article>`).join("");
 
   const insightCards = buildInsightCards(health, training, week, hasGarmin);
-  document.getElementById("insightGrid").innerHTML = insightCards.map((item) => `<article class="glass-card insight-card"><p class="eyebrow">${escapeHtml(item.label)}</p><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p><span class="source-badge">${escapeHtml(item.source)}</span></article>`).join("");
+  document.getElementById("insightGrid").innerHTML = insightCards.map((item) => `<article class="glass-card insight-card"><p class="eyebrow">${escapeHtml(item.label)}</p><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p><small class="insight-evidence">Based on ${escapeHtml(item.source || "your current data")}</small></article>`).join("");
+
+  const actions = (privatePacket.recommendations || []).filter((item) => item?.title || item?.detail || item?.body).slice(0, 2);
+  document.getElementById("insightActions").innerHTML = actions.length
+    ? actions.map((item, index) => `<article class="insight-action"><span class="insight-action-mark">${index + 1}</span><div><h4>${escapeHtml(item.title || "Next step")}</h4><p>${escapeHtml(item.detail || item.body)}</p><small>${escapeHtml(item.source || "Your Garmin data + current plan")}</small></div></article>`).join("")
+    : '<div class="empty-state">Next actions will appear with the next personal analysis.</div>';
 }
 
 function buildInsightCards(health, training, week, hasGarmin) {
-  const cards = [];
-  cards.push({
-    label: "Consistency",
-    title: week.active ? `${week.active} active day${week.active === 1 ? "" : "s"} so far this week` : "The next session starts the week",
-    body: week.active ? "There is no streak to protect. The useful signal is that you keep returning across the month." : "No catch-up is required. Begin with today's normal or minimum version.",
-    source: "On-device completion history",
-  });
-
   const aiCards = Array.isArray(privatePacket.aiInsights?.cards) ? privatePacket.aiInsights.cards : [];
-  if (aiCards.length) {
-    cards.push(...aiCards.slice(0, 3));
-  } else if (hasGarmin) {
-    cards.push({
+  if (aiCards.length) return aiCards.slice(0, 3);
+  return hasGarmin
+    ? [{
       label: "AI analysis",
       title: "Your Garmin context is ready",
-      body: "The next private OpenAI refresh will connect these signals to your goals, fixed schedule, and current training constraints.",
+      body: "The next private refresh will connect these signals to your goals, fixed schedule, and current training constraints.",
       source: "Encrypted analysis pending",
-    });
-  } else {
-    cards.push({
+    }]
+    : [{
       label: "Health data",
       title: "Garmin is the primary source",
       body: "Once the existing encrypted sync is connected, recovery and training-load context will appear here automatically.",
       source: "Connection status",
-    });
-  }
+    }];
+}
 
-  cards.push({
-    label: "Guardrail",
-    title: "Pain is not a motivation problem",
-    body: "Pull-ups remain paused while the upper-left arm is painful. Use a pain-free supported row only if comfortable and get the persistent issue evaluated.",
-    source: "Your reported recurring pain",
-  });
-  return cards;
+function splitInsightSummary(value) {
+  const text = String(value || "").trim();
+  if (!text) return ["No current analysis available."];
+  const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z0-9])/).map((item) => item.trim()).filter(Boolean);
+  return sentences.slice(0, 3);
 }
 
 function renderAllTracking() {
   renderTodayWorkout();
-  renderMiniMonth();
+  renderYearCounter();
   renderProgress();
   renderGuidance();
   renderInsights();
@@ -822,6 +889,11 @@ function wireEvents() {
     const outcome = event.target.closest("[data-completion]");
     if (outcome) {
       setTodayOutcome(outcome.dataset.completion);
+      return;
+    }
+    const calendarDay = event.target.closest(".calendar-day[data-date]");
+    if (calendarDay && !calendarDay.disabled) {
+      toggleDateCompletion(calendarDay.dataset.date, calendarDay);
       return;
     }
     const planButton = event.target.closest(".plan-day-button");
