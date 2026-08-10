@@ -1,13 +1,11 @@
-const CACHE_NAME = "fitness-hq-v1";
+const CACHE_NAME = "fitness-hq-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
-  "./assets/my-command-center-logo.png",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./assets/my-command-center-logo.png"
 ];
 
 self.addEventListener("install", (event) => {

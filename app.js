@@ -517,9 +517,22 @@ function renderAllTracking() {
 function loadSyncSettings() {
   const current = readJson(STORAGE.sync, null);
   const legacy = readJson(STORAGE.legacySync, null);
+  let cookieKey = "";
+  try {
+    const storedCookie = document.cookie
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith("ben-hq-private-key="))
+      ?.split("=")
+      .slice(1)
+      .join("=");
+    cookieKey = storedCookie ? decodeURIComponent(storedCookie) : "";
+  } catch {
+    cookieKey = "";
+  }
   const chosen = current || legacy || {};
   return {
-    key: typeof chosen.key === "string" ? chosen.key : "",
+    key: typeof chosen.key === "string" && chosen.key ? chosen.key : cookieKey,
     status: typeof chosen.status === "string" ? chosen.status : "not configured",
     lastSyncAt: typeof chosen.lastSyncAt === "string" ? chosen.lastSyncAt : "",
     error: "",
@@ -528,6 +541,69 @@ function loadSyncSettings() {
 
 function saveSyncSettings() {
   writeJson(STORAGE.sync, syncSettings);
+  if (syncSettings.key) {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `ben-hq-private-key=${encodeURIComponent(syncSettings.key)}; Max-Age=31536000; Path=/; SameSite=Strict${secure}`;
+    persistPrivateKeyInDatabase(syncSettings.key);
+  }
+}
+
+function openPrivateKeyDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      resolve(null);
+      return;
+    }
+    const request = window.indexedDB.open("my-command-center-private-v1", 1);
+    request.addEventListener("upgradeneeded", () => {
+      if (!request.result.objectStoreNames.contains("secrets")) request.result.createObjectStore("secrets");
+    });
+    request.addEventListener("success", () => resolve(request.result));
+    request.addEventListener("error", () => reject(request.error));
+  });
+}
+
+async function readPrivateKeyFromDatabase() {
+  try {
+    const database = await openPrivateKeyDatabase();
+    if (!database) return "";
+    const value = await new Promise((resolve, reject) => {
+      const request = database.transaction("secrets", "readonly").objectStore("secrets").get("garmin-sync-key");
+      request.addEventListener("success", () => resolve(request.result || ""));
+      request.addEventListener("error", () => reject(request.error));
+    });
+    database.close();
+    return typeof value === "string" ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+async function persistPrivateKeyInDatabase(key) {
+  try {
+    const database = await openPrivateKeyDatabase();
+    if (!database) return;
+    await new Promise((resolve, reject) => {
+      const request = database.transaction("secrets", "readwrite").objectStore("secrets").put(key, "garmin-sync-key");
+      request.addEventListener("success", resolve);
+      request.addEventListener("error", () => reject(request.error));
+    });
+    database.close();
+  } catch {
+    // The local setting and activation URL remain available as fallbacks.
+  }
+}
+
+async function restoreLegacySyncKey() {
+  if (syncSettings.key) {
+    persistPrivateKeyInDatabase(syncSettings.key);
+    return true;
+  }
+  const key = await readPrivateKeyFromDatabase();
+  if (!key) return false;
+  syncSettings = { ...syncSettings, key, status: "configured", error: "" };
+  saveSyncSettings();
+  return true;
 }
 
 function emptyPrivatePacket() {
@@ -765,6 +841,7 @@ function wireEvents() {
 
 async function init() {
   importSyncKeyFromHash();
+  await restoreLegacySyncKey();
   renderNavigation();
   renderDateHeader();
   renderPlan();
