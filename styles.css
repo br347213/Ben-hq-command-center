@@ -297,6 +297,56 @@ button { color: inherit; }
 .settings-card h3 { margin: 6px 0 0; font-size: 18px; }
 .settings-card > div:last-child { flex: 1; }
 .settings-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+
+.secure-entry-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 9, 18, .82);
+  backdrop-filter: blur(16px);
+}
+.secure-entry-card {
+  position: relative;
+  width: min(100%, 460px);
+  padding: 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 24px;
+  background: #0c1727;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .45);
+}
+.secure-entry-card h2 { margin: 5px 0 10px; }
+.secure-entry-card > p:not(.eyebrow) { margin: 0 0 22px; color: var(--muted); line-height: 1.65; }
+.secure-entry-card form { display: grid; gap: 10px; }
+.secure-entry-card label { color: var(--muted); font-size: .82rem; font-weight: 700; letter-spacing: .04em; }
+.secure-entry-card input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  outline: none;
+  background: rgba(255, 255, 255, .055);
+  color: var(--text);
+  font: inherit;
+}
+.secure-entry-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(71, 205, 159, .13); }
+.secure-entry-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .06);
+  color: var(--muted);
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+.secure-entry-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
 .secondary-button { min-height: 39px; padding: 0 14px; border: 1px solid rgba(100,158,255,.3); border-radius: 12px; background: rgba(82,132,230,.12); color: #c9e2ff; font-size: 11px; font-weight: 750; }
 .file-button { position: relative; cursor: pointer; }
 .file-button input { position: absolute; inset: 0; opacity: 0; width: 1px; height: 1px; }

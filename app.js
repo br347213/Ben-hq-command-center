@@ -758,14 +758,30 @@ function renderSyncStatus() {
   dot.classList.toggle("offline", !(syncSettings.status === "live" || hasData));
 }
 
-function promptForSyncKey() {
-  const value = window.prompt("Enter the existing Fitness HQ sync key for this device. It will stay in this browser.");
-  if (!value?.trim()) return;
-  syncSettings.key = value.trim();
+function openSyncKeyPanel() {
+  const panel = document.getElementById("syncKeyPanel");
+  const input = document.getElementById("syncKeyInput");
+  input.value = "";
+  panel.hidden = false;
+  window.requestAnimationFrame(() => input.focus());
+}
+
+function closeSyncKeyPanel() {
+  document.getElementById("syncKeyPanel").hidden = true;
+  document.getElementById("syncKeyInput").value = "";
+}
+
+async function connectSyncKey(event) {
+  event.preventDefault();
+  const input = document.getElementById("syncKeyInput");
+  const value = input.value.trim();
+  if (!value) return;
+  syncSettings.key = value;
   syncSettings.status = "configured";
   syncSettings.error = "";
   saveSyncSettings();
-  refreshGarminData(true);
+  closeSyncKeyPanel();
+  await refreshGarminData(true);
 }
 
 function changeCalendarMonth(delta) {
@@ -829,7 +845,16 @@ function wireEvents() {
   document.getElementById("previousMonth").addEventListener("click", () => changeCalendarMonth(-1));
   document.getElementById("nextMonth").addEventListener("click", () => changeCalendarMonth(1));
   document.getElementById("jumpToCurrentMonth").addEventListener("click", () => { calendarCursor = new Date(); renderProgress(); });
-  document.getElementById("enterSyncKey").addEventListener("click", promptForSyncKey);
+  document.getElementById("enterSyncKey").addEventListener("click", openSyncKeyPanel);
+  document.getElementById("syncKeyForm").addEventListener("submit", connectSyncKey);
+  document.getElementById("closeSyncKeyPanel").addEventListener("click", closeSyncKeyPanel);
+  document.getElementById("cancelSyncKeyPanel").addEventListener("click", closeSyncKeyPanel);
+  document.getElementById("syncKeyPanel").addEventListener("click", (event) => {
+    if (event.target.id === "syncKeyPanel") closeSyncKeyPanel();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !document.getElementById("syncKeyPanel").hidden) closeSyncKeyPanel();
+  });
   document.getElementById("refreshGarmin").addEventListener("click", () => refreshGarminData(true));
   document.getElementById("exportData").addEventListener("click", exportBackup);
   document.getElementById("importData").addEventListener("change", (event) => {
