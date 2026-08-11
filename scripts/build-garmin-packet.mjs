@@ -65,6 +65,8 @@ function readAiAnalysis(pathArg, summary) {
   })).filter((item) => item.label && item.title && item.body && item.source) : [];
   const headline = typeof input.headline === "string" ? input.headline.trim() : "";
   const summaryText = typeof input.summary === "string" ? input.summary.trim() : "";
+  const healthHeadline = typeof input.healthHeadline === "string" ? input.healthHeadline.trim() : "";
+  const healthSummary = typeof input.healthSummary === "string" ? input.healthSummary.trim() : "";
   return {
     recommendations: normalized.length ? normalized : buildRecommendations(summary),
     aiInsights: headline && summaryText && cards.length ? {
@@ -72,6 +74,8 @@ function readAiAnalysis(pathArg, summary) {
       model: typeof input.model === "string" ? input.model : null,
       headline,
       summary: summaryText,
+      healthHeadline: healthHeadline || headline,
+      healthSummary: healthSummary || summaryText,
       cards,
     } : null,
   };

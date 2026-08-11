@@ -498,6 +498,36 @@ function renderGuidance() {
   document.getElementById("guidanceSource").textContent = source;
 }
 
+function renderTodayHealthInsight() {
+  const health = privatePacket.health || {};
+  const training = privatePacket.training || {};
+  const weeklyLoad = training.weeklyLoad || {};
+  const lastWorkout = training.lastWorkoutDetail || {};
+  const aiInsights = privatePacket.aiInsights || {};
+  const recommendation = privatePacket.recommendations?.[0];
+  const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
+  const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
+  const hasGarmin = hasHealthData();
+  const summary = aiInsights.healthSummary || aiInsights.summary || recommendation?.detail || recommendation?.body || (hasGarmin
+    ? "Your current Garmin signals are available together here. Use them as context for the day rather than as a pass-fail readiness score."
+    : "Connect Garmin to combine sleep, heart-rate, and exercise context in one daily read.");
+  const points = splitInsightSummary(summary).slice(0, 2);
+  const lastWorkoutValue = hasValue(lastWorkout.distanceMiles) ? `${lastWorkout.distanceMiles} mi` : (training.lastWorkout || "Not available");
+  const lastWorkoutDetail = [lastWorkout.type ? String(lastWorkout.type).replaceAll("_", " ") : "", hasValue(lastWorkout.averageHr) ? `Avg HR ${lastWorkout.averageHr}` : ""].filter(Boolean).join(" • ") || "Latest Garmin activity";
+  const signals = [
+    { label: "Sleep", value: hasValue(sleepValue) ? `${sleepValue} h` : "Not available", detail: hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "No recent reading" },
+    { label: "Resting HR", value: hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.restingHr) ? "Latest Garmin value" : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "No recent reading" },
+    { label: "7-day running", value: hasValue(weeklyLoad.distanceMiles) ? `${weeklyLoad.distanceMiles} mi` : "Not available", detail: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} activities` : "No recent load" },
+    { label: "Last activity", value: lastWorkoutValue, detail: lastWorkoutDetail },
+  ];
+
+  document.getElementById("todayHealthFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
+  document.getElementById("todayHealthLead").textContent = aiInsights.healthHeadline || aiInsights.headline || recommendation?.title || (hasGarmin ? "Your current health context" : "Connecting the full picture");
+  document.getElementById("todayHealthPoints").innerHTML = points.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
+  document.getElementById("todayHealthSource").textContent = aiInsights.headline ? "ChatGPT analysis • Garmin health + training data" : hasGarmin ? "Garmin data • personal analysis pending" : "Waiting for Garmin data";
+  document.getElementById("todayHealthSignals").innerHTML = signals.map((signal) => `<div class="health-signal"><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong><small>${escapeHtml(signal.detail)}</small></div>`).join("");
+}
+
 function renderInsights() {
   const health = privatePacket.health || {};
   const training = privatePacket.training || {};
@@ -568,6 +598,7 @@ function renderAllTracking() {
   renderYearCounter();
   renderProgress();
   renderGuidance();
+  renderTodayHealthInsight();
   renderInsights();
 }
 
@@ -774,6 +805,7 @@ async function refreshGarminData(showResult = false) {
     saveSyncSettings();
     renderSyncStatus();
     renderGuidance();
+    renderTodayHealthInsight();
     renderInsights();
     if (showResult) showToast(JSON.stringify(privatePacket) === previousPacket ? "Checked — Garmin data is already current." : "New Garmin data loaded.");
     return true;

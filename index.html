@@ -10,7 +10,7 @@
     <title>My Fitness Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="styles.css?v=20260810-fitness-7" />
+    <link rel="stylesheet" href="styles.css?v=20260811-fitness-8" />
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -112,6 +112,31 @@
               </article>
             </div>
           </div>
+
+          <article class="glass-panel today-health-panel" id="todayHealthPanel">
+            <div class="today-health-heading">
+              <div>
+                <p class="eyebrow">Sleep + heart + training</p>
+                <h3>Your whole-health read</h3>
+              </div>
+              <span class="health-read-freshness" id="todayHealthFreshness">Waiting for Garmin</span>
+            </div>
+            <div class="today-health-layout">
+              <div class="today-health-copy">
+                <span class="health-read-mark" aria-hidden="true">AI</span>
+                <div>
+                  <h4 id="todayHealthLead">Connecting the full picture</h4>
+                  <ul class="health-read-points" id="todayHealthPoints"></ul>
+                  <span class="source-badge" id="todayHealthSource">ChatGPT analysis + Garmin data</span>
+                </div>
+              </div>
+              <div class="today-health-signals" id="todayHealthSignals"></div>
+            </div>
+            <div class="today-health-footer">
+              <span>Context, not a readiness score.</span>
+              <button class="text-button" data-view="insights" type="button">Open full insights</button>
+            </div>
+          </article>
 
           <article class="glass-panel session-detail-panel" id="todaySessionDetails">
             <div class="section-heading compact-heading">
@@ -262,6 +287,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20260810-fitness-7"></script>
+    <script src="app.js?v=20260811-fitness-8"></script>
   </body>
 </html>
