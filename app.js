@@ -762,6 +762,7 @@ async function refreshGarminData(showResult = false) {
   syncSettings.status = "checking";
   renderSyncStatus();
   try {
+    const previousPacket = JSON.stringify(privatePacket);
     const response = await fetch(`data/ben-hq-latest.enc.json?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error("Fitness packet unavailable");
     const packet = await decryptEnvelope(await response.json());
@@ -774,7 +775,7 @@ async function refreshGarminData(showResult = false) {
     renderSyncStatus();
     renderGuidance();
     renderInsights();
-    if (showResult) showToast("Garmin context refreshed.");
+    if (showResult) showToast(JSON.stringify(privatePacket) === previousPacket ? "Checked — Garmin data is already current." : "New Garmin data loaded.");
     return true;
   } catch {
     syncSettings.status = "error";
@@ -784,6 +785,15 @@ async function refreshGarminData(showResult = false) {
     if (showResult) showToast("The last good Garmin snapshot is still available.");
     return false;
   }
+}
+
+async function refreshDashboardData() {
+  if (!syncSettings.key) {
+    openSyncKeyPanel();
+    showToast("Connect the existing sync key once on this phone.");
+    return;
+  }
+  await refreshGarminData(true);
 }
 
 function freshnessLabel(value) {
@@ -799,6 +809,9 @@ function renderSyncStatus() {
   const railText = document.getElementById("railSyncLabel");
   const dot = document.querySelector(".pulse-dot");
   const connectButton = document.getElementById("enterSyncKey");
+  const dashboardButton = document.getElementById("dashboardRefresh");
+  const dashboardStatus = document.getElementById("dashboardRefreshStatus");
+  const settingsRefresh = document.getElementById("refreshGarmin");
   if (syncSettings.status === "checking") {
     statusText.textContent = "Refreshing your encrypted Garmin snapshot…";
     railText.textContent = "Refreshing Garmin";
@@ -814,6 +827,21 @@ function renderSyncStatus() {
   }
   connectButton.textContent = syncSettings.key ? "Replace sync key" : "Connect sync key";
   dot.classList.toggle("offline", !(syncSettings.status === "live" || hasData));
+  const isChecking = syncSettings.status === "checking";
+  dashboardButton.disabled = isChecking;
+  dashboardButton.classList.toggle("refreshing", isChecking);
+  dashboardStatus.textContent = isChecking
+    ? "Checking Garmin"
+    : syncSettings.status === "error"
+      ? "Using saved data"
+      : hasData
+        ? freshnessLabel(privatePacket.generatedAt)
+        : syncSettings.key
+          ? "Ready to check"
+          : "Connect Garmin";
+  dashboardButton.setAttribute("aria-label", isChecking ? "Refreshing Garmin data" : `Refresh Garmin data. ${dashboardStatus.textContent}`);
+  settingsRefresh.disabled = isChecking;
+  settingsRefresh.textContent = isChecking ? "Refreshing…" : "Refresh";
 }
 
 function openSyncKeyPanel() {
@@ -919,6 +947,7 @@ function wireEvents() {
     if (event.key === "Escape" && !document.getElementById("syncKeyPanel").hidden) closeSyncKeyPanel();
   });
   document.getElementById("refreshGarmin").addEventListener("click", () => refreshGarminData(true));
+  document.getElementById("dashboardRefresh").addEventListener("click", refreshDashboardData);
   document.getElementById("exportData").addEventListener("click", exportBackup);
   document.getElementById("importData").addEventListener("change", (event) => {
     const file = event.target.files?.[0];
