@@ -17,6 +17,12 @@ function hasValue(value) {
   return value !== null && value !== undefined && value !== "";
 }
 
+function timestamp(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function buildRecommendations(summary) {
   const recommendations = [];
   const health = summary.health || {};
@@ -50,6 +56,11 @@ function buildRecommendations(summary) {
 function readAiAnalysis(pathArg, summary) {
   if (!pathArg) return { recommendations: buildRecommendations(summary), aiInsights: null };
   const input = JSON.parse(readFileSync(resolve(pathArg), "utf8"));
+  const summaryTime = timestamp(summary.generatedAt);
+  const analysisTime = timestamp(input?.generatedAt);
+  if (summaryTime === null || analysisTime === null || analysisTime < summaryTime) {
+    return { recommendations: buildRecommendations(summary), aiInsights: null };
+  }
   const items = Array.isArray(input) ? input : input.recommendations;
   if (!Array.isArray(items)) throw new Error("The recommendations file must contain an array.");
   const normalized = items.slice(0, 2).map((item) => ({

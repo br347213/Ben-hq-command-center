@@ -513,12 +513,12 @@ function renderTodayHealthInsight() {
   const weeklyLoad = training.weeklyLoad || {};
   const lastWorkout = training.lastWorkoutDetail || {};
   const aiInsights = privatePacket.aiInsights || {};
-  const recommendation = privatePacket.recommendations?.[0];
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
   const hasGarmin = hasHealthData();
-  const summary = aiInsights.healthSummary || aiInsights.summary || recommendation?.detail || recommendation?.body || (hasGarmin
-    ? "Your current Garmin signals are available together here. Use them as context for the day rather than as a pass-fail readiness score."
+  const hasCurrentAnalysis = Boolean(aiInsights.healthHeadline && aiInsights.healthSummary);
+  const summary = hasCurrentAnalysis ? aiInsights.healthSummary : (hasGarmin
+    ? "Your latest Garmin health signals are displayed below. A new personal interpretation is pending, so the app will not infer recovery from an older snapshot."
     : "Connect Garmin to combine sleep, heart-rate, and exercise context in one daily read.");
   const points = splitInsightSummary(summary).slice(0, 2);
   const lastWorkoutValue = hasValue(lastWorkout.distanceMiles) ? `${lastWorkout.distanceMiles} mi` : (training.lastWorkout || "Not available");
@@ -531,9 +531,9 @@ function renderTodayHealthInsight() {
   ];
 
   document.getElementById("todayHealthFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
-  document.getElementById("todayHealthLead").textContent = aiInsights.healthHeadline || aiInsights.headline || recommendation?.title || (hasGarmin ? "Your current health context" : "Connecting the full picture");
+  document.getElementById("todayHealthLead").textContent = hasCurrentAnalysis ? aiInsights.healthHeadline : (hasGarmin ? "Current data is ready; analysis is refreshing" : "Connecting the full picture");
   document.getElementById("todayHealthPoints").innerHTML = points.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
-  document.getElementById("todayHealthSource").textContent = aiInsights.headline ? "ChatGPT analysis • Garmin health + training data" : hasGarmin ? "Garmin data • personal analysis pending" : "Waiting for Garmin data";
+  document.getElementById("todayHealthSource").textContent = hasCurrentAnalysis ? "ChatGPT analysis • Garmin health + training data" : hasGarmin ? "Garmin data • personal analysis pending" : "Waiting for Garmin data";
   document.getElementById("todayHealthSignals").innerHTML = signals.map((signal) => `<div class="health-signal"><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong><small>${escapeHtml(signal.detail)}</small></div>`).join("");
 }
 
@@ -545,14 +545,17 @@ function renderInsights() {
   const recommendation = privatePacket.recommendations?.[0];
   const week = currentWeekStats();
   const hasGarmin = hasHealthData();
+  const hasCurrentAnalysis = Boolean(aiInsights.headline && aiInsights.summary);
 
   document.getElementById("insightFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
-  document.getElementById("insightHeroTitle").textContent = aiInsights.headline || recommendation?.title || (week.active ? "Keep building the ordinary week" : "Personal analysis is refreshing");
-  const summary = aiInsights.summary || recommendation?.detail || recommendation?.body || (week.active
-    ? `You have recorded ${week.active} intentional training day${week.active === 1 ? "" : "s"} this week. Stay with the fixed schedule and use the minimum version when life is crowded.`
-    : "Your Garmin data is connected. The next personal analysis will connect it to your goals and fixed plan.");
+  document.getElementById("insightHeroTitle").textContent = hasCurrentAnalysis ? aiInsights.headline : (hasGarmin ? "Current Garmin data is ready; analysis is refreshing" : "Personal analysis is refreshing");
+  const summary = hasCurrentAnalysis ? aiInsights.summary : (hasGarmin
+    ? "The metric cards below reflect the latest Garmin snapshot. Narrative insights are temporarily withheld until a matching analysis is available."
+    : week.active
+      ? `You have recorded ${week.active} intentional training day${week.active === 1 ? "" : "s"} this week. Stay with the fixed schedule and use the minimum version when life is crowded.`
+      : recommendation?.detail || recommendation?.body || "Connect Garmin to generate personal analysis.");
   document.getElementById("insightHeroPoints").innerHTML = splitInsightSummary(summary).map((point) => `<li>${escapeHtml(point)}</li>`).join("");
-  document.getElementById("insightHeroSource").textContent = aiInsights.headline ? "ChatGPT analysis • Garmin + your goals + fixed plan" : "Personalized analysis pending";
+  document.getElementById("insightHeroSource").textContent = hasCurrentAnalysis ? "ChatGPT analysis • Garmin + your goals + fixed plan" : "Personalized analysis pending";
 
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
@@ -571,7 +574,7 @@ function renderInsights() {
   const insightCards = buildInsightCards(health, training, week, hasGarmin);
   document.getElementById("insightGrid").innerHTML = insightCards.map((item) => `<article class="glass-card insight-card"><p class="eyebrow">${escapeHtml(item.label)}</p><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p><small class="insight-evidence">Based on ${escapeHtml(item.source || "your current data")}</small></article>`).join("");
 
-  const actions = (privatePacket.recommendations || []).filter((item) => item?.title || item?.detail || item?.body).slice(0, 2);
+  const actions = hasCurrentAnalysis ? (privatePacket.recommendations || []).filter((item) => item?.title || item?.detail || item?.body).slice(0, 2) : [];
   document.getElementById("insightActions").innerHTML = actions.length
     ? actions.map((item, index) => `<article class="insight-action"><span class="insight-action-mark">${index + 1}</span><div><h4>${escapeHtml(item.title || "Next step")}</h4><p>${escapeHtml(item.detail || item.body)}</p><small>${escapeHtml(item.source || "Your Garmin data + current plan")}</small></div></article>`).join("")
     : '<div class="empty-state">Next actions will appear with the next personal analysis.</div>';
