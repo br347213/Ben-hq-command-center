@@ -526,8 +526,8 @@ function renderTodayHealthInsight() {
   const signals = [
     { label: "Sleep", value: hasValue(sleepValue) ? `${sleepValue} h` : "Not available", detail: hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "No recent reading" },
     { label: "Resting HR", value: hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.restingHr) ? "Latest Garmin value" : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "No recent reading" },
-    { label: "7-day running", value: hasValue(weeklyLoad.distanceMiles) ? `${weeklyLoad.distanceMiles} mi` : "Not available", detail: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} activities` : "No recent load" },
-    { label: "Last activity", value: lastWorkoutValue, detail: lastWorkoutDetail },
+    { label: "Stress", value: hasValue(health.stress) ? health.stress : "Not available", detail: "Latest Garmin value" },
+    { label: "Body Battery", value: hasValue(health.bodyBattery) ? health.bodyBattery : "Not available", detail: "Latest Garmin value" },
   ];
 
   document.getElementById("todayHealthFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
@@ -562,12 +562,13 @@ function renderInsights() {
   const lastWorkout = training.lastWorkoutDetail || {};
   const lastWorkoutValue = hasValue(lastWorkout.distanceMiles) ? `${lastWorkout.distanceMiles} mi` : (training.lastWorkout || "Not available");
   const lastWorkoutDetail = [lastWorkout.type ? String(lastWorkout.type).replaceAll("_", " ") : "", hasValue(lastWorkout.averageHr) ? `Avg HR ${lastWorkout.averageHr}` : ""].filter(Boolean).join(" • ") || "Latest Garmin activity";
+  const loadChange = Number(weeklyLoad.distanceChangePct);
   const metrics = [
-    { label: "Sleep", value: hasValue(sleepValue) ? `${sleepValue} h` : "Not available", detail: hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "No recent Garmin reading" },
-    { label: "Resting HR", value: hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.restingHr) ? (hasValue(health.baselines?.restingHr7Day) ? `7-day ${health.baselines.restingHr7Day}` : "Latest Garmin value") : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "No recent Garmin reading" },
-    { label: "Body Battery", value: hasValue(health.bodyBattery) ? health.bodyBattery : "Not available", detail: hasValue(health.stress) ? `Stress ${health.stress}` : "No recent Garmin reading" },
     { label: "7-day running", value: hasValue(weeklyLoad.distanceMiles) ? `${weeklyLoad.distanceMiles} mi` : "Not available", detail: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} activities` : "No recent training load" },
-    { label: "Last workout", value: lastWorkoutValue, detail: lastWorkoutDetail },
+    { label: "Last run", value: lastWorkoutValue, detail: lastWorkoutDetail },
+    { label: "Run frequency", value: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} sessions` : "Not available", detail: hasValue(weeklyLoad.previousActivities) ? `${weeklyLoad.previousActivities} in prior 7 days` : "No comparison available" },
+    { label: "Load direction", value: Number.isFinite(loadChange) ? `${loadChange > 0 ? "+" : ""}${loadChange}%` : "Not available", detail: "Distance vs prior 7 days" },
+    { label: "Recovery context", value: hasValue(health.bodyBattery) ? `BB ${health.bodyBattery}` : hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.stress) ? `Stress ${health.stress}` : hasValue(sleepValue) ? `${sleepValue} h sleep` : "Use feel and pain signals" },
   ];
   document.getElementById("healthMetricGrid").innerHTML = metrics.map((metric) => `<article class="metric-card"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.detail)}</small></article>`).join("");
 
