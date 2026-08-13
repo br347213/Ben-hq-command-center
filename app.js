@@ -132,7 +132,7 @@ const STORAGE = {
 };
 
 const OUTCOME_LABELS = {
-  completed: "Workout complete",
+  completed: "Workout completed",
   minimum: "Minimum version",
   rest: "Intentional rest",
 };
@@ -231,7 +231,7 @@ function getOutcome(key) {
 function setTodayOutcome(status) {
   const key = localDateKey();
   const previousStatus = getOutcome(key);
-  completions[key] = { status, updatedAt: new Date().toISOString() };
+  completions[key] = { status, updatedAt: new Date().toISOString(), source: "manual" };
   writeJson(STORAGE.completions, completions);
   renderAllTracking();
   const becameActive = (status === "completed" || status === "minimum") && previousStatus !== "completed" && previousStatus !== "minimum";
@@ -240,7 +240,12 @@ function setTodayOutcome(status) {
 }
 
 function clearTodayOutcome() {
-  delete completions[localDateKey()];
+  const key = localDateKey();
+  if (privatePacket.training?.activities?.some((activity) => activity?.date === key)) {
+    completions[key] = { status: "", updatedAt: new Date().toISOString(), suppressGarmin: true };
+  } else {
+    delete completions[key];
+  }
   writeJson(STORAGE.completions, completions);
   renderAllTracking();
   showToast("Today's mark was cleared.");
@@ -267,7 +272,7 @@ function renderTodayWorkout() {
     strong.textContent = OUTCOME_LABELS[status];
     small.textContent = "Today is recorded";
   } else {
-    strong.textContent = "Workout complete";
+    strong.textContent = "Complete workout";
     small.textContent = "Mark today as done";
   }
   document.getElementById("clearTodayOutcome").hidden = !status;
@@ -317,7 +322,7 @@ function renderYearCounter() {
   document.getElementById("yearCounterTitle").textContent = year;
   document.getElementById("yearActiveCount").textContent = stats.active;
   document.getElementById("yearCounterMessage").textContent = stats.active
-    ? `${stats.active} day${stats.active === 1 ? "" : "s"} you did the thing.`
+    ? `${stats.active} workout${stats.active === 1 ? "" : "s"} completed.`
     : "The first check is waiting.";
   document.getElementById("yearCounterDetail").textContent = `Every mark stays in ${year}.`;
   document.getElementById("yearDotGrid").innerHTML = cells.join("");
@@ -372,9 +377,13 @@ function toggleDateCompletion(key, target) {
   const previousStatus = getOutcome(key);
   const wasActive = previousStatus === "completed" || previousStatus === "minimum";
   if (wasActive) {
-    delete completions[key];
+    if (privatePacket.training?.activities?.some((activity) => activity?.date === key)) {
+      completions[key] = { status: "", updatedAt: new Date().toISOString(), suppressGarmin: true };
+    } else {
+      delete completions[key];
+    }
   } else {
-    completions[key] = { status: "completed", updatedAt: new Date().toISOString() };
+    completions[key] = { status: "completed", updatedAt: new Date().toISOString(), source: "manual" };
   }
   writeJson(STORAGE.completions, completions);
   renderAllTracking();
@@ -695,7 +704,7 @@ async function restoreLegacySyncKey() {
 }
 
 function emptyPrivatePacket() {
-  return { generatedAt: "", health: {}, training: {}, recommendations: [], aiInsights: null, sources: [] };
+  return { generatedAt: "", health: {}, training: { activities: [] }, recommendations: [], aiInsights: null, sources: [] };
 }
 
 function normalizePacket(packet) {
@@ -703,7 +712,9 @@ function normalizePacket(packet) {
   return {
     generatedAt: firstText(packet.generatedAt, packet.packetGeneratedAt),
     health: packet.health && typeof packet.health === "object" ? packet.health : {},
-    training: packet.training && typeof packet.training === "object" ? packet.training : {},
+    training: packet.training && typeof packet.training === "object"
+      ? { ...packet.training, activities: Array.isArray(packet.training.activities) ? packet.training.activities.filter(Boolean) : [] }
+      : { activities: [] },
     recommendations: Array.isArray(packet.recommendations) ? packet.recommendations.filter(Boolean) : [],
     aiInsights: packet.aiInsights && typeof packet.aiInsights === "object" ? packet.aiInsights : null,
     sources: Array.isArray(packet.sources) ? packet.sources.filter(Boolean) : [],
@@ -716,6 +727,28 @@ function loadPrivatePacket() {
 
 function savePrivatePacket() {
   writeJson(STORAGE.packet, privatePacket);
+}
+
+function applyGarminActivityCompletions() {
+  const activities = Array.isArray(privatePacket.training?.activities) ? privatePacket.training.activities : [];
+  const todayKey = localDateKey();
+  let importedDays = 0;
+  activities.forEach((activity) => {
+    const key = typeof activity?.date === "string" ? activity.date : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || key > todayKey) return;
+    const existing = completions[key];
+    if (getOutcome(key) || (existing && typeof existing === "object" && existing.suppressGarmin)) return;
+    completions[key] = {
+      status: "completed",
+      source: "garmin",
+      activityType: firstText(activity.type),
+      activityName: firstText(activity.name),
+      updatedAt: privatePacket.generatedAt || new Date().toISOString(),
+    };
+    importedDays += 1;
+  });
+  if (importedDays) writeJson(STORAGE.completions, completions);
+  return importedDays;
 }
 
 function hasHealthData() {
@@ -799,15 +832,21 @@ async function refreshGarminData(showResult = false) {
     const packet = await decryptEnvelope(await response.json());
     privatePacket = normalizePacket(packet);
     savePrivatePacket();
+    const importedDays = applyGarminActivityCompletions();
     syncSettings.status = "live";
     syncSettings.lastSyncAt = new Date().toISOString();
     syncSettings.error = "";
     saveSyncSettings();
     renderSyncStatus();
-    renderGuidance();
-    renderTodayHealthInsight();
-    renderInsights();
-    if (showResult) showToast(JSON.stringify(privatePacket) === previousPacket ? "Checked — Garmin data is already current." : "New Garmin data loaded.");
+    renderAllTracking();
+    if (showResult) {
+      const message = importedDays
+        ? `${importedDays} Garmin workout day${importedDays === 1 ? "" : "s"} marked complete.`
+        : JSON.stringify(privatePacket) === previousPacket
+          ? "Checked — Garmin data is already current."
+          : "New Garmin data loaded.";
+      showToast(message);
+    }
     return true;
   } catch {
     syncSettings.status = "error";

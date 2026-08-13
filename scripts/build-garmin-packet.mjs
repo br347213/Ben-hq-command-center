@@ -103,6 +103,8 @@ function main() {
       lastWorkout: summary.training?.lastWorkout || null,
       lastWorkoutDetail: summary.training?.lastWorkoutDetail || null,
       weeklyLoad: summary.training?.weeklyLoad || {},
+      activities: Array.isArray(summary.training?.activities) ? summary.training.activities : [],
+      activityHistory: summary.training?.activityHistory || null,
     },
     recommendations: analysis.recommendations,
     aiInsights: analysis.aiInsights,
