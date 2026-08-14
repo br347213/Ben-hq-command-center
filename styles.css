@@ -384,6 +384,9 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .metric-card span { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
 .metric-card strong { margin-top: 12px; font-size: 23px; letter-spacing: -.04em; }
 .metric-card small { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.metric-icon-value { display: flex !important; align-items: center; gap: 8px; }
+.metric-icon-value svg { width: 25px; height: 25px; fill: none; stroke: var(--teal); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.metric-icon-value em { font-style: normal; }
 .training-intelligence-panel { position: relative; margin-top: 24px; padding: 24px; overflow: hidden; }
 .training-intelligence-panel::before { content: ""; position: absolute; left: 24px; right: 68%; top: 0; height: 2px; background: linear-gradient(90deg, var(--blue), var(--teal), transparent); opacity: .78; }
 .training-intelligence-heading { align-items: center; }
@@ -408,9 +411,9 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .training-chart-legend span::before { content: ""; width: 14px; height: 2px; border-radius: 99px; background: var(--blue); }
 .training-chart-legend .fatigue-key::before { background: #f3bd69; }
 .training-chart-legend .form-key::before { background: var(--teal); }
-.training-chart { height: 250px; margin-top: 13px; }
-.training-chart svg { width: 100%; height: 100%; overflow: visible; }
-.training-chart text { fill: var(--muted); font-size: 9px; font-family: inherit; }
+.training-chart { height: 250px; margin-top: 13px; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 9px; }
+.training-chart svg { width: 100%; height: 100%; min-height: 0; overflow: visible; }
+.training-chart-dates { display: flex; justify-content: space-between; align-items: center; padding: 0 2px; color: var(--muted); font-size: 9px; line-height: 1; letter-spacing: .02em; }
 .chart-zero { stroke: rgba(178,211,240,.13); stroke-width: 1; stroke-dasharray: 5 6; vector-effect: non-scaling-stroke; }
 .chart-line { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .chart-fitness { stroke: #5bcbff; }

@@ -11,6 +11,7 @@ const ICONS = {
   plan: '<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 9h8M8 13h8M8 17h5"></path>',
   progress: '<path d="M4 18V9M10 18V5M16 18v-7M22 18V3"></path><path d="M2 21h22"></path>',
   spark: '<path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"></path><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path>',
+  battery: '<rect x="3" y="6" width="16" height="12" rx="2"></rect><path d="M21 10v4"></path><path d="M6.5 9.5h7"></path>',
   settings: '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"></path>',
 };
 
@@ -568,9 +569,14 @@ function renderInsights() {
     { label: "Last run", value: lastWorkoutValue, detail: lastWorkoutDetail },
     { label: "Run frequency", value: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} sessions` : "Not available", detail: hasValue(weeklyLoad.previousActivities) ? `${weeklyLoad.previousActivities} in prior 7 days` : "No comparison available" },
     { label: "Load direction", value: Number.isFinite(loadChange) ? `${loadChange > 0 ? "+" : ""}${loadChange}%` : "Not available", detail: "Distance vs prior 7 days" },
-    { label: "Recovery context", value: hasValue(health.bodyBattery) ? `BB ${health.bodyBattery}` : hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.stress) ? `Stress ${health.stress}` : hasValue(sleepValue) ? `${sleepValue} h sleep` : "Use feel and pain signals" },
+    { label: "Recovery context", value: hasValue(health.bodyBattery) ? health.bodyBattery : hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", icon: hasValue(health.bodyBattery) ? "battery" : "", detail: hasValue(health.stress) ? `Stress ${health.stress}` : hasValue(sleepValue) ? `${sleepValue} h sleep` : "Use feel and pain signals" },
   ];
-  document.getElementById("healthMetricGrid").innerHTML = metrics.map((metric) => `<article class="metric-card"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.detail)}</small></article>`).join("");
+  document.getElementById("healthMetricGrid").innerHTML = metrics.map((metric) => {
+    const value = metric.icon
+      ? `<strong class="metric-icon-value">${iconMarkup(metric.icon)}<em>${escapeHtml(metric.value)}</em></strong>`
+      : `<strong>${escapeHtml(metric.value)}</strong>`;
+    return `<article class="metric-card"><span>${escapeHtml(metric.label)}</span>${value}<small>${escapeHtml(metric.detail)}</small></article>`;
+  }).join("");
   renderTrainingIntelligence(training.analytics);
 
   const insightCards = buildInsightCards(health, training, week, hasGarmin);
@@ -641,14 +647,13 @@ function renderTrainingIntelligence(analytics) {
   const zeroY = height - ((0 - minValue) / (maxValue - minValue || 1)) * height;
   const firstDate = parseLocalDateKey(series[0].date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const lastDate = parseLocalDateKey(series[series.length - 1].date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height + 26}" preserveAspectRatio="none" aria-hidden="true">
+  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
     <defs><linearGradient id="fitnessFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5bcbff" stop-opacity=".22"/><stop offset="1" stop-color="#5bcbff" stop-opacity="0"/></linearGradient></defs>
     <line class="chart-zero" x1="0" y1="${zeroY.toFixed(1)}" x2="${width}" y2="${zeroY.toFixed(1)}"></line>
     <path class="chart-line chart-fitness" d="${fitnessPath}"></path>
     <path class="chart-line chart-fatigue" d="${fatiguePath}"></path>
     <path class="chart-line chart-form" d="${formPath}"></path>
-    <text x="0" y="${height + 22}">${escapeHtml(firstDate)}</text><text x="${width}" y="${height + 22}" text-anchor="end">${escapeHtml(lastDate)}</text>
-  </svg>`;
+  </svg><div class="training-chart-dates"><span>${escapeHtml(firstDate)}</span><span>${escapeHtml(lastDate)}</span></div>`;
 
   const secondary = [
     { label: "Load balance", value: metricValue(current.loadBalance), detail: "Fatigue ÷ fitness" },
@@ -657,7 +662,7 @@ function renderTrainingIntelligence(analytics) {
     { label: "Strain", value: metricValue(current.strain7Day), detail: "Load × monotony" },
     { label: "28-day consistency", value: metricValue(current.activeDays28, " days"), detail: `${metricValue(current.activities28)} activities` },
     { label: "VO₂ max", value: metricValue(current.vo2Max28), detail: hasValue(current.vo2MaxChangePct) ? `${current.vo2MaxChangePct > 0 ? "+" : ""}${current.vo2MaxChangePct}% vs prior 28d` : "No prior comparison" },
-    { label: "Run efficiency", value: metricValue(current.runningEfficiency28), detail: hasValue(current.runningEfficiencyChangePct) ? `${current.runningEfficiencyChangePct > 0 ? "+" : ""}${current.runningEfficiencyChangePct}% vs prior 28d` : "Speed per heartbeat" },
+    { label: "Run efficiency", value: hasValue(current.runningEfficiency28) ? Number(current.runningEfficiency28).toFixed(2) : "—", detail: hasValue(current.runningEfficiencyChangePct) ? `${current.runningEfficiencyChangePct > 0 ? "+" : ""}${current.runningEfficiencyChangePct}% vs prior 28d` : "Speed per heartbeat" },
   ];
   detailGrid.innerHTML = secondary.map((item) => `<article><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong><small>${escapeHtml(item.detail)}</small></article>`).join("");
   method.textContent = `${analytics.loadMethod} Fitness uses a ${analytics.references?.fitnessTimeConstantDays || 42}-day response and fatigue a ${analytics.references?.fatigueTimeConstantDays || 7}-day response. Only Garmin-recorded workouts contribute load. Values are estimates in arbitrary load points—not health, injury-risk, or readiness scores.`;

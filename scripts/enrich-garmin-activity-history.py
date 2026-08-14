@@ -199,7 +199,7 @@ def main() -> int:
             "activities28": len([item for item in analysis_activities if date.fromisoformat(item["date"]) >= last_28_start]),
             "vo2Max28": rounded(current_vo2),
             "vo2MaxChangePct": trend_percent(current_vo2, previous_vo2),
-            "runningEfficiency28": rounded(current_efficiency, 3),
+            "runningEfficiency28": rounded(current_efficiency, 2),
             "runningEfficiencyChangePct": trend_percent(current_efficiency, previous_efficiency),
         },
         "series": [
