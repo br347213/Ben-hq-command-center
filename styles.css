@@ -162,8 +162,7 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .profile-button img { width: 100%; height: 100%; object-fit: cover; }
 
 .page-view { display: none; animation: viewIn 220ms ease both; }
-.page-view.active { display: block; }
-.page-view:not(#view-today) { padding-top: 6px; }
+.page-view.active { display: block; padding-top: 12px; }
 .view-utility-row { min-height: 32px; display: flex; align-items: center; justify-content: flex-end; margin: 0 0 12px; }
 .view-utility-row .freshness { padding: 6px 10px; background: rgba(255,255,255,.03); }
 .progress-utility { margin-bottom: 9px; }
@@ -627,7 +626,7 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .health-signal { padding: 13px; }
   .health-signal strong { font-size: 16px; }
   .session-columns { gap: 9px; margin-top: 15px; }
-  .page-view:not(#view-today) { padding-top: 2px; }
+  .page-view.active { padding-top: 14px; }
   .view-utility-row { min-height: 28px; margin-bottom: 8px; }
   .insights-utility { display: none; }
   .plan-day-button { grid-template-columns: 56px minmax(0,1fr) auto; gap: 10px; padding: 15px 14px; }
