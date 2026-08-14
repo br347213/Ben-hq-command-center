@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-const GARMIN_REFRESH_ENDPOINT = "";
+const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
 
