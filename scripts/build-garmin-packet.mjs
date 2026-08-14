@@ -58,7 +58,8 @@ function readAiAnalysis(pathArg, summary) {
   const input = JSON.parse(readFileSync(resolve(pathArg), "utf8"));
   const summaryTime = timestamp(summary.generatedAt);
   const analysisTime = timestamp(input?.generatedAt);
-  if (summaryTime === null || analysisTime === null || analysisTime < summaryTime) {
+  const canCarryForward = process.env.ALLOW_STALE_ANALYSIS === "1";
+  if (summaryTime === null || analysisTime === null || (analysisTime < summaryTime && !canCarryForward)) {
     return { recommendations: buildRecommendations(summary), aiInsights: null };
   }
   const items = Array.isArray(input) ? input : input.recommendations;

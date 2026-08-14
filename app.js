@@ -6,6 +6,10 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
+const GARMIN_REFRESH_ENDPOINT = "";
+const GARMIN_REFRESH_POLL_MS = 2500;
+const GARMIN_REFRESH_MAX_POLLS = 48;
+
 const ICONS = {
   home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
   plan: '<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 9h8M8 13h8M8 17h5"></path>',
@@ -781,6 +785,7 @@ function loadSyncSettings() {
     key: typeof chosen.key === "string" && chosen.key ? chosen.key : cookieKey,
     status: typeof chosen.status === "string" ? chosen.status : "not configured",
     lastSyncAt: typeof chosen.lastSyncAt === "string" ? chosen.lastSyncAt : "",
+    progress: "",
     error: "",
   };
 }
@@ -964,6 +969,35 @@ function importSyncKeyFromHash() {
   return true;
 }
 
+async function fetchLatestPrivatePacket() {
+  const response = await fetch(`data/ben-hq-latest.enc.json?t=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Fitness packet unavailable");
+  return normalizePacket(await decryptEnvelope(await response.json()));
+}
+
+function installPrivatePacket(packet, showResult = false) {
+  const previousPacket = JSON.stringify(privatePacket);
+  privatePacket = packet;
+  savePrivatePacket();
+  const importedDays = applyGarminActivityCompletions();
+  syncSettings.status = "live";
+  syncSettings.progress = "";
+  syncSettings.lastSyncAt = new Date().toISOString();
+  syncSettings.error = "";
+  saveSyncSettings();
+  renderSyncStatus();
+  renderAllTracking();
+  if (showResult) {
+    const message = importedDays
+      ? `${importedDays} Garmin workout day${importedDays === 1 ? "" : "s"} marked complete.`
+      : JSON.stringify(privatePacket) === previousPacket
+        ? "Garmin data is already current."
+        : "Garmin data is up to date.";
+    showToast(message);
+  }
+  return importedDays;
+}
+
 async function refreshGarminData(showResult = false) {
   if (!syncSettings.key) {
     syncSettings.status = "not configured";
@@ -973,32 +1007,14 @@ async function refreshGarminData(showResult = false) {
     return false;
   }
   syncSettings.status = "checking";
+  syncSettings.progress = "Checking Garmin";
   renderSyncStatus();
   try {
-    const previousPacket = JSON.stringify(privatePacket);
-    const response = await fetch(`data/ben-hq-latest.enc.json?t=${Date.now()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error("Fitness packet unavailable");
-    const packet = await decryptEnvelope(await response.json());
-    privatePacket = normalizePacket(packet);
-    savePrivatePacket();
-    const importedDays = applyGarminActivityCompletions();
-    syncSettings.status = "live";
-    syncSettings.lastSyncAt = new Date().toISOString();
-    syncSettings.error = "";
-    saveSyncSettings();
-    renderSyncStatus();
-    renderAllTracking();
-    if (showResult) {
-      const message = importedDays
-        ? `${importedDays} Garmin workout day${importedDays === 1 ? "" : "s"} marked complete.`
-        : JSON.stringify(privatePacket) === previousPacket
-          ? "Checked — Garmin data is already current."
-          : "New Garmin data loaded.";
-      showToast(message);
-    }
+    installPrivatePacket(await fetchLatestPrivatePacket(), showResult);
     return true;
   } catch {
     syncSettings.status = "error";
+    syncSettings.progress = "";
     syncSettings.error = "The latest encrypted packet could not be read.";
     saveSyncSettings();
     renderSyncStatus();
@@ -1007,13 +1023,81 @@ async function refreshGarminData(showResult = false) {
   }
 }
 
+function bytesToHex(bytes) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function signRefreshRequest(timestamp, nonce) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(syncSettings.key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${nonce}`));
+  return bytesToHex(new Uint8Array(signature));
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function triggerGarminRefresh() {
+  const timestamp = Date.now();
+  const nonce = crypto.randomUUID();
+  const signature = await signRefreshRequest(timestamp, nonce);
+  const response = await fetch(GARMIN_REFRESH_ENDPOINT, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ timestamp, nonce, signature }),
+  });
+  if (!response.ok) throw new Error("Garmin refresh could not be started");
+}
+
+async function waitForNewGarminPacket(previousGeneratedAt) {
+  const previousTime = Date.parse(previousGeneratedAt || "") || 0;
+  for (let poll = 0; poll < GARMIN_REFRESH_MAX_POLLS; poll += 1) {
+    await wait(GARMIN_REFRESH_POLL_MS);
+    syncSettings.progress = poll < 4 ? "Connecting to Garmin" : poll < 20 ? "Updating your data" : "Finishing refresh";
+    renderSyncStatus();
+    try {
+      const packet = await fetchLatestPrivatePacket();
+      const packetTime = Date.parse(packet.generatedAt || "") || 0;
+      if (packetTime > previousTime) return packet;
+    } catch {
+      // Keep the previous good packet in place while the cloud refresh runs.
+    }
+  }
+  throw new Error("Garmin refresh timed out");
+}
+
 async function refreshDashboardData() {
   if (!syncSettings.key) {
     openSyncKeyPanel();
     showToast("Connect the existing sync key once on this phone.");
     return;
   }
-  await refreshGarminData(true);
+  if (!GARMIN_REFRESH_ENDPOINT) {
+    await refreshGarminData(true);
+    return;
+  }
+  syncSettings.status = "checking";
+  syncSettings.progress = "Starting Garmin refresh";
+  syncSettings.error = "";
+  renderSyncStatus();
+  try {
+    const previousGeneratedAt = privatePacket.generatedAt;
+    await triggerGarminRefresh();
+    installPrivatePacket(await waitForNewGarminPacket(previousGeneratedAt), true);
+  } catch {
+    syncSettings.status = "error";
+    syncSettings.progress = "";
+    syncSettings.error = "The Garmin refresh did not finish.";
+    saveSyncSettings();
+    renderSyncStatus();
+    showToast("Garmin did not finish refreshing. Your last good data is still here.");
+  }
 }
 
 function freshnessLabel(value) {
@@ -1032,7 +1116,7 @@ function renderSyncStatus() {
   const dashboardButton = document.getElementById("dashboardRefresh");
   const dashboardStatus = document.getElementById("dashboardRefreshStatus");
   if (syncSettings.status === "checking") {
-    statusText.textContent = "Refreshing your encrypted Garmin snapshot…";
+    statusText.textContent = `${syncSettings.progress || "Refreshing Garmin"}…`;
     railText.textContent = "Refreshing Garmin";
   } else if (syncSettings.status === "live" || hasData) {
     statusText.textContent = `Your encrypted Garmin snapshot is connected. ${freshnessLabel(privatePacket.generatedAt)}.`;
@@ -1050,7 +1134,7 @@ function renderSyncStatus() {
   dashboardButton.disabled = isChecking;
   dashboardButton.classList.toggle("refreshing", isChecking);
   dashboardStatus.textContent = isChecking
-    ? "Checking Garmin"
+    ? (syncSettings.progress || "Checking Garmin")
     : syncSettings.status === "error"
       ? "Using saved data"
       : hasData

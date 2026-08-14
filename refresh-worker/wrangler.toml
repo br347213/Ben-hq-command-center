@@ -1,0 +1,10 @@
+name = "ben-hq-garmin-refresh"
+main = "src/index.js"
+compatibility_date = "2026-08-14"
+
+[vars]
+ALLOWED_ORIGIN = "https://br347213.github.io"
+GITHUB_OWNER = "br347213"
+GITHUB_REPO = "Ben-hq-command-center"
+GITHUB_REF = "gh-pages"
+GITHUB_WORKFLOW_FILE = "refresh-garmin.yml"
