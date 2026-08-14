@@ -116,6 +116,7 @@ function main() {
       weeklyLoad: summary.training?.weeklyLoad || {},
       activities: Array.isArray(summary.training?.activities) ? summary.training.activities : [],
       activityHistory: summary.training?.activityHistory || null,
+      analytics: summary.training?.analytics || null,
     },
     recommendations: analysis.recommendations,
     aiInsights: analysis.aiInsights,

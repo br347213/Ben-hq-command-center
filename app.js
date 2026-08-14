@@ -571,6 +571,7 @@ function renderInsights() {
     { label: "Recovery context", value: hasValue(health.bodyBattery) ? `BB ${health.bodyBattery}` : hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.stress) ? `Stress ${health.stress}` : hasValue(sleepValue) ? `${sleepValue} h sleep` : "Use feel and pain signals" },
   ];
   document.getElementById("healthMetricGrid").innerHTML = metrics.map((metric) => `<article class="metric-card"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.detail)}</small></article>`).join("");
+  renderTrainingIntelligence(training.analytics);
 
   const insightCards = buildInsightCards(health, training, week, hasGarmin);
   document.getElementById("insightGrid").innerHTML = insightCards.map((item) => `<article class="glass-card insight-card"><p class="eyebrow">${escapeHtml(item.label)}</p><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p><small class="insight-evidence">Based on ${escapeHtml(item.source || "your current data")}</small></article>`).join("");
@@ -579,6 +580,87 @@ function renderInsights() {
   document.getElementById("insightActions").innerHTML = actions.length
     ? actions.map((item, index) => `<article class="insight-action"><span class="insight-action-mark">${index + 1}</span><div><h4>${escapeHtml(item.title || "Next step")}</h4><p>${escapeHtml(item.detail || item.body)}</p><small>${escapeHtml(item.source || "Your Garmin data + current plan")}</small></div></article>`).join("")
     : '<div class="empty-state">Next actions will appear with the next personal analysis.</div>';
+}
+
+function metricValue(value, suffix = "", fallback = "—") {
+  return hasValue(value) ? `${value}${suffix}` : fallback;
+}
+
+function trainingStateLabel(form, balance) {
+  if (!hasValue(form)) return "Building history";
+  if (balance > 1.35 || form < -10) return "High short-term load";
+  if (form < -3) return "Carrying fatigue";
+  if (form > 8) return "Very fresh";
+  if (form > 2) return "Fresh";
+  return "Balanced";
+}
+
+function chartPath(series, key, width, height, minValue, maxValue) {
+  if (!series.length) return "";
+  const range = maxValue - minValue || 1;
+  return series.map((item, index) => {
+    const x = series.length === 1 ? width / 2 : (index / (series.length - 1)) * width;
+    const y = height - ((Number(item[key]) - minValue) / range) * height;
+    return `${index ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+}
+
+function renderTrainingIntelligence(analytics) {
+  const stateGrid = document.getElementById("trainingStateGrid");
+  const chart = document.getElementById("trainingLoadChart");
+  const detailGrid = document.getElementById("trainingDetailGrid");
+  const method = document.getElementById("trainingMethod");
+  if (!stateGrid || !chart || !detailGrid || !method) return;
+  const current = analytics?.current || {};
+  const series = Array.isArray(analytics?.series) ? analytics.series.filter((item) => item && hasValue(item.fitness) && hasValue(item.fatigue) && hasValue(item.form)) : [];
+  if (!analytics || !series.length) {
+    stateGrid.innerHTML = '<div class="empty-state">Training intelligence will appear after the next Garmin history refresh.</div>';
+    chart.innerHTML = '<div class="training-chart-empty">Waiting for longitudinal load history</div>';
+    detailGrid.innerHTML = "";
+    method.textContent = "Fitness, fatigue, and form are estimates derived from recorded workout load—not medical or readiness scores.";
+    return;
+  }
+
+  const state = trainingStateLabel(Number(current.form), Number(current.loadBalance));
+  const primary = [
+    { label: "Fitness", value: metricValue(current.fitness), detail: "42-day load" },
+    { label: "Fatigue", value: metricValue(current.fatigue), detail: "7-day load" },
+    { label: "Form", value: hasValue(current.form) ? `${current.form > 0 ? "+" : ""}${current.form}` : "—", detail: state },
+    { label: "7-day ramp", value: hasValue(current.ramp7Day) ? `${current.ramp7Day > 0 ? "+" : ""}${current.ramp7Day}` : "—", detail: "Fitness change" },
+  ];
+  stateGrid.innerHTML = primary.map((item, index) => `<article class="training-state-card state-${index}"><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong><small>${escapeHtml(item.detail)}</small></article>`).join("");
+
+  const values = series.flatMap((item) => [Number(item.fitness), Number(item.fatigue), Number(item.form)]).filter(Number.isFinite);
+  const minValue = Math.min(0, ...values);
+  const maxValue = Math.max(1, ...values);
+  const width = 720;
+  const height = 220;
+  const fitnessPath = chartPath(series, "fitness", width, height, minValue, maxValue);
+  const fatiguePath = chartPath(series, "fatigue", width, height, minValue, maxValue);
+  const formPath = chartPath(series, "form", width, height, minValue, maxValue);
+  const zeroY = height - ((0 - minValue) / (maxValue - minValue || 1)) * height;
+  const firstDate = parseLocalDateKey(series[0].date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const lastDate = parseLocalDateKey(series[series.length - 1].date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height + 26}" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="fitnessFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5bcbff" stop-opacity=".22"/><stop offset="1" stop-color="#5bcbff" stop-opacity="0"/></linearGradient></defs>
+    <line class="chart-zero" x1="0" y1="${zeroY.toFixed(1)}" x2="${width}" y2="${zeroY.toFixed(1)}"></line>
+    <path class="chart-line chart-fitness" d="${fitnessPath}"></path>
+    <path class="chart-line chart-fatigue" d="${fatiguePath}"></path>
+    <path class="chart-line chart-form" d="${formPath}"></path>
+    <text x="0" y="${height + 22}">${escapeHtml(firstDate)}</text><text x="${width}" y="${height + 22}" text-anchor="end">${escapeHtml(lastDate)}</text>
+  </svg>`;
+
+  const secondary = [
+    { label: "Load balance", value: metricValue(current.loadBalance), detail: "Fatigue ÷ fitness" },
+    { label: "7-day load", value: metricValue(current.sevenDayLoad), detail: analytics.loadUnit || "Load points" },
+    { label: "Monotony", value: metricValue(current.monotony7Day), detail: "7-day repetition" },
+    { label: "Strain", value: metricValue(current.strain7Day), detail: "Load × monotony" },
+    { label: "28-day consistency", value: metricValue(current.activeDays28, " days"), detail: `${metricValue(current.activities28)} activities` },
+    { label: "VO₂ max", value: metricValue(current.vo2Max28), detail: hasValue(current.vo2MaxChangePct) ? `${current.vo2MaxChangePct > 0 ? "+" : ""}${current.vo2MaxChangePct}% vs prior 28d` : "No prior comparison" },
+    { label: "Run efficiency", value: metricValue(current.runningEfficiency28), detail: hasValue(current.runningEfficiencyChangePct) ? `${current.runningEfficiencyChangePct > 0 ? "+" : ""}${current.runningEfficiencyChangePct}% vs prior 28d` : "Speed per heartbeat" },
+  ];
+  detailGrid.innerHTML = secondary.map((item) => `<article><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong><small>${escapeHtml(item.detail)}</small></article>`).join("");
+  method.textContent = `${analytics.loadMethod} Fitness uses a ${analytics.references?.fitnessTimeConstantDays || 42}-day response and fatigue a ${analytics.references?.fatigueTimeConstantDays || 7}-day response. Only Garmin-recorded workouts contribute load. Values are estimates in arbitrary load points—not health, injury-risk, or readiness scores.`;
 }
 
 function buildInsightCards(health, training, week, hasGarmin) {

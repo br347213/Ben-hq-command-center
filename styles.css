@@ -384,6 +384,46 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .metric-card span { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
 .metric-card strong { margin-top: 12px; font-size: 23px; letter-spacing: -.04em; }
 .metric-card small { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.training-intelligence-panel { position: relative; margin-top: 24px; padding: 24px; overflow: hidden; }
+.training-intelligence-panel::before { content: ""; position: absolute; left: 24px; right: 68%; top: 0; height: 2px; background: linear-gradient(90deg, var(--blue), var(--teal), transparent); opacity: .78; }
+.training-intelligence-heading { align-items: center; }
+.estimate-badge { width: auto !important; padding: 0 10px; color: var(--teal) !important; border-color: rgba(85,223,196,.2) !important; background: rgba(85,223,196,.07) !important; }
+.training-state-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.training-state-card { position: relative; min-height: 116px; padding: 18px; border: 1px solid var(--line); border-radius: 15px; background: linear-gradient(145deg, rgba(20,46,71,.86), rgba(8,21,36,.82)); overflow: hidden; }
+.training-state-card::after { content: ""; position: absolute; left: 17px; right: 45%; top: 0; height: 2px; background: linear-gradient(90deg, var(--blue), transparent); }
+.training-state-card.state-1::after { background: linear-gradient(90deg, #f3bd69, transparent); }
+.training-state-card.state-2::after { background: linear-gradient(90deg, var(--teal), transparent); }
+.training-state-card.state-3::after { background: linear-gradient(90deg, #9b8cff, transparent); }
+.training-state-card span, .training-state-card strong, .training-state-card small { display: block; }
+.training-state-card span { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.training-state-card strong { margin-top: 13px; font-size: 30px; line-height: .9; letter-spacing: -.055em; }
+.training-state-card small { margin-top: 9px; color: var(--muted-bright); font-size: 9px; }
+.training-chart-wrap { margin-top: 13px; padding: 18px 18px 12px; border: 1px solid var(--line); border-radius: 16px; background: rgba(4,14,26,.48); }
+.training-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+.training-chart-head strong, .training-chart-head small { display: block; }
+.training-chart-head strong { font-size: 13px; }
+.training-chart-head small { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.training-chart-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; color: var(--muted-bright); font-size: 9px; }
+.training-chart-legend span { display: flex; align-items: center; gap: 5px; }
+.training-chart-legend span::before { content: ""; width: 14px; height: 2px; border-radius: 99px; background: var(--blue); }
+.training-chart-legend .fatigue-key::before { background: #f3bd69; }
+.training-chart-legend .form-key::before { background: var(--teal); }
+.training-chart { height: 250px; margin-top: 13px; }
+.training-chart svg { width: 100%; height: 100%; overflow: visible; }
+.training-chart text { fill: var(--muted); font-size: 9px; font-family: inherit; }
+.chart-zero { stroke: rgba(178,211,240,.13); stroke-width: 1; stroke-dasharray: 5 6; vector-effect: non-scaling-stroke; }
+.chart-line { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.chart-fitness { stroke: #5bcbff; }
+.chart-fatigue { stroke: #f3bd69; }
+.chart-form { stroke: var(--teal); stroke-width: 1.8; stroke-dasharray: 5 4; }
+.training-chart-empty { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 11px; }
+.training-detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 13px; }
+.training-detail-grid article { min-height: 89px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.022); }
+.training-detail-grid span, .training-detail-grid strong, .training-detail-grid small { display: block; }
+.training-detail-grid span { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.training-detail-grid strong { margin-top: 8px; font-size: 17px; letter-spacing: -.025em; }
+.training-detail-grid small { margin-top: 4px; color: var(--muted); font-size: 8px; line-height: 1.35; }
+.training-method { margin: 15px 1px 0; padding-top: 13px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; line-height: 1.5; }
 .insight-section { margin-top: 24px; }
 .insight-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .insight-section-heading h3 { margin: 5px 0 0; font-size: 19px; }
@@ -510,6 +550,7 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .plan-day-detail { padding-left: 19px; }
   .progress-layout { grid-template-columns: 1fr; }
   .health-metric-grid { grid-template-columns: repeat(2, 1fr); }
+  .training-state-grid, .training-detail-grid { grid-template-columns: repeat(2, 1fr); }
   .insight-grid, .insight-actions { grid-template-columns: 1fr; }
   .goal-chip-grid { grid-template-columns: repeat(2, 1fr); }
   .recent-history { grid-template-columns: repeat(2, 1fr); }
@@ -555,7 +596,7 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .exercise-preview { margin: 20px 0 26px; }
   .exercise-preview span { padding: 7px 9px; font-size: 10px; }
   .completion-button { min-height: 66px; border-radius: 15px; }
-  .year-counter-card, .guidance-card, .body-note-card, .today-health-panel, .session-detail-panel, .substitutions-panel, .calendar-panel, .recent-history-panel, .goal-panel, .action-panel { padding: 18px; }
+  .year-counter-card, .guidance-card, .body-note-card, .today-health-panel, .session-detail-panel, .substitutions-panel, .calendar-panel, .recent-history-panel, .goal-panel, .action-panel, .training-intelligence-panel { padding: 18px; }
   .today-health-panel::before { left: 18px; }
   .today-health-heading { align-items: flex-start; }
   .today-health-copy { grid-template-columns: 38px minmax(0,1fr); gap: 11px; padding: 15px; }
@@ -577,6 +618,15 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .health-metric-grid { gap: 8px; }
   .metric-card { min-height: 92px; padding: 13px; }
   .metric-card strong { font-size: 20px; }
+  .training-state-grid { gap: 8px; }
+  .training-state-card { min-height: 100px; padding: 14px; }
+  .training-state-card strong { font-size: 25px; }
+  .training-chart-wrap { padding: 14px 12px 8px; }
+  .training-chart-head { align-items: flex-start; flex-direction: column; }
+  .training-chart-legend { justify-content: flex-start; }
+  .training-chart { height: 210px; }
+  .training-detail-grid { gap: 7px; }
+  .training-detail-grid article { min-height: 82px; padding: 12px; }
   .insight-hero { grid-template-columns: 40px minmax(0,1fr); padding: 23px 18px; gap: 12px; }
   .insight-index { width: 38px; height: 38px; border-radius: 12px; }
   .insight-card { min-height: auto; }

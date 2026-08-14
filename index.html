@@ -10,7 +10,7 @@
     <title>My Fitness Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="styles.css?v=20260813-fitness-12" />
+    <link rel="stylesheet" href="styles.css?v=20260813-fitness-13" />
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -222,6 +222,22 @@
             <div><p class="eyebrow">Athletic read</p><h3 id="insightHeroTitle">Personal analysis is refreshing</h3><ul class="insight-summary-points" id="insightHeroPoints"></ul><span class="source-badge" id="insightHeroSource">Waiting for personalized analysis</span></div>
           </article>
           <div class="health-metric-grid" id="healthMetricGrid"></div>
+          <section class="glass-panel training-intelligence-panel" aria-labelledby="trainingIntelligenceHeading">
+            <div class="insight-section-heading training-intelligence-heading">
+              <div><p class="eyebrow">Fitness · fatigue · form</p><h3 id="trainingIntelligenceHeading">Training intelligence</h3></div>
+              <span class="estimate-badge">Estimated</span>
+            </div>
+            <div class="training-state-grid" id="trainingStateGrid"></div>
+            <div class="training-chart-wrap">
+              <div class="training-chart-head">
+                <div><strong>90-day load response</strong><small>Long-term fitness versus short-term fatigue</small></div>
+                <div class="training-chart-legend"><span class="fitness-key">Fitness</span><span class="fatigue-key">Fatigue</span><span class="form-key">Form</span></div>
+              </div>
+              <div class="training-chart" id="trainingLoadChart" role="img" aria-label="Estimated fitness, fatigue, and form over the last 90 days"></div>
+            </div>
+            <div class="training-detail-grid" id="trainingDetailGrid"></div>
+            <p class="training-method" id="trainingMethod">Estimates use your recorded workout duration and heart-rate intensity. They describe load patterns—not health, injury risk, or readiness.</p>
+          </section>
           <section class="insight-section" aria-labelledby="signalsHeading">
             <div class="insight-section-heading"><div><p class="eyebrow">Performance analysis</p><h3 id="signalsHeading">Training signals worth noticing</h3></div><span>02</span></div>
             <div class="insight-grid" id="insightGrid"></div>
@@ -287,6 +303,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20260813-fitness-12"></script>
+    <script src="app.js?v=20260813-fitness-13"></script>
   </body>
 </html>
