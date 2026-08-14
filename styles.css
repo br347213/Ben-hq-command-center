@@ -670,7 +670,7 @@ body::before { background-image: linear-gradient(rgba(142,190,235,.018) 1px, tra
 .nav-button.active { background: #10263a; border-color: #20445e; box-shadow: none; }
 .nav-button.active .nav-icon { filter: none; }
 .pulse-dot { box-shadow: none; }
-.top-bar { background: rgba(7,17,29,.96); border-bottom: 1px solid rgba(142,190,235,.08); backdrop-filter: blur(12px); }
+.top-bar { background: rgba(7,17,29,.96); border-bottom: 0; backdrop-filter: blur(12px); }
 .dashboard-refresh-button, .profile-button { background: #0b1d2d; box-shadow: none; }
 .dashboard-refresh-button:hover:not(:disabled) { background: #10283b; }
 .hero-panel, .glass-panel, .glass-card { background: #0b1b2c; box-shadow: var(--shadow); backdrop-filter: none; }
