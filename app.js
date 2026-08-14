@@ -455,15 +455,23 @@ function renderLastGarminActivity() {
   }
 
   const distance = Number(activity.distanceMiles);
-  const duration = formatActivityDuration(activity.durationMinutes);
+  const durationMinutes = Number(activity.durationMinutes);
+  const duration = formatActivityDuration(durationMinutes);
   const hasDistance = Number.isFinite(distance) && distance > 0;
+  const averageHr = Number(activity.averageHr ?? activity.averageHR);
+  const maxHr = Number(activity.maxHr ?? activity.maxHR ?? activity.maximumHr ?? activity.maximumHR);
+  const recordedPace = Number(activity.averagePaceMinutesPerMile);
+  const paceFromDuration = hasDistance && Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes / distance : NaN;
+  const averageSpeedMps = Number(activity.averageSpeedMps ?? activity.averageSpeed);
+  const paceFromSpeed = Number.isFinite(averageSpeedMps) && averageSpeedMps > 0 ? 1609.344 / averageSpeedMps / 60 : NaN;
+  const averagePace = [recordedPace, paceFromDuration, paceFromSpeed].find((value) => Number.isFinite(value) && value > 0);
   const primaryValue = hasDistance ? `${distance.toFixed(2)} mi` : (duration || activityTypeLabel(activity.type));
   const primaryLabel = hasDistance ? "distance" : (duration ? "duration" : "activity");
   const stats = [
     hasDistance && duration ? { label: "Duration", value: duration } : null,
-    hasValue(activity.averageHr) ? { label: "Average HR", value: `${Math.round(Number(activity.averageHr))} bpm` } : null,
-    hasValue(activity.maxHr) ? { label: "Max HR", value: `${Math.round(Number(activity.maxHr))} bpm` } : null,
-    hasDistance && hasValue(activity.averagePaceMinutesPerMile) ? { label: "Average pace", value: formatActivityPace(activity.averagePaceMinutesPerMile) } : null,
+    Number.isFinite(averageHr) ? { label: "Average HR", value: `${Math.round(averageHr)} bpm` } : null,
+    { label: "Max HR", value: Number.isFinite(maxHr) ? `${Math.round(maxHr)} bpm` : "—" },
+    hasDistance ? { label: "Average pace", value: averagePace ? formatActivityPace(averagePace) : "—" } : null,
     hasValue(activity.calories) ? { label: "Calories", value: `${Math.round(Number(activity.calories))}` } : null,
     hasValue(activity.elevationGainFeet) && Number(activity.elevationGainFeet) > 0 ? { label: "Elevation gain", value: `${Math.round(Number(activity.elevationGainFeet))} ft` } : null,
     hasValue(activity.aerobicEffect) ? { label: "Aerobic effect", value: Number(activity.aerobicEffect).toFixed(1) } : null,

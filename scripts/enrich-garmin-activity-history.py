@@ -59,7 +59,14 @@ def activity_load(activity: dict[str, Any], resting_hr: float, max_hr: float) ->
 def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> dict[str, Any]:
     duration_minutes = (numeric(activity.get("duration")) or 0) / 60
     distance_miles = (numeric(activity.get("distance")) or 0) / 1609.344
-    average_pace = duration_minutes / distance_miles if duration_minutes > 0 and distance_miles > 0 else None
+    average_speed_mps = numeric(activity.get("averageSpeed"))
+    average_pace = (
+        1609.344 / average_speed_mps / 60
+        if average_speed_mps is not None and average_speed_mps > 0
+        else duration_minutes / distance_miles
+        if duration_minutes > 0 and distance_miles > 0
+        else None
+    )
     cadence = first(
         numeric(activity.get("averageRunningCadenceInStepsPerMinute")),
         numeric(activity.get("averageBikingCadenceInRevPerMinute")),
@@ -73,9 +80,10 @@ def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> d
         "name": str(first(activity.get("activityName"), kind)),
         "durationMinutes": rounded(duration_minutes),
         "distanceMiles": rounded(distance_miles, 2),
+        "averageSpeedMps": rounded(average_speed_mps, 3),
         "averagePaceMinutesPerMile": rounded(average_pace, 2),
         "averageHr": rounded(numeric(activity.get("averageHR")), 0),
-        "maxHr": rounded(numeric(activity.get("maxHR")), 0),
+        "maxHr": rounded(first(numeric(activity.get("maxHR")), numeric(activity.get("maxHr")), numeric(activity.get("maximumHR"))), 0),
         "calories": rounded(numeric(activity.get("calories")), 0),
         "elevationGainFeet": rounded(elevation_meters * 3.28084, 0) if elevation_meters is not None else None,
         "averageCadence": rounded(cadence, 0),
