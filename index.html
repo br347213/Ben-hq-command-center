@@ -10,7 +10,7 @@
     <title>My Fitness Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="styles.css?v=20260814-fitness-18" />
+    <link rel="stylesheet" href="styles.css?v=20260814-fitness-20" />
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -86,7 +86,7 @@
                 </div>
                 <div class="year-counter-main">
                   <div class="year-number-wrap"><strong id="yearActiveCount">0</strong><span>days done</span></div>
-                  <div class="year-counter-copy"><strong id="yearCounterMessage">Every check stays.</strong><span id="yearCounterDetail">Nothing resets.</span></div>
+                  <div class="year-counter-copy"><strong id="yearCounterMessage">No workouts completed yet.</strong></div>
                 </div>
                 <div class="year-dot-grid" id="yearDotGrid" aria-label="Yearly workout checkoff history"></div>
                 <p class="year-counter-foot"><span id="monthActiveCount">0 this month</span><span>Tap any past day in Progress to check it off.</span></p>
@@ -182,7 +182,6 @@
             <article class="hero-panel progress-summary-card">
               <p class="eyebrow" id="progressMonthLabel">2026 cumulative total</p>
               <div class="progress-number-row"><strong id="progressActiveDays">0</strong><span>days you intentionally trained</span></div>
-              <div class="progress-year-note"><span>One running total.</span><strong>No streak. No reset.</strong></div>
               <div class="progress-stat-row">
                 <div><strong id="fullCount">0</strong><span>complete</span></div>
                 <div><strong id="minimumCount">0</strong><span>minimum</span></div>
@@ -201,9 +200,12 @@
               <div class="calendar-legend"><span><i class="legend-complete"></i>Complete</span><span><i class="legend-minimum"></i>Minimum</span><span><i class="legend-rest"></i>Intentional rest</span></div>
             </article>
           </div>
-          <article class="glass-panel recent-history-panel">
-            <div class="section-heading compact-heading"><div><p class="eyebrow">Recent rhythm</p><h3>Latest activity</h3></div></div>
-            <div class="recent-history" id="recentHistory"></div>
+          <article class="glass-panel latest-activity-panel">
+            <div class="section-heading compact-heading">
+              <div><p class="eyebrow">Garmin activity</p><h3>Last workout</h3></div>
+              <span class="activity-source-badge">Garmin</span>
+            </div>
+            <div id="lastGarminActivity"></div>
           </article>
         </section>
 
@@ -211,10 +213,6 @@
           <div class="view-utility-row insights-utility">
             <span class="freshness" id="insightFreshness">Waiting for Garmin</span>
           </div>
-          <article class="hero-panel insight-hero" id="insightHero">
-            <div class="insight-index" aria-hidden="true">01</div>
-            <div><p class="eyebrow">Athletic read</p><h3 id="insightHeroTitle">Personal analysis is refreshing</h3><ul class="insight-summary-points" id="insightHeroPoints"></ul><span class="source-badge" id="insightHeroSource">Waiting for personalized analysis</span></div>
-          </article>
           <article class="coaching-focus-panel" id="coachingFocusPanel" aria-labelledby="coachingFocusTitle">
             <div class="coaching-focus-head">
               <div><p class="eyebrow">The coach's call</p><h3>Your current focus</h3></div>
@@ -249,15 +247,11 @@
             <p class="training-method" id="trainingMethod">Estimates use your recorded workout duration and heart-rate intensity. They describe load patterns—not health, injury risk, or readiness.</p>
           </section>
           <section class="insight-section" aria-labelledby="signalsHeading">
-            <div class="insight-section-heading"><div><p class="eyebrow">Performance analysis</p><h3 id="signalsHeading">Training signals worth noticing</h3></div><span>02</span></div>
+            <div class="insight-section-heading"><div><p class="eyebrow">Performance analysis</p><h3 id="signalsHeading">Training signals worth noticing</h3></div><span>01</span></div>
             <div class="insight-grid" id="insightGrid"></div>
           </section>
-          <section class="glass-panel action-panel" aria-labelledby="actionsHeading">
-            <div class="insight-section-heading"><div><p class="eyebrow">What to do</p><h3 id="actionsHeading">Next actions</h3></div><span>03</span></div>
-            <div class="insight-actions" id="insightActions"></div>
-          </section>
           <article class="glass-panel goal-panel">
-            <div class="insight-section-heading"><div><p class="eyebrow">Long horizon</p><h3>Goals this supports</h3></div><span>04</span></div>
+            <div class="insight-section-heading"><div><p class="eyebrow">Long horizon</p><h3>Goals this supports</h3></div><span>02</span></div>
             <div class="goal-chip-grid">
               <div><span>Primary</span><strong>Healthy consistency</strong></div>
               <div><span>Aerobic</span><strong>Comfortable 6-mile runs</strong></div>
@@ -271,7 +265,7 @@
           <div class="settings-grid">
             <article class="glass-panel settings-card">
               <div class="settings-icon" aria-hidden="true">G</div>
-              <div><p class="eyebrow">Primary health source</p><h3>Garmin Connect</h3><p id="garminStatusText">Checking your existing encrypted daily sync.</p><div class="settings-actions"><button class="secondary-button" id="enterSyncKey" type="button">Connect sync key</button><button class="text-button" id="refreshGarmin" type="button">Refresh</button></div></div>
+              <div><p class="eyebrow">Primary health source</p><h3>Garmin Connect</h3><p id="garminStatusText">Checking your existing encrypted daily sync.</p><div class="settings-actions"><button class="secondary-button" id="enterSyncKey" type="button">Connect sync key</button></div></div>
             </article>
             <article class="glass-panel settings-card">
               <div class="settings-icon" aria-hidden="true">⌂</div>
@@ -281,12 +275,7 @@
               <div class="settings-icon" aria-hidden="true">↧</div>
               <div><p class="eyebrow">Your consistency data</p><h3>Local backup</h3><p>Completion marks stay on this device. Export a small backup whenever you want.</p><div class="settings-actions"><button class="secondary-button" id="exportData" type="button">Export backup</button><label class="text-button file-button">Import backup<input id="importData" type="file" accept="application/json" /></label></div></div>
             </article>
-            <article class="glass-panel settings-card safety-settings-card">
-              <div class="settings-icon" aria-hidden="true">!</div>
-              <div><p class="eyebrow">Upper-left-arm pain</p><h3>Do not use the app to push through it</h3><p>Because it has persisted for months and pull-ups reliably provoke it, arrange an evaluation with a clinician or physical therapist. Seek urgent care for sudden severe pain, major weakness, deformity, swelling, persistent numbness, or inability to move the arm.</p></div>
-            </article>
           </div>
-          <p class="app-version">My Fitness Command Center · Personal build</p>
         </section>
       </main>
     </div>
@@ -310,6 +299,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20260814-fitness-18"></script>
+    <script src="app.js?v=20260814-fitness-20"></script>
   </body>
 </html>

@@ -325,7 +325,6 @@ function renderYearCounter() {
   document.getElementById("yearCounterMessage").textContent = stats.active
     ? `${stats.active} workout${stats.active === 1 ? "" : "s"} completed.`
     : "The first check is waiting.";
-  document.getElementById("yearCounterDetail").textContent = `Every mark stays in ${year}.`;
   document.getElementById("yearDotGrid").innerHTML = cells.join("");
   document.getElementById("monthActiveCount").textContent = monthStats(now).active;
 }
@@ -441,21 +440,44 @@ function renderProgress() {
     cells.push(`<button class="${classes}" type="button" data-date="${key}" aria-label="${escapeHtml(`${monthLabel} ${day}: ${state}`)}" ${cellDate > now ? "disabled" : ""}>${day}${status ? '<i class="status-mark"></i>' : ""}</button>`);
   }
   document.getElementById("consistencyCalendar").innerHTML = cells.join("");
-  renderRecentHistory();
+  renderLastGarminActivity();
 }
 
-function renderRecentHistory() {
-  const entries = Object.keys(completions)
-    .filter((key) => getOutcome(key))
-    .sort((a, b) => b.localeCompare(a))
-    .slice(0, 8);
-  document.getElementById("recentHistory").innerHTML = entries.length
-    ? entries.map((key) => {
-        const date = parseLocalDateKey(key);
-        const workout = workoutForDate(date);
-        return `<div class="history-item"><span>${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span><strong>${escapeHtml(OUTCOME_LABELS[getOutcome(key)])}</strong><small>${escapeHtml(workout.title)}</small></div>`;
-      }).join("")
-    : '<div class="empty-state">Your first completed day will appear here.</div>';
+function renderLastGarminActivity() {
+  const container = document.getElementById("lastGarminActivity");
+  if (!container) return;
+  const training = privatePacket.training || {};
+  const activity = training.lastWorkoutDetail && typeof training.lastWorkoutDetail === "object" ? training.lastWorkoutDetail : {};
+  const name = firstText(activity.name, training.lastWorkout);
+  if (!name) {
+    container.innerHTML = '<div class="empty-state">Your latest Garmin workout will appear after the next sync.</div>';
+    return;
+  }
+
+  const distance = Number(activity.distanceMiles);
+  const duration = formatActivityDuration(activity.durationMinutes);
+  const hasDistance = Number.isFinite(distance) && distance > 0;
+  const primaryValue = hasDistance ? `${distance.toFixed(2)} mi` : (duration || activityTypeLabel(activity.type));
+  const primaryLabel = hasDistance ? "distance" : (duration ? "duration" : "activity");
+  const stats = [
+    hasDistance && duration ? { label: "Duration", value: duration } : null,
+    hasValue(activity.averageHr) ? { label: "Average HR", value: `${Math.round(Number(activity.averageHr))} bpm` } : null,
+    hasValue(activity.maxHr) ? { label: "Max HR", value: `${Math.round(Number(activity.maxHr))} bpm` } : null,
+    hasDistance && hasValue(activity.averagePaceMinutesPerMile) ? { label: "Average pace", value: formatActivityPace(activity.averagePaceMinutesPerMile) } : null,
+    hasValue(activity.calories) ? { label: "Calories", value: `${Math.round(Number(activity.calories))}` } : null,
+    hasValue(activity.elevationGainFeet) && Number(activity.elevationGainFeet) > 0 ? { label: "Elevation gain", value: `${Math.round(Number(activity.elevationGainFeet))} ft` } : null,
+    hasValue(activity.aerobicEffect) ? { label: "Aerobic effect", value: Number(activity.aerobicEffect).toFixed(1) } : null,
+    hasValue(activity.anaerobicEffect) ? { label: "Anaerobic effect", value: Number(activity.anaerobicEffect).toFixed(1) } : null,
+    hasValue(activity.averageCadence) && Number(activity.averageCadence) > 0 ? { label: "Avg cadence", value: `${Math.round(Number(activity.averageCadence))} spm` } : null,
+    hasValue(activity.vo2Max) ? { label: "VO₂ max", value: Number(activity.vo2Max).toFixed(0) } : null,
+  ].filter((item) => item && item.value);
+
+  container.innerHTML = `<div class="latest-activity-hero">
+    <div class="latest-activity-title"><span>${escapeHtml(formatActivityDate(activity))}</span><h4>${escapeHtml(name)}</h4><small>${escapeHtml(activityTypeLabel(activity.type))}</small></div>
+    <div class="latest-activity-primary"><strong>${escapeHtml(primaryValue)}</strong><span>${escapeHtml(primaryLabel)}</span></div>
+  </div>
+  ${stats.length ? `<div class="activity-stat-grid">${stats.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("")}</div>` : '<p class="activity-detail-note">More workout metrics will appear after the next Garmin history refresh.</p>'}
+  <p class="activity-detail-note">Synced from Garmin · Refresh from the header for the latest workout.</p>`;
 }
 
 function currentWeekStats() {
@@ -478,6 +500,48 @@ function firstText(...values) {
 
 function hasValue(value) {
   return value !== null && value !== undefined && value !== "";
+}
+
+function activityTypeLabel(value) {
+  return String(value || "Activity")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatActivityDuration(value) {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) return "";
+  const rounded = Math.round(minutes);
+  const hours = Math.floor(rounded / 60);
+  const remainder = rounded % 60;
+  return hours ? `${hours}h ${remainder}m` : `${remainder}m`;
+}
+
+function formatActivityPace(value) {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) return "";
+  let whole = Math.floor(minutes);
+  let seconds = Math.round((minutes - whole) * 60);
+  if (seconds === 60) {
+    whole += 1;
+    seconds = 0;
+  }
+  return `${whole}:${String(seconds).padStart(2, "0")} /mi`;
+}
+
+function formatActivityDate(activity) {
+  const localStart = firstText(activity.startTimeLocal);
+  if (localStart) {
+    const parsed = new Date(localStart);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+        + ` · ${parsed.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(activity.date || "")) {
+    return parseLocalDateKey(activity.date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }
+  return "Latest synced workout";
 }
 
 function renderGuidance() {
@@ -510,9 +574,6 @@ function renderGuidance() {
 
 function renderTodayHealthInsight() {
   const health = privatePacket.health || {};
-  const training = privatePacket.training || {};
-  const weeklyLoad = training.weeklyLoad || {};
-  const lastWorkout = training.lastWorkoutDetail || {};
   const aiInsights = privatePacket.aiInsights || {};
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
@@ -522,8 +583,6 @@ function renderTodayHealthInsight() {
     ? "Your latest Garmin health signals are displayed below. A new personal interpretation is pending, so the app will not infer recovery from an older snapshot."
     : "Connect Garmin to combine sleep, heart-rate, and exercise context in one daily read.");
   const points = splitInsightSummary(summary).slice(0, 2);
-  const lastWorkoutValue = hasValue(lastWorkout.distanceMiles) ? `${lastWorkout.distanceMiles} mi` : (training.lastWorkout || "Not available");
-  const lastWorkoutDetail = [lastWorkout.type ? String(lastWorkout.type).replaceAll("_", " ") : "", hasValue(lastWorkout.averageHr) ? `Avg HR ${lastWorkout.averageHr}` : ""].filter(Boolean).join(" • ") || "Latest Garmin activity";
   const signals = [
     { label: "Sleep", value: hasValue(sleepValue) ? `${sleepValue} h` : "Not available", detail: hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "No recent reading" },
     { label: "Resting HR", value: hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.restingHr) ? "Latest Garmin value" : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "No recent reading" },
@@ -543,20 +602,11 @@ function renderInsights() {
   const training = privatePacket.training || {};
   const weeklyLoad = training.weeklyLoad || {};
   const aiInsights = privatePacket.aiInsights || {};
-  const recommendation = privatePacket.recommendations?.[0];
   const week = currentWeekStats();
   const hasGarmin = hasHealthData();
   const hasCurrentAnalysis = Boolean(aiInsights.headline && aiInsights.summary);
 
   document.getElementById("insightFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
-  document.getElementById("insightHeroTitle").textContent = hasCurrentAnalysis ? aiInsights.headline : (hasGarmin ? "Current Garmin data is ready; analysis is refreshing" : "Personal analysis is refreshing");
-  const summary = hasCurrentAnalysis ? aiInsights.summary : (hasGarmin
-    ? "The metric cards below reflect the latest Garmin snapshot. Narrative insights are temporarily withheld until a matching analysis is available."
-    : week.active
-      ? `You have recorded ${week.active} intentional training day${week.active === 1 ? "" : "s"} this week. Stay with the fixed schedule and use the minimum version when life is crowded.`
-      : recommendation?.detail || recommendation?.body || "Connect Garmin to generate personal analysis.");
-  document.getElementById("insightHeroPoints").innerHTML = splitInsightSummary(summary).map((point) => `<li>${escapeHtml(point)}</li>`).join("");
-  document.getElementById("insightHeroSource").textContent = hasCurrentAnalysis ? "Analysis • Garmin + goals + fixed plan" : "Personalized analysis pending";
 
   const focus = hasCurrentAnalysis && aiInsights.focus && typeof aiInsights.focus === "object" ? aiInsights.focus : {};
   document.getElementById("coachingFocusTitle").textContent = focus.title || "Your priority is refreshing";
@@ -564,17 +614,13 @@ function renderInsights() {
   document.getElementById("coachingFocusAction").textContent = focus.action || "Keep following the fixed plan";
   document.getElementById("coachingFocusSuccess").textContent = focus.successMarker || "More repeatable training with no catch-up work";
   document.getElementById("coachingFocusHorizon").textContent = focus.horizon || "Short term";
-  document.getElementById("coachingFocusEvidence").textContent = focus.evidence ? `Based on ${focus.evidence}` : "Based on your Garmin history, current plan, recovery context, and goals";
+  document.getElementById("coachingFocusEvidence").textContent = "Based on Garmin history, goals, and your fixed plan";
 
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
-  const lastWorkout = training.lastWorkoutDetail || {};
-  const lastWorkoutValue = hasValue(lastWorkout.distanceMiles) ? `${lastWorkout.distanceMiles} mi` : (training.lastWorkout || "Not available");
-  const lastWorkoutDetail = [lastWorkout.type ? String(lastWorkout.type).replaceAll("_", " ") : "", hasValue(lastWorkout.averageHr) ? `Avg HR ${lastWorkout.averageHr}` : ""].filter(Boolean).join(" • ") || "Latest Garmin activity";
   const loadChange = Number(weeklyLoad.distanceChangePct);
   const metrics = [
     { label: "7-day running", value: hasValue(weeklyLoad.distanceMiles) ? `${weeklyLoad.distanceMiles} mi` : "Not available", detail: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} activities` : "No recent training load" },
-    { label: "Last run", value: lastWorkoutValue, detail: lastWorkoutDetail },
     { label: "Run frequency", value: hasValue(weeklyLoad.activities) ? `${weeklyLoad.activities} sessions` : "Not available", detail: hasValue(weeklyLoad.previousActivities) ? `${weeklyLoad.previousActivities} in prior 7 days` : "No comparison available" },
     { label: "Load direction", value: Number.isFinite(loadChange) ? `${loadChange > 0 ? "+" : ""}${loadChange}%` : "Not available", detail: "Distance vs prior 7 days" },
     { label: "Recovery context", value: hasValue(health.bodyBattery) ? health.bodyBattery : hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", icon: hasValue(health.bodyBattery) ? "battery" : "", detail: hasValue(health.stress) ? `Stress ${health.stress}` : hasValue(sleepValue) ? `${sleepValue} h sleep` : "Use feel and pain signals" },
@@ -590,10 +636,6 @@ function renderInsights() {
   const insightCards = buildInsightCards(health, training, week, hasGarmin);
   document.getElementById("insightGrid").innerHTML = insightCards.map((item) => `<article class="glass-card insight-card"><p class="eyebrow">${escapeHtml(item.label)}</p><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p><small class="insight-evidence">Based on ${escapeHtml(item.source || "your current data")}</small></article>`).join("");
 
-  const actions = hasCurrentAnalysis ? (privatePacket.recommendations || []).filter((item) => item?.title || item?.detail || item?.body).slice(0, 2) : [];
-  document.getElementById("insightActions").innerHTML = actions.length
-    ? actions.map((item, index) => `<article class="insight-action"><span class="insight-action-mark">${index + 1}</span><div><h4>${escapeHtml(item.title || "Next step")}</h4><p>${escapeHtml(item.detail || item.body)}</p><small>${escapeHtml(item.source || "Your Garmin data + current plan")}</small></div></article>`).join("")
-    : '<div class="empty-state">Next actions will appear with the next personal analysis.</div>';
 }
 
 function metricValue(value, suffix = "", fallback = "—") {
@@ -981,7 +1023,6 @@ function renderSyncStatus() {
   const connectButton = document.getElementById("enterSyncKey");
   const dashboardButton = document.getElementById("dashboardRefresh");
   const dashboardStatus = document.getElementById("dashboardRefreshStatus");
-  const settingsRefresh = document.getElementById("refreshGarmin");
   if (syncSettings.status === "checking") {
     statusText.textContent = "Refreshing your encrypted Garmin snapshot…";
     railText.textContent = "Refreshing Garmin";
@@ -1010,8 +1051,6 @@ function renderSyncStatus() {
           ? "Ready to check"
           : "Connect Garmin";
   dashboardButton.setAttribute("aria-label", isChecking ? "Refreshing Garmin data" : `Refresh Garmin data. ${dashboardStatus.textContent}`);
-  settingsRefresh.disabled = isChecking;
-  settingsRefresh.textContent = isChecking ? "Refreshing…" : "Refresh";
 }
 
 function openSyncKeyPanel() {
@@ -1116,7 +1155,6 @@ function wireEvents() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !document.getElementById("syncKeyPanel").hidden) closeSyncKeyPanel();
   });
-  document.getElementById("refreshGarmin").addEventListener("click", () => refreshGarminData(true));
   document.getElementById("dashboardRefresh").addEventListener("click", refreshDashboardData);
   document.getElementById("exportData").addEventListener("click", exportBackup);
   document.getElementById("importData").addEventListener("change", (event) => {

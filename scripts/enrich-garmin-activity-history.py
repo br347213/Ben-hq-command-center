@@ -56,6 +56,35 @@ def activity_load(activity: dict[str, Any], resting_hr: float, max_hr: float) ->
     return duration_minutes * 0.35, "duration estimate"
 
 
+def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> dict[str, Any]:
+    duration_minutes = (numeric(activity.get("duration")) or 0) / 60
+    distance_miles = (numeric(activity.get("distance")) or 0) / 1609.344
+    average_pace = duration_minutes / distance_miles if duration_minutes > 0 and distance_miles > 0 else None
+    cadence = first(
+        numeric(activity.get("averageRunningCadenceInStepsPerMinute")),
+        numeric(activity.get("averageBikingCadenceInRevPerMinute")),
+        numeric(activity.get("averageCadence")),
+    )
+    elevation_meters = first(numeric(activity.get("elevationGain")), numeric(activity.get("totalElevationGain")))
+    return {
+        "date": current_date,
+        "startTimeLocal": first(activity.get("startTimeLocal"), activity.get("startTimeGMT")),
+        "type": kind,
+        "name": str(first(activity.get("activityName"), kind)),
+        "durationMinutes": rounded(duration_minutes),
+        "distanceMiles": rounded(distance_miles, 2),
+        "averagePaceMinutesPerMile": rounded(average_pace, 2),
+        "averageHr": rounded(numeric(activity.get("averageHR")), 0),
+        "maxHr": rounded(numeric(activity.get("maxHR")), 0),
+        "calories": rounded(numeric(activity.get("calories")), 0),
+        "elevationGainFeet": rounded(elevation_meters * 3.28084, 0) if elevation_meters is not None else None,
+        "averageCadence": rounded(cadence, 0),
+        "aerobicEffect": rounded(numeric(activity.get("aerobicTrainingEffect")), 1),
+        "anaerobicEffect": rounded(numeric(activity.get("anaerobicTrainingEffect")), 1),
+        "vo2Max": rounded(numeric(activity.get("vO2MaxValue")), 0),
+    }
+
+
 def ewma_series(values: list[float], time_constant: int) -> list[float]:
     alpha = 1 - math.exp(-1 / time_constant)
     output: list[float] = []
@@ -101,6 +130,7 @@ def main() -> int:
 
     activities = []
     analysis_activities = []
+    activity_details = []
     seen_ids = set()
     for item in raw_activities:
         if not isinstance(item, dict):
@@ -118,6 +148,7 @@ def main() -> int:
             "type": kind,
             "name": str(first(item.get("activityName"), kind)),
         })
+        activity_details.append(activity_detail(item, current_date, kind))
         analysis_activities.append({
             "date": current_date,
             "type": kind,
@@ -216,6 +247,10 @@ def main() -> int:
 
     training = summary.setdefault("training", {})
     training["activities"] = activities
+    if activity_details:
+        latest_activity = max(activity_details, key=lambda item: str(first(item.get("startTimeLocal"), item.get("date"), "")))
+        training["lastWorkout"] = latest_activity["name"]
+        training["lastWorkoutDetail"] = latest_activity
     training["activityHistory"] = {
         "startDate": start_date.isoformat(),
         "endDate": today.isoformat(),
