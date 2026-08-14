@@ -10,7 +10,7 @@
     <title>My Fitness Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="styles.css?v=20260813-fitness-15" />
+    <link rel="stylesheet" href="styles.css?v=20260813-fitness-16" />
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -93,7 +93,7 @@
               </article>
 
               <article class="glass-card guidance-card" id="todayGuidanceCard">
-                <div class="module-icon" aria-hidden="true">AI</div>
+                <div class="module-icon direction-icon" aria-hidden="true">→</div>
                 <div>
                   <p class="eyebrow">Today's direction</p>
                   <h3 id="guidanceTitle">Keep the decision small</h3>
@@ -123,11 +123,11 @@
             </div>
             <div class="today-health-layout">
               <div class="today-health-copy">
-                <span class="health-read-mark" aria-hidden="true">AI</span>
+                <span class="health-read-mark" aria-hidden="true">READ</span>
                 <div>
                   <h4 id="todayHealthLead">Connecting the full picture</h4>
                   <ul class="health-read-points" id="todayHealthPoints"></ul>
-                  <span class="source-badge" id="todayHealthSource">ChatGPT analysis + Garmin data</span>
+                  <span class="source-badge" id="todayHealthSource">Analysis + Garmin data</span>
                 </div>
               </div>
               <div class="today-health-signals" id="todayHealthSignals"></div>
@@ -160,11 +160,7 @@
           </article>
         </section>
 
-        <section class="page-view" id="view-plan" aria-labelledby="planHeading">
-          <div class="section-heading page-heading">
-            <div><p class="eyebrow">Fixed rhythm, flexible execution</p><h2 id="planHeading">Your weekly plan</h2></div>
-            <span class="freshness">No rescheduling required</span>
-          </div>
+        <section class="page-view" id="view-plan" aria-label="Plan">
           <div class="week-plan" id="weekPlan"></div>
           <article class="glass-panel substitutions-panel">
             <div class="section-heading compact-heading">
@@ -178,9 +174,8 @@
           </article>
         </section>
 
-        <section class="page-view" id="view-progress" aria-labelledby="progressHeading">
-          <div class="section-heading page-heading">
-            <div><p class="eyebrow">Return, don't restart</p><h2 id="progressHeading">Consistency</h2></div>
+        <section class="page-view" id="view-progress" aria-label="Progress">
+          <div class="view-utility-row progress-utility">
             <button class="text-button" id="jumpToCurrentMonth" type="button">This month</button>
           </div>
           <div class="progress-layout">
@@ -212,9 +207,8 @@
           </article>
         </section>
 
-        <section class="page-view" id="view-insights" aria-labelledby="insightsHeading">
-          <div class="section-heading page-heading">
-            <div><p class="eyebrow">Training load + performance direction</p><h2 id="insightsHeading">Insights</h2></div>
+        <section class="page-view" id="view-insights" aria-label="Insights">
+          <div class="view-utility-row insights-utility">
             <span class="freshness" id="insightFreshness">Waiting for Garmin</span>
           </div>
           <article class="hero-panel insight-hero" id="insightHero">
@@ -273,10 +267,7 @@
           </article>
         </section>
 
-        <section class="page-view" id="view-settings" aria-labelledby="settingsHeading">
-          <div class="section-heading page-heading">
-            <div><p class="eyebrow">Simple by design</p><h2 id="settingsHeading">Settings</h2></div>
-          </div>
+        <section class="page-view" id="view-settings" aria-label="Settings">
           <div class="settings-grid">
             <article class="glass-panel settings-card">
               <div class="settings-icon" aria-hidden="true">G</div>
@@ -319,6 +310,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20260813-fitness-15"></script>
+    <script src="app.js?v=20260813-fitness-16"></script>
   </body>
 </html>

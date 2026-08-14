@@ -17,10 +17,10 @@
   --teal: #52e2c1;
   --amber: #f3bd69;
   --rose: #ff819a;
-  --shadow: 0 24px 70px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255,255,255,.025);
-  --radius-xl: 30px;
-  --radius-lg: 21px;
-  --radius-md: 15px;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  --radius-xl: 20px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -137,7 +137,7 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   position: sticky;
   z-index: 20;
   top: 0;
-  min-height: 92px;
+  min-height: 88px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -163,6 +163,11 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 
 .page-view { display: none; animation: viewIn 220ms ease both; }
 .page-view.active { display: block; }
+.page-view:not(#view-today) { padding-top: 6px; }
+.view-utility-row { min-height: 32px; display: flex; align-items: center; justify-content: flex-end; margin: 0 0 12px; }
+.view-utility-row .freshness { padding: 6px 10px; background: rgba(255,255,255,.03); }
+.progress-utility { margin-bottom: 9px; }
+.progress-utility .text-button { padding: 7px 3px; }
 @keyframes viewIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
 
 .hero-panel, .glass-panel, .glass-card {
@@ -287,8 +292,6 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .workout-list { margin: 13px 0 0; padding-left: 20px; color: var(--muted-bright); font-size: 12px; line-height: 1.55; }
 .workout-list li + li { margin-top: 8px; }
 
-.page-heading { position: relative; min-height: 87px; margin-bottom: 18px; padding-left: 15px; }
-.page-heading::before { content: ""; position: absolute; left: 0; top: 25%; bottom: 25%; width: 3px; border-radius: 999px; background: linear-gradient(var(--blue), var(--teal)); box-shadow: 0 0 13px rgba(79,171,227,.2); }
 .freshness { color: var(--muted); }
 .week-plan { display: grid; gap: 10px; }
 .plan-day { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 17px; background: linear-gradient(110deg, rgba(15,32,53,.8), rgba(8,20,35,.75)); box-shadow: inset 0 1px 0 rgba(255,255,255,.02); transition: border-color 170ms ease, transform 170ms ease, background 170ms ease; }
@@ -559,7 +562,7 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .app-shell { display: block; }
   .side-rail { display: none; }
   .main-stage { padding: 0 16px calc(98px + var(--safe-bottom)); }
-  .top-bar { min-height: 77px; margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+  .top-bar { min-height: 74px; margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
   .top-bar-title h2 { font-size: 21px; }
   .refresh-button-copy { display: none; }
   .dashboard-refresh-button { width: 42px; min-height: 42px; padding: 3px; justify-content: center; }
@@ -624,9 +627,9 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .health-signal { padding: 13px; }
   .health-signal strong { font-size: 16px; }
   .session-columns { gap: 9px; margin-top: 15px; }
-  .page-heading { min-height: 68px; align-items: flex-end; padding-left: 13px; }
-  .page-heading h2 { font-size: 28px; }
-  .page-heading .freshness { display: none; }
+  .page-view:not(#view-today) { padding-top: 2px; }
+  .view-utility-row { min-height: 28px; margin-bottom: 8px; }
+  .insights-utility { display: none; }
   .plan-day-button { grid-template-columns: 56px minmax(0,1fr) auto; gap: 10px; padding: 15px 14px; }
   .plan-day-detail { padding: 0 14px 14px; }
   .calendar-day { min-height: 42px; border-radius: 8px; padding: 6px; font-size: 9px; }
@@ -655,6 +658,64 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .year-counter-foot { align-items: flex-start; flex-direction: column; gap: 4px; }
   .settings-card { padding: 18px; }
 }
+
+/* Restrained training-log finish: color communicates state, not decoration. */
+body { background: #07111d; }
+body::before { background-image: linear-gradient(rgba(142,190,235,.018) 1px, transparent 1px); background-size: 100% 44px; -webkit-mask-image: linear-gradient(to bottom, #000, transparent 92%); mask-image: linear-gradient(to bottom, #000, transparent 92%); }
+.ambient { display: none; }
+.side-rail { background: #07111d; backdrop-filter: none; }
+.brand-lockup { background: #0a1929; box-shadow: none; }
+.brand-lockup::after { display: none; }
+.brand-mark { box-shadow: none; }
+.nav-button::before { background: var(--teal); box-shadow: none; }
+.nav-button.active { background: #10263a; border-color: #20445e; box-shadow: none; }
+.nav-button.active .nav-icon { filter: none; }
+.pulse-dot { box-shadow: none; }
+.top-bar { background: rgba(7,17,29,.96); border-bottom: 1px solid rgba(142,190,235,.08); backdrop-filter: blur(12px); }
+.dashboard-refresh-button, .profile-button { background: #0b1d2d; box-shadow: none; }
+.dashboard-refresh-button:hover:not(:disabled) { background: #10283b; }
+.hero-panel, .glass-panel, .glass-card { background: #0b1b2c; box-shadow: var(--shadow); backdrop-filter: none; }
+.hero-panel { background: #0e2236; }
+.day-pill, .duration-pill, .source-badge, .freshness { border-radius: 7px; background: #102235; }
+.day-pill { background: #15304a; box-shadow: none; }
+.duration-pill::before { box-shadow: none; }
+.workout-hero { background: #0e2439; }
+.workout-hero::before, .workout-hero::after { display: none; }
+.workout-hero-copy { padding-left: 0; }
+.workout-hero-copy::before { display: none; }
+.exercise-preview span { background: #11263a; box-shadow: none; }
+.completion-button { background: #276fae; border-color: #3a82bd; box-shadow: 0 10px 24px rgba(0,0,0,.22); }
+.completion-button::after { display: none; }
+.completion-button:hover { box-shadow: 0 12px 28px rgba(0,0,0,.25); }
+.completion-button.selected { background: #197d70; box-shadow: 0 10px 24px rgba(0,0,0,.2); }
+.button-check { box-shadow: none; }
+.year-counter-card, .body-note-card, .today-health-panel, .progress-summary-card, .insight-hero, .coaching-focus-panel { background: #0d2234; }
+.year-counter-card::before, .year-counter-card::after, .today-health-panel::before, .progress-summary-card::after, .insight-hero::after, .coaching-focus-panel::before, .coaching-focus-panel::after { display: none; }
+.year-counter-badge, .focus-horizon, .estimate-badge { border-radius: 6px; background: #102d36 !important; }
+.year-number-wrap, .today-health-copy, .progress-year-note { background: #10283a; box-shadow: none; }
+.year-dot.complete, .year-dot.minimum { box-shadow: none; }
+.guidance-card::before, .body-note-card::before { display: none; }
+.module-icon, .body-note-icon, .settings-icon, .health-read-mark, .insight-index { background: #10283a; box-shadow: none; }
+.direction-icon { color: var(--teal); font-size: 20px; font-weight: 500; }
+.health-read-mark { font-size: 7px; letter-spacing: .1em; }
+.health-read-points li::before, .insight-summary-points li::before { box-shadow: none; }
+.health-signal::after, .session-detail-panel::before, .session-column::after, .calendar-panel::before, .history-item::before { display: none; }
+.plan-day { background: #0a1929; box-shadow: none; }
+.plan-day.is-today { background: #0e2636; box-shadow: none; }
+.plan-day.is-today::before { background: var(--teal); box-shadow: none; }
+.calendar-day.complete { background: #194f7a; box-shadow: none; }
+.calendar-day.today { box-shadow: inset 0 0 0 1px rgba(91,210,207,.08); }
+.history-item { background: #0e2032; }
+.coaching-focus-panel { border-color: #276058; box-shadow: var(--shadow); }
+.metric-card, .training-state-card { background: #0c1d2e; box-shadow: none; }
+.metric-card::before, .training-intelligence-panel::before, .training-state-card::after, .insight-card::before, .insight-card::after, .action-panel::before, .goal-panel::before, .goal-chip-grid > div::after, .settings-card::before { display: none; }
+.training-chart-wrap, .training-detail-grid article, .coaching-focus-grid > div, .insight-action, .goal-chip-grid > div { background: #091827; }
+.insight-action { box-shadow: none; }
+.insight-action-mark { border-radius: 8px; box-shadow: none; }
+.secondary-button { background: #102a3e; }
+.mobile-bottom-nav { background: #071522; box-shadow: 0 12px 34px rgba(0,0,0,.38); backdrop-filter: blur(14px); }
+.mobile-bottom-nav .nav-button.active { background: #102a3e; box-shadow: none; }
+.metric-card strong, .training-state-card strong, .training-detail-grid strong, .progress-number-row strong, .year-number-wrap strong, .health-signal strong { font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }

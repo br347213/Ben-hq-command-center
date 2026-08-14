@@ -491,7 +491,7 @@ function renderGuidance() {
   if (recommendation?.title) {
     title = recommendation.title;
     body = recommendation.detail || recommendation.body || body;
-    source = "Daily AI read from your Garmin context";
+    source = "Garmin context + fixed plan";
   } else if (status === "completed" || status === "minimum") {
     title = "Today's deposit is made";
     body = "Let the completed work stand on its own. There is no reason to add bonus volume to make it more legitimate.";
@@ -534,7 +534,7 @@ function renderTodayHealthInsight() {
   document.getElementById("todayHealthFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
   document.getElementById("todayHealthLead").textContent = hasCurrentAnalysis ? aiInsights.healthHeadline : (hasGarmin ? "Current data is ready; analysis is refreshing" : "Connecting the full picture");
   document.getElementById("todayHealthPoints").innerHTML = points.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
-  document.getElementById("todayHealthSource").textContent = hasCurrentAnalysis ? "ChatGPT analysis • Garmin health + training data" : hasGarmin ? "Garmin data • personal analysis pending" : "Waiting for Garmin data";
+  document.getElementById("todayHealthSource").textContent = hasCurrentAnalysis ? "Analysis • Garmin health + training data" : hasGarmin ? "Garmin data • personal analysis pending" : "Waiting for Garmin data";
   document.getElementById("todayHealthSignals").innerHTML = signals.map((signal) => `<div class="health-signal"><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong><small>${escapeHtml(signal.detail)}</small></div>`).join("");
 }
 
@@ -556,7 +556,7 @@ function renderInsights() {
       ? `You have recorded ${week.active} intentional training day${week.active === 1 ? "" : "s"} this week. Stay with the fixed schedule and use the minimum version when life is crowded.`
       : recommendation?.detail || recommendation?.body || "Connect Garmin to generate personal analysis.");
   document.getElementById("insightHeroPoints").innerHTML = splitInsightSummary(summary).map((point) => `<li>${escapeHtml(point)}</li>`).join("");
-  document.getElementById("insightHeroSource").textContent = hasCurrentAnalysis ? "ChatGPT analysis • Garmin + your goals + fixed plan" : "Personalized analysis pending";
+  document.getElementById("insightHeroSource").textContent = hasCurrentAnalysis ? "Analysis • Garmin + goals + fixed plan" : "Personalized analysis pending";
 
   const focus = hasCurrentAnalysis && aiInsights.focus && typeof aiInsights.focus === "object" ? aiInsights.focus : {};
   document.getElementById("coachingFocusTitle").textContent = focus.title || "Your priority is refreshing";
@@ -681,7 +681,7 @@ function buildInsightCards(health, training, week, hasGarmin) {
   if (aiCards.length) return aiCards.slice(0, 3);
   return hasGarmin
     ? [{
-      label: "AI analysis",
+      label: "Analysis",
       title: "Your Garmin context is ready",
       body: "The next private refresh will connect these signals to your goals, fixed schedule, and current training constraints.",
       source: "Encrypted analysis pending",
