@@ -558,6 +558,14 @@ function renderInsights() {
   document.getElementById("insightHeroPoints").innerHTML = splitInsightSummary(summary).map((point) => `<li>${escapeHtml(point)}</li>`).join("");
   document.getElementById("insightHeroSource").textContent = hasCurrentAnalysis ? "ChatGPT analysis • Garmin + your goals + fixed plan" : "Personalized analysis pending";
 
+  const focus = hasCurrentAnalysis && aiInsights.focus && typeof aiInsights.focus === "object" ? aiInsights.focus : {};
+  document.getElementById("coachingFocusTitle").textContent = focus.title || "Your priority is refreshing";
+  document.getElementById("coachingFocusRationale").textContent = focus.rationale || "The next analysis will identify the single constraint that matters most for your progress.";
+  document.getElementById("coachingFocusAction").textContent = focus.action || "Keep following the fixed plan";
+  document.getElementById("coachingFocusSuccess").textContent = focus.successMarker || "More repeatable training with no catch-up work";
+  document.getElementById("coachingFocusHorizon").textContent = focus.horizon || "Short term";
+  document.getElementById("coachingFocusEvidence").textContent = focus.evidence ? `Based on ${focus.evidence}` : "Based on your Garmin history, current plan, recovery context, and goals";
+
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
   const lastWorkout = training.lastWorkoutDetail || {};

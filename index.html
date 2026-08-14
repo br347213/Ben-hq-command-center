@@ -10,7 +10,7 @@
     <title>My Fitness Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="styles.css?v=20260813-fitness-14" />
+    <link rel="stylesheet" href="styles.css?v=20260813-fitness-15" />
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -221,6 +221,22 @@
             <div class="insight-index" aria-hidden="true">01</div>
             <div><p class="eyebrow">Athletic read</p><h3 id="insightHeroTitle">Personal analysis is refreshing</h3><ul class="insight-summary-points" id="insightHeroPoints"></ul><span class="source-badge" id="insightHeroSource">Waiting for personalized analysis</span></div>
           </article>
+          <article class="coaching-focus-panel" id="coachingFocusPanel" aria-labelledby="coachingFocusTitle">
+            <div class="coaching-focus-head">
+              <div><p class="eyebrow">The coach's call</p><h3>Your current focus</h3></div>
+              <span class="focus-horizon" id="coachingFocusHorizon">Short term</span>
+            </div>
+            <div class="coaching-focus-main">
+              <span class="focus-priority-label">Most important right now</span>
+              <h4 id="coachingFocusTitle">Your priority is refreshing</h4>
+              <p id="coachingFocusRationale">The next analysis will identify the single constraint that matters most for your progress.</p>
+            </div>
+            <div class="coaching-focus-grid">
+              <div><span>Do this</span><strong id="coachingFocusAction">Keep following the fixed plan</strong></div>
+              <div><span>Progress looks like</span><strong id="coachingFocusSuccess">More repeatable training with no catch-up work</strong></div>
+            </div>
+            <small class="coaching-focus-evidence" id="coachingFocusEvidence">Based on your Garmin history, current plan, recovery context, and goals</small>
+          </article>
           <div class="health-metric-grid" id="healthMetricGrid"></div>
           <section class="glass-panel training-intelligence-panel" aria-labelledby="trainingIntelligenceHeading">
             <div class="insight-section-heading training-intelligence-heading">
@@ -303,6 +319,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20260813-fitness-14"></script>
+    <script src="app.js?v=20260813-fitness-15"></script>
   </body>
 </html>

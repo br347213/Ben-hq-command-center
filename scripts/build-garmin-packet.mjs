@@ -78,6 +78,16 @@ function readAiAnalysis(pathArg, summary) {
   const summaryText = typeof input.summary === "string" ? input.summary.trim() : "";
   const healthHeadline = typeof input.healthHeadline === "string" ? input.healthHeadline.trim() : "";
   const healthSummary = typeof input.healthSummary === "string" ? input.healthSummary.trim() : "";
+  const focusInput = input.focus && typeof input.focus === "object" ? input.focus : {};
+  const focus = {
+    title: typeof focusInput.title === "string" ? focusInput.title.trim() : "",
+    rationale: typeof focusInput.rationale === "string" ? focusInput.rationale.trim() : "",
+    action: typeof focusInput.action === "string" ? focusInput.action.trim() : "",
+    successMarker: typeof focusInput.successMarker === "string" ? focusInput.successMarker.trim() : "",
+    horizon: typeof focusInput.horizon === "string" ? focusInput.horizon.trim() : "",
+    evidence: typeof focusInput.evidence === "string" ? focusInput.evidence.trim() : "",
+  };
+  const normalizedFocus = Object.values(focus).every(Boolean) ? focus : null;
   return {
     recommendations: normalized.length ? normalized : buildRecommendations(summary),
     aiInsights: headline && summaryText && cards.length ? {
@@ -87,6 +97,7 @@ function readAiAnalysis(pathArg, summary) {
       summary: summaryText,
       healthHeadline: healthHeadline || headline,
       healthSummary: healthSummary || summaryText,
+      focus: normalizedFocus,
       cards,
     } : null,
   };
