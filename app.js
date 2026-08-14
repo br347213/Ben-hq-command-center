@@ -9,6 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
+const APP_VERSION = "1.0.0";
 
 const ICONS = {
   home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
@@ -1208,6 +1209,13 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
 }
 
+function renderAppVersion() {
+  document.querySelectorAll("[data-app-version]").forEach((element) => {
+    element.textContent = `v${APP_VERSION}`;
+    element.setAttribute("aria-label", `Fitness HQ version ${APP_VERSION}`);
+  });
+}
+
 function wireEvents() {
   document.body.addEventListener("click", (event) => {
     const viewButton = event.target.closest("[data-view]");
@@ -1257,6 +1265,7 @@ function wireEvents() {
 }
 
 async function init() {
+  renderAppVersion();
   importSyncKeyFromHash();
   await restoreLegacySyncKey();
   renderNavigation();
