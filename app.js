@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "1.0.2";
+const APP_VERSION = "1.1.0";
 
 const ICONS = {
   home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
@@ -446,6 +446,7 @@ function renderProgress() {
   }
   document.getElementById("consistencyCalendar").innerHTML = cells.join("");
   renderLastGarminActivity();
+  renderWorkoutAnalysis();
 }
 
 function renderLastGarminActivity() {
@@ -491,6 +492,123 @@ function renderLastGarminActivity() {
   </div>
   ${stats.length ? `<div class="activity-stat-grid">${stats.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("")}</div>` : '<p class="activity-detail-note">More workout metrics will appear after the next Garmin history refresh.</p>'}
   <p class="activity-detail-note">Synced from Garmin · Refresh from the header for the latest workout.</p>`;
+}
+
+function workoutEffortRead(activity, training, health) {
+  const aerobicEffect = hasValue(activity.aerobicEffect) ? Number(activity.aerobicEffect) : NaN;
+  if (Number.isFinite(aerobicEffect)) {
+    if (aerobicEffect >= 4.3) return { level: "very-hard", label: "Very demanding aerobic stimulus", evidence: `Garmin aerobic effect ${aerobicEffect.toFixed(1)}` };
+    if (aerobicEffect >= 3.5) return { level: "hard", label: "Strong aerobic development", evidence: `Garmin aerobic effect ${aerobicEffect.toFixed(1)}` };
+    if (aerobicEffect >= 2.5) return { level: "building", label: "Productive aerobic work", evidence: `Garmin aerobic effect ${aerobicEffect.toFixed(1)}` };
+    if (aerobicEffect >= 1.5) return { level: "maintaining", label: "Aerobic maintenance", evidence: `Garmin aerobic effect ${aerobicEffect.toFixed(1)}` };
+    return { level: "light", label: "Light training stimulus", evidence: `Garmin aerobic effect ${aerobicEffect.toFixed(1)}` };
+  }
+
+  const averageHrRaw = activity.averageHr ?? activity.averageHR;
+  const restingHrRaw = training.analytics?.references?.restingHr ?? health.baselines?.restingHr7Day ?? health.restingHr;
+  const observedMaxHrRaw = training.analytics?.references?.observedMaxHr;
+  const averageHr = hasValue(averageHrRaw) ? Number(averageHrRaw) : NaN;
+  const restingHr = hasValue(restingHrRaw) ? Number(restingHrRaw) : NaN;
+  const observedMaxHr = hasValue(observedMaxHrRaw) ? Number(observedMaxHrRaw) : NaN;
+  const reserveFraction = Number.isFinite(averageHr) && averageHr > restingHr && Number.isFinite(restingHr) && restingHr > 0 && Number.isFinite(observedMaxHr) && observedMaxHr > restingHr
+    ? (averageHr - restingHr) / (observedMaxHr - restingHr)
+    : NaN;
+  if (Number.isFinite(reserveFraction)) {
+    if (reserveFraction >= .8) return { level: "hard", label: "High cardiovascular demand", evidence: `${Math.round(reserveFraction * 100)}% of observed heart-rate reserve` };
+    if (reserveFraction >= .7) return { level: "building", label: "Moderate-to-hard cardiovascular work", evidence: `${Math.round(reserveFraction * 100)}% of observed heart-rate reserve` };
+    if (reserveFraction >= .58) return { level: "maintaining", label: "Steady aerobic work", evidence: `${Math.round(reserveFraction * 100)}% of observed heart-rate reserve` };
+    return { level: "light", label: "Low cardiovascular load", evidence: `${Math.round(reserveFraction * 100)}% of observed heart-rate reserve` };
+  }
+  return { level: "unknown", label: "Completed training exposure", evidence: "Workout duration and completion" };
+}
+
+function buildWorkoutAnalysis(activity, training, health) {
+  const type = String(activity.type || "").toLowerCase();
+  const name = firstText(activity.name, training.lastWorkout, activityTypeLabel(type));
+  const isRun = type.includes("run") || /run/i.test(name);
+  const isRide = type.includes("cycl") || type.includes("bike") || /ride|cycling|bike/i.test(name);
+  const isStrength = type.includes("strength") || /strength|lift|weight/i.test(name);
+  const distance = Number(activity.distanceMiles);
+  const durationMinutes = Number(activity.durationMinutes);
+  const averageHrRaw = activity.averageHr ?? activity.averageHR;
+  const maxHrRaw = activity.maxHr ?? activity.maxHR ?? activity.maximumHr ?? activity.maximumHR;
+  const averageHr = hasValue(averageHrRaw) ? Number(averageHrRaw) : NaN;
+  const maxHr = hasValue(maxHrRaw) ? Number(maxHrRaw) : NaN;
+  const aerobicEffect = hasValue(activity.aerobicEffect) ? Number(activity.aerobicEffect) : NaN;
+  const anaerobicEffect = hasValue(activity.anaerobicEffect) ? Number(activity.anaerobicEffect) : NaN;
+  const pace = hasValue(activity.averagePaceMinutesPerMile) ? Number(activity.averagePaceMinutesPerMile) : NaN;
+  const effort = workoutEffortRead(activity, training, health);
+  const weeklyLoad = training.weeklyLoad || {};
+  const current = training.analytics?.current || {};
+  const loadChange = hasValue(weeklyLoad.distanceChangePct) ? Number(weeklyLoad.distanceChangePct) : NaN;
+  const form = hasValue(current.form) ? Number(current.form) : NaN;
+  const loadBalance = hasValue(current.loadBalance) ? Number(current.loadBalance) : NaN;
+
+  let title;
+  if (isRun && ["very-hard", "hard"].includes(effort.level)) title = "This run delivered a hard stimulus; the gain now comes from absorbing it";
+  else if (isRun && effort.level === "building") title = "This was a productive aerobic session, not just another checked box";
+  else if (isRun && ["maintaining", "light"].includes(effort.level)) title = "This run's main value was aerobic consistency without a large recovery bill";
+  else if (isRide) title = ["very-hard", "hard"].includes(effort.level) ? "The ride created meaningful cardiovascular load" : "The ride preserved the aerobic rhythm with lower impact";
+  else if (isStrength) title = "This session adds to the strength base; repeatability matters more than squeezing out extra work";
+  else title = "This session moved the year forward and now has useful training context";
+
+  const facts = [];
+  if (isRun && Number.isFinite(distance) && distance > 0) facts.push(`${distance.toFixed(2)} miles`);
+  else if (Number.isFinite(durationMinutes) && durationMinutes > 0) facts.push(formatActivityDuration(durationMinutes));
+  if (isRun && Number.isFinite(pace) && pace > 0) facts.push(`${formatActivityPace(pace)} average pace`);
+  if (Number.isFinite(averageHr) && averageHr > 0) facts.push(`${Math.round(averageHr)} bpm average HR`);
+  if (Number.isFinite(maxHr) && maxHr > 0) facts.push(`${Math.round(maxHr)} bpm max`);
+  const evidence = facts.length ? `${facts.join(", ")}.` : "Garmin recorded the completed session.";
+
+  let interpretation = `${effort.label}, based on ${effort.evidence.toLowerCase()}.`;
+  if (Number.isFinite(anaerobicEffect) && anaerobicEffect >= 2.5) interpretation += ` The ${anaerobicEffect.toFixed(1)} anaerobic effect shows a meaningful faster-effort component as well.`;
+  else if (Number.isFinite(aerobicEffect) && aerobicEffect >= 3.5) interpretation += " Treat it as a key workout rather than adding more intensity around it.";
+
+  let next = "Follow the fixed plan; no compensatory work is needed.";
+  if (["very-hard", "hard"].includes(effort.level) || (Number.isFinite(loadBalance) && loadBalance > 1.3) || (Number.isFinite(form) && form < -8)) {
+    next = "Protect the next easy or rest day and let this session settle before adding intensity.";
+  } else if (isRun && Number.isFinite(loadChange) && loadChange <= -30) {
+    next = "Keep the next run easy and on schedule; rebuild frequency before adding intensity or catch-up miles.";
+  } else if (isRun && Number.isFinite(loadChange) && loadChange >= 30) {
+    next = "Hold the next run genuinely easy so the recent mileage increase can settle.";
+  } else if (isStrength) {
+    next = "Return to the fixed schedule, and keep any painful pulling out of the next lift.";
+  }
+
+  let impact = effort.label;
+  if (isRun && Number.isFinite(loadChange)) impact += loadChange <= -30 ? " · rebuilding run frequency" : loadChange >= 30 ? " · rising weekly mileage" : " · steady weekly rhythm";
+  else if (Number.isFinite(form)) impact += ` · current form ${form > 0 ? "+" : ""}${form}`;
+
+  return {
+    title,
+    body: `${evidence} ${interpretation}`,
+    effect: impact,
+    next,
+    source: "Latest Garmin activity + 7-day load + fitness–fatigue context",
+  };
+}
+
+function renderWorkoutAnalysis() {
+  const title = document.getElementById("workoutAnalysisTitle");
+  if (!title) return;
+  const training = privatePacket.training || {};
+  const activity = training.lastWorkoutDetail && typeof training.lastWorkoutDetail === "object" ? training.lastWorkoutDetail : null;
+  if (!activity || !firstText(activity.name, training.lastWorkout)) {
+    title.textContent = "Waiting for your latest workout";
+    document.getElementById("workoutAnalysisBody").textContent = "The session read will appear after Garmin has synced an activity.";
+    document.getElementById("workoutAnalysisEffect").textContent = "Waiting for workout data";
+    document.getElementById("workoutAnalysisNext").textContent = "Follow the fixed plan";
+    document.getElementById("workoutAnalysisStatus").textContent = "Pending";
+    document.getElementById("workoutAnalysisSource").textContent = "Latest Garmin activity + recent training context";
+    return;
+  }
+  const analysis = buildWorkoutAnalysis(activity, training, privatePacket.health || {});
+  title.textContent = analysis.title;
+  document.getElementById("workoutAnalysisBody").textContent = analysis.body;
+  document.getElementById("workoutAnalysisEffect").textContent = analysis.effect;
+  document.getElementById("workoutAnalysisNext").textContent = analysis.next;
+  document.getElementById("workoutAnalysisStatus").textContent = "Current";
+  document.getElementById("workoutAnalysisSource").textContent = analysis.source;
 }
 
 function currentWeekStats() {

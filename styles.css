@@ -377,6 +377,17 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .activity-stat-grid span { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .activity-stat-grid strong { margin-top: 9px; font-size: 16px; font-variant-numeric: tabular-nums; }
 .activity-detail-note { margin: 13px 1px 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.workout-analysis-panel { margin-top: 14px; padding: 22px; }
+.workout-analysis-status { color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.workout-analysis-copy { max-width: 850px; margin-top: 20px; }
+.workout-analysis-copy h4 { margin: 0; max-width: 760px; font-size: clamp(20px, 2.7vw, 27px); line-height: 1.15; letter-spacing: -.03em; }
+.workout-analysis-copy p { margin: 10px 0 0; color: var(--muted-bright); font-size: 12px; line-height: 1.6; }
+.workout-analysis-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: 9px; margin-top: 18px; }
+.workout-analysis-grid > div { padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #091827; }
+.workout-analysis-grid span, .workout-analysis-grid strong { display: block; }
+.workout-analysis-grid span { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.workout-analysis-grid strong { margin-top: 7px; font-size: 12px; line-height: 1.45; }
+.workout-analysis-source { display: block; margin-top: 12px; color: var(--muted); font-size: 8px; line-height: 1.45; }
 .empty-state { color: var(--muted); font-size: 12px; padding: 18px 0; }
 
 .coaching-focus-panel { position: relative; isolation: isolate; padding: 24px; border: 1px solid rgba(84,213,192,.22); border-radius: 20px; background: radial-gradient(circle at 96% 8%, rgba(75,220,190,.13), transparent 31%), linear-gradient(135deg, rgba(15,43,62,.97), rgba(7,22,37,.95)); box-shadow: 0 18px 44px rgba(0,8,18,.24), inset 0 1px 0 rgba(255,255,255,.035); overflow: hidden; }
@@ -643,6 +654,9 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .progress-summary-card { padding: 23px; }
   .progress-number-row strong { font-size: 66px; }
   .latest-activity-primary strong { font-size: 30px; }
+  .workout-analysis-panel { padding: 19px 18px; }
+  .workout-analysis-copy { margin-top: 16px; }
+  .workout-analysis-grid { grid-template-columns: 1fr; }
   .health-metric-grid { gap: 8px; }
   .metric-card { min-height: 92px; padding: 13px; }
   .metric-card strong { font-size: 20px; }
