@@ -139,15 +139,17 @@ assert.match(highMileage.focus.rationale, /20–25 miles/i);
 
 const workout = buildWorkoutAnalysis(packet().training.lastWorkoutDetail, packet().training, packet().health, normal);
 assert.match(workout.title, /quality workout/i);
-assert.match(workout.body, /Zones 4–5/i);
+assert.match(workout.body, /quality work/i);
 assert.match(workout.effect, /year-to-date/i);
 assert.match(workout.next, /136–151 bpm/i);
-assert.match(workout.source, /athlete history/i);
+assert.match(workout.signals.find((signal) => signal.label === "High-zone time").value, /Z4–5/i);
+assert.equal("source" in workout, false);
 
 const hotWorkoutPacket = packet();
 hotWorkoutPacket.training.lastWorkoutDetail.weather = { temperatureF: 88, apparentTemperatureF: 94, relativeHumidityPct: 72, dewPointF: 74, heatLoad: "high" };
 const hotWorkout = buildWorkoutAnalysis(hotWorkoutPacket.training.lastWorkoutDetail, hotWorkoutPacket.training, hotWorkoutPacket.health, normal);
-assert.match(hotWorkout.body, /88°F.*72% humidity.*Heat and humidity/i);
+assert.match(hotWorkout.body, /Heat raised/i);
+assert.match(hotWorkout.signals.find((signal) => signal.label === "Conditions").value, /88°F.*72% humidity/i);
 assert.match(hotWorkout.next, /similar heat/i);
 
 const saturday = new Date(2026, 7, 15, 8, 0, 0);

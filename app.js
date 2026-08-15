@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "2.0.1";
+const APP_VERSION = "2.1.0";
 const COACHING_MODEL_VERSION = "2.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -501,8 +501,7 @@ function runRecommendationMarkup(recommendation, compact = false) {
       <div><h3>${escapeHtml(recommendation.title)}</h3><p>${escapeHtml(recommendation.summary)}</p></div>
       <ol>${recommendation.prescription.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>
     </div>
-    ${compact ? "" : `<div class="ai-run-evidence">${recommendation.evidence.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`}
-    <div class="ai-run-footer"><span>${escapeHtml(recommendation.note)}</span><small>${escapeHtml(recommendation.source)}</small></div>`;
+    ${compact ? "" : `<div class="ai-run-evidence">${recommendation.evidence.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`}`;
 }
 
 function greeting() {
@@ -813,9 +812,8 @@ function renderLastGarminActivity() {
     <div class="latest-activity-title"><span>${escapeHtml(formatActivityDate(activity))}</span><h4>${escapeHtml(name)}</h4><small>${escapeHtml(activityTypeLabel(activity.type))}</small></div>
     <div class="latest-activity-primary"><strong>${escapeHtml(primaryValue)}</strong><span>${escapeHtml(primaryLabel)}</span></div>
   </div>
-  ${stats.length ? `<div class="activity-stat-grid">${stats.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("")}</div>` : '<p class="activity-detail-note">More workout metrics will appear after the next Garmin history refresh.</p>'}
-  ${workoutHrZones}
-  <p class="activity-detail-note">Synced from Garmin${activity.weather ? " · workout weather from Open-Meteo" : ""} · Refresh from the header for the latest workout.</p>`;
+  ${stats.length ? `<div class="activity-stat-grid">${stats.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("")}</div>` : ""}
+  ${workoutHrZones}`;
 }
 
 function latestWorkoutDetail() {
@@ -843,10 +841,6 @@ function renderWorkoutFeedback() {
   document.getElementById("feedbackPlanChoice").value = feedback.planChoice || "";
   document.getElementById("feedbackNote").value = feedback.note || "";
   document.getElementById("feedbackSavedState").textContent = feedback.updatedAt ? "Saved" : "Not required";
-  const learned = feedbackLearning();
-  document.getElementById("feedbackLearningNote").textContent = learned.recent.length
-    ? `${learned.recent.length} recent reflection${learned.recent.length === 1 ? "" : "s"} now inform recommendations.`
-    : "Your notes stay on this device and shape future coaching.";
 }
 
 function saveWorkoutFeedback(event) {
@@ -965,6 +959,7 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
   let body;
   let impact;
   let next;
+  let signals = [];
 
   if (isRun) {
     if (hardRun && heatAffected && ["easy", "long", "recovery"].includes(inferredIntent)) title = "The conditions raised the cost above the intended easy run";
@@ -972,59 +967,56 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
     else if (moderateRun) title = "This run landed in the middle: useful, but too hard to count as easy";
     else title = "This intensity is suitable for rebuilding your aerobic base";
 
-    const heartRateEvidence = [];
-    if (Number.isFinite(sessionMaxFraction)) heartRateEvidence.push(`${Math.round(sessionMaxFraction * 100)}% of the session max`);
-    if (Number.isFinite(reserveFraction)) heartRateEvidence.push(`about ${Math.round(reserveFraction * 100)}% of working heart-rate reserve`);
-    if (heartRateEvidence.length && Number.isFinite(averageHr)) {
-      body = `Your ${Math.round(averageHr)} bpm average was ${heartRateEvidence.join(" and ")}.`;
-    } else if (Number.isFinite(aerobicEffect)) {
-      body = `Garmin assigned this run a ${aerobicEffect.toFixed(1)} aerobic effect.`;
-    } else {
-      body = "Garmin did not provide enough heart-rate context to classify the intensity confidently.";
-    }
-    if (hardRun) body += ` ${Number.isFinite(aerobicEffect) ? `The ${aerobicEffect.toFixed(1)} aerobic effect reinforces that this was sustained moderate-hard work` : "That pattern points to sustained moderate-hard work"}, regardless of pace.`;
-    else if (moderateRun) body += " That is more cardiovascular load than an easy day should usually carry.";
-    else body += " That leaves room to repeat the work without turning every run into a recovery problem.";
-    if (Number.isFinite(workoutHardPct) && workoutHardPct >= 15) body += ` ${workoutHardPct.toFixed(0)}% of zoned time was in Zones 4–5, so the zone split supports the same classification.`;
-    if (conditions) {
-      body += ` Conditions were ${conditions}.${heatAffected ? " Heat and humidity can raise heart rate at the same pace, so the cardiovascular cost matters more here than judging the pace by itself." : " The weather does not appear to be the main explanation for the session cost."}`;
-    }
     const bodyMindSignal = BODY_MIND_SIGNAL_META[feedback?.bodySignal];
-    if (bodyMindSignal && feedback.bodySignal !== "normal") body += ` You marked your body/mind signal as ${bodyMindSignal.label}; that subjective signal is part of the coaching read, not an afterthought.`;
-    if (feedback?.note) body += ` Your note adds: “${String(feedback.note).slice(0, 180)}${String(feedback.note).length > 180 ? "…" : ""}”`;
+    body = hardRun && heatAffected
+      ? "Heat raised the cardiovascular cost. Treat this as the week’s quality run even though the intended effort was easier."
+      : hardRun
+        ? "The effort data classifies this as quality work. It should occupy the hard-running slot for the week."
+        : moderateRun
+          ? "Useful steady work, but too costly to count as a genuinely easy run."
+          : "A repeatable aerobic effort that supports your current fitness goal without demanding extra recovery.";
+    signals = [
+      {
+        label: "Effort",
+        value: effort.label,
+        detail: [Number.isFinite(averageHr) ? `${Math.round(averageHr)} avg HR` : "", Number.isFinite(aerobicEffect) ? `${aerobicEffect.toFixed(1)} aerobic effect` : ""].filter(Boolean).join(" · "),
+      },
+      Number.isFinite(workoutHardPct) ? { label: "High-zone time", value: `${workoutHardPct.toFixed(0)}% in Z4–5`, detail: "of zoned workout time" } : null,
+      conditions ? { label: "Conditions", value: conditions, detail: heatAffected ? "meaningful heat cost" : "not the main limiter" } : null,
+      bodyMindSignal && feedback.bodySignal !== "normal" ? { label: "Your signal", value: bodyMindSignal.label, detail: "included in the coaching read" } : null,
+    ].filter(Boolean);
 
     if (Number.isFinite(loadChange) && loadChange <= -30) {
-      impact = "Your current limiter is repeatable run frequency and easy-volume durability—not a lack of intensity. Comfortable six-mile fitness will come back faster by keeping more runs truly easy.";
+      impact = "Your limiter is repeatable easy volume, not intensity. Rebuild frequency before adding more hard work.";
     } else if (Number.isFinite(loadChange) && loadChange >= 30) {
-      impact = `Seven-day mileage is already up ${Math.round(loadChange)}%. Adding hard running while volume is rising increases the recovery cost without solving a clear weakness.`;
+      impact = `Mileage is already up ${Math.round(loadChange)}%. Let that increase settle before adding another hard stimulus.`;
     } else {
       impact = hardRun || moderateRun
-        ? "This can count as a quality session, but comfortable six-mile fitness still depends on separating hard work from genuinely easy volume."
-        : "This is the kind of low-cost aerobic work that can be repeated and gradually extended toward comfortable six-mile runs.";
+        ? "This fills the quality bucket. Comfortable six-mile fitness now depends on keeping the surrounding runs genuinely easy."
+        : "This is the low-cost aerobic work that can be repeated and gradually extended toward comfortable six-mile runs.";
     }
     if (Number.isFinite(form) && form > 2 && Number.isFinite(ramp) && ramp < 0) {
-      impact += " Your positive form is partly freshness from reduced recent load, not a signal that extra intensity is needed.";
+      impact += " Current freshness comes partly from lighter load, not a need for more intensity.";
     }
     if (coaching.training.zoneMix && hardRun && coaching.training.zoneMix.hard >= 20) {
-      impact += ` Zones 4–5 already account for ${coaching.training.zoneMix.hard.toFixed(0)}% of year-to-date zoned time, so this session fills the quality bucket; it does not create a need for more hard running.`;
+      impact += ` Z4–5 already makes up ${coaching.training.zoneMix.hard.toFixed(0)}% of year-to-date zoned time.`;
     } else if (coaching.training.zoneMix && !hardRun && coaching.training.zoneMix.hard >= 20) {
       impact += " This lower-cost session helps correct a year-to-date intensity mix that already contains plenty of hard work.";
     }
-    if (scheduled) impact += ` The scheduled day was ${scheduled.title.toLowerCase()}; performed intent reads as ${performedIntent}.`;
 
-    const easyGuardrail = Number.isFinite(easyLow) && Number.isFinite(easyHigh) ? ` Use roughly ${easyLow}–${easyHigh} bpm as a starting guardrail from your recent HR data` : " Use conversational breathing as the guardrail";
+    const easyGuardrail = Number.isFinite(easyLow) && Number.isFinite(easyHigh) ? `${easyLow}–${easyHigh} bpm` : "conversational effort";
     if (coaching.health.status === "caution") {
-      next = `Treat the next scheduled session as a recovery-preserving day.${easyGuardrail}; use the minimum version if energy or heart rate remains off baseline.`;
+      next = `Use the minimum version or intentional rest. Keep any running near ${easyGuardrail}.`;
     } else if (hardRun) {
-      next = `Count this as the quality run. Make the next run 3–4 conversational miles.${easyGuardrail}; slow down or add brief walk breaks if heart rate keeps climbing. Do not stack another tempo effort on top of this.`;
+      next = `Next run: 3–4 conversational miles near ${easyGuardrail}. Slow or walk if heart rate climbs; no second tempo effort.`;
     } else if (moderateRun) {
-      next = `Make the next run clearly easier rather than repeating the middle.${easyGuardrail}, and finish with enough left to run again on schedule.`;
+      next = `Make the next run clearly easier—around ${easyGuardrail}—and finish with enough left to run again on schedule.`;
     } else if (Number.isFinite(loadChange) && loadChange <= -30) {
-      next = `Repeat an easy 3–4 miles on schedule before adding speed.${easyGuardrail}; frequency is the progression right now.`;
+      next = `Repeat 3–4 easy miles on schedule near ${easyGuardrail}. Frequency is the progression right now.`;
     } else {
-      next = `Keep the next easy run at this effort and extend distance gradually.${easyGuardrail}; pace is secondary.`;
+      next = `Repeat this effort and extend distance gradually. Keep ${easyGuardrail} as a loose guardrail.`;
     }
-    if (heatAffected) next += " In similar heat, slow the pace early and preserve the intended effort rather than trying to reproduce a cool-weather split.";
+    if (heatAffected) next += " In similar heat, slow down early rather than chasing a cool-weather pace.";
     if (feedback?.bodySignal === "pain") next = "Do not progress this session. Use pain-free movement only and reassess before the next demanding workout.";
     else if (feedback?.bodySignal === "sick") next = "Skip the next workout while you feel sick. Resume with an easy or minimum version only after normal daily activity feels normal again.";
     else if (feedback?.bodySignal === "burnt-out") next = "Take pressure off the next session: choose intentional rest or a genuinely enjoyable, low-cost option. Do not use catch-up work to rebuild motivation.";
@@ -1035,16 +1027,19 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
     body = `${effort.evidence}. ${hardRide ? "Treat the cardiovascular cost like a hard run even though the mechanical load was lower." : "That makes it useful when running is unavailable or your legs need less impact."}`;
     impact = "The bike supports aerobic continuity, but it does not fully replace the running-specific durability needed for comfortable six-mile runs.";
     next = hardRide ? "Keep the next cardio session easy and return to running only when the legs feel normal." : "Return to the fixed run schedule without adding make-up mileage.";
+    signals = [{ label: "Effort", value: effort.label, detail: effort.evidence }];
   } else if (isStrength) {
     title = "The value of this lift is what it lets you repeat next week";
     body = Number.isFinite(durationMinutes) && durationMinutes > 0 ? `This was ${formatActivityDuration(durationMinutes)} of strength work. Garmin heart-rate load cannot tell whether the sets were effective, so the analysis should not pretend it can.` : "Garmin heart-rate data cannot judge rep quality, proximity to failure, or whether the target muscles did the work.";
     impact = "For arm growth and general strength, consistent pain-free sets and gradual progression matter more than a single session's calorie or heart-rate total.";
     next = "Keep painful pulling out, note whether reps or load improved, and leave enough margin to complete the next scheduled session.";
+    signals = [{ label: "Session", value: Number.isFinite(durationMinutes) ? formatActivityDuration(durationMinutes) : "Completed", detail: "strength work" }];
   } else {
     title = "This workout counts, but Garmin does not provide enough context for a strong coaching verdict";
     body = `${effort.evidence}. The available fields describe cardiovascular demand, not whether the session matched its intended purpose.`;
     impact = "The useful question is whether this supported consistency without interfering with the next planned run or lift.";
     next = "Follow the fixed schedule and use soreness, pain, and motivation—not the calorie number—to choose the full or minimum version.";
+    signals = [{ label: "Effort", value: effort.label, detail: effort.evidence }];
   }
 
   return {
@@ -1052,9 +1047,9 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
     body,
     effect: impact,
     next,
+    signals,
     intent: `${inferredIntent} → ${performedIntent}`,
     confidence: confidence.label,
-    source: `${coaching.source} · ${confidence.detail}`,
   };
 }
 
@@ -1071,7 +1066,7 @@ function renderWorkoutAnalysis(coaching = buildCoachingContext()) {
     document.getElementById("workoutAnalysisStatus").textContent = "Pending";
     document.getElementById("workoutAnalysisIntent").textContent = "Waiting for workout data";
     document.getElementById("workoutAnalysisConfidence").textContent = "Limited context";
-    document.getElementById("workoutAnalysisSource").textContent = "Latest Garmin activity + recent training context";
+    document.getElementById("workoutAnalysisSignals").innerHTML = "";
     return;
   }
   const analysis = buildWorkoutAnalysis(activity, training, privatePacket.health || {}, coaching);
@@ -1082,7 +1077,7 @@ function renderWorkoutAnalysis(coaching = buildCoachingContext()) {
   document.getElementById("workoutAnalysisIntent").textContent = analysis.intent;
   document.getElementById("workoutAnalysisConfidence").textContent = analysis.confidence;
   document.getElementById("workoutAnalysisStatus").textContent = analysis.confidence;
-  document.getElementById("workoutAnalysisSource").textContent = analysis.source;
+  document.getElementById("workoutAnalysisSignals").innerHTML = analysis.signals.map((signal) => `<div><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong>${signal.detail ? `<small>${escapeHtml(signal.detail)}</small>` : ""}</div>`).join("");
 }
 
 function currentWeekStats() {
@@ -1172,22 +1167,6 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   if (Number(latestFeedback?.rpe) >= 9) recoveryScore -= 1;
   const criticalBodyMindSignal = ["pain", "sick"].includes(latestFeedback?.bodySignal);
   const recoveryStatus = currentRecoverySignalCount === 0 && !latestFeedback ? "incomplete" : criticalBodyMindSignal || recoveryScore <= -3 ? "caution" : recoveryScore < 0 ? "mixed" : "supportive";
-
-  const recoveryEvidence = [];
-  if (Number.isFinite(sleep)) {
-    recoveryEvidence.push(Number.isFinite(sleepDelta)
-      ? `${sleep.toFixed(1)} hours of sleep (${Math.abs(sleepDelta).toFixed(1)} ${sleepDelta >= 0 ? "above" : "below"} your seven-day average)`
-      : `${sleep.toFixed(1)} hours of sleep`);
-  }
-  if (Number.isFinite(restingHr)) {
-    recoveryEvidence.push(Number.isFinite(restingHrDelta)
-      ? `${Math.round(restingHr)} bpm resting HR (${Math.abs(restingHrDelta).toFixed(1)} ${restingHrDelta <= 0 ? "below" : "above"} baseline)`
-      : `${Math.round(restingHr)} bpm resting HR`);
-  }
-  const recoverySecondary = [
-    Number.isFinite(bodyBattery) ? `Body Battery ${Math.round(bodyBattery)}` : "",
-    Number.isFinite(stress) ? `stress ${Math.round(stress)}` : "",
-  ].filter(Boolean).join(" and ");
 
   const zones = normalizeHrZones(training.hrZonesYtd);
   const zonePercent = (zone) => zones?.zones.find((item) => item.zone === zone)?.percent || 0;
@@ -1329,21 +1308,25 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
       : recoveryStatus === "incomplete"
         ? "Latest recovery readings are incomplete"
         : "Recovery looks broadly supportive today";
-  const baselineContext = [
-    Number.isFinite(sleepBaseline) ? `${sleepBaseline.toFixed(1)} hours average sleep` : "",
-    Number.isFinite(restingHrBaseline) ? `${restingHrBaseline.toFixed(1)} bpm average resting HR` : "",
-  ].filter(Boolean).join(" and ");
+  const dailyRecovery = [
+    Number.isFinite(sleep) ? `Sleep ${sleep.toFixed(1)}h${Number.isFinite(sleepDelta) ? ` (${sleepDelta >= 0 ? "+" : ""}${sleepDelta.toFixed(1)}h vs average)` : ""}` : "",
+    Number.isFinite(restingHr) ? `Resting HR ${Math.round(restingHr)}${Number.isFinite(restingHrDelta) ? ` (${restingHrDelta >= 0 ? "+" : ""}${restingHrDelta.toFixed(1)} vs baseline)` : ""}` : "",
+  ].filter(Boolean);
+  const secondaryRecovery = [
+    Number.isFinite(bodyBattery) ? `Body Battery ${Math.round(bodyBattery)}` : "",
+    Number.isFinite(stress) ? `Stress ${Math.round(stress)}` : "",
+  ].filter(Boolean);
+  const statusRead = recoveryStatus === "supportive"
+    ? "No clear recovery constraint."
+    : recoveryStatus === "caution"
+      ? "Choose the lowest-cost version today."
+      : recoveryStatus === "mixed"
+        ? "Train, but keep the cost controlled."
+        : "Current recovery readings are incomplete.";
   const healthPoints = [
-    recoveryEvidence.length
-      ? `${recoveryEvidence.join(" and ")} ${recoveryStatus === "supportive" ? "do not show a clear recovery constraint." : "make recovery more relevant than chasing a target pace or load."}`
-      : "Garmin has not supplied enough sleep and resting-heart-rate context for a confident recovery read.",
-    recoveryStatus === "incomplete" && baselineContext
-      ? `Your seven-day baselines are ${baselineContext}. They are useful reference points, but they are not a current recovery reading.`
-      : recoverySecondary
-      ? `${recoverySecondary} ${recoveryStatus === "caution" ? "support choosing the lowest-cost version that preserves the habit." : "add context, but they are not treated as a pass–fail readiness score."}`
-      : `Use energy, mood, and the persistent arm-pain guardrail alongside the available training data; ${focus.title.toLowerCase()}.`,
+    dailyRecovery.length ? dailyRecovery.join(" • ") : "Sleep and resting-HR readings are unavailable.",
+    `${secondaryRecovery.length ? `${secondaryRecovery.join(" • ")}. ` : ""}${statusRead}`,
   ];
-  if (latestFeedback?.note) healthPoints.push(`Your latest reflection adds subjective context: ${String(latestFeedback.note).slice(0, 150)}${String(latestFeedback.note).length > 150 ? "…" : ""}`);
 
   let loadCard;
   if (overHardMileageCeiling) {
@@ -1462,17 +1445,14 @@ function hrZoneBreakdownMarkup(value, variant = "workout") {
   }
   const stackedBar = `<div class="hr-zone-stack" role="img" aria-label="${data.zones.map((zone) => `${zone.label} ${zone.percent.toFixed(1)} percent`).join(", ")}">${data.zones.map((zone) => `<span class="hr-zone-${zone.zone}" style="width:${zone.percent.toFixed(2)}%"></span>`).join("")}</div>`;
   const zoneGrid = `<div class="hr-zone-grid">${data.zones.map((zone) => `<div class="hr-zone-item hr-zone-${zone.zone}"><span><i></i>${zone.label}</span><strong>${zone.percent.toFixed(1)}%</strong><small>${formatZoneDuration(zone.seconds, true)}${Number.isFinite(zone.lowerBpm) && Number.isFinite(zone.upperBpm) ? ` · ${Math.round(zone.lowerBpm)}–${Math.round(zone.upperBpm)} bpm` : ""}</small></div>`).join("")}</div>`;
-  const belowNote = data.belowZoneSeconds > 0 ? ` ${formatZoneDuration(data.belowZoneSeconds, true)} below Zone 1 is excluded.` : "";
   if (variant === "workout") {
     return `<section class="activity-hr-zones" aria-label="Workout heart-rate zone split">
       <div class="hr-zone-block-head"><div><span>Heart-rate zones</span><strong>This workout</strong></div><small>${formatZoneDuration(data.totalSeconds, true)} zoned</small></div>
       ${stackedBar}${zoneGrid}
-      <p>Five-zone %HRR model using a 194 bpm working max; wrist-HR spikes are treated cautiously.${belowNote}</p>
     </section>`;
   }
   return `<div class="hr-zone-ytd-overview"><div><strong>${formatZoneDuration(data.totalSeconds)}</strong><span>time in Zones 1–5</span></div><div><strong>${Math.round(data.activityCount || 0)}</strong><span>workouts with zone data</span></div></div>
-    ${stackedBar}${zoneGrid}
-    <p class="hr-zone-method">Percentages use your five-zone %HRR model with a 194 bpm working max. A wrist-recorded peak up to 198 is retained as context, not used to silently move every zone.${belowNote}</p>`;
+    ${stackedBar}${zoneGrid}`;
 }
 
 function renderYtdHrZones() {
@@ -1501,7 +1481,6 @@ function renderGuidance(coaching = buildCoachingContext()) {
   const workout = workoutForDate(new Date());
   let title = "Keep the decision small";
   let body = "Start the planned session. The minimum version still counts, and nothing needs to be made up later.";
-  const source = "Live coaching context + fixed plan";
 
   if (status === "completed" || status === "minimum") {
     title = "Today's deposit is made";
@@ -1525,7 +1504,6 @@ function renderGuidance(coaching = buildCoachingContext()) {
 
   document.getElementById("guidanceTitle").textContent = title;
   document.getElementById("guidanceBody").textContent = body;
-  document.getElementById("guidanceSource").textContent = source;
 }
 
 function renderTodayHealthInsight(coaching = buildCoachingContext()) {
@@ -1540,17 +1518,16 @@ function renderTodayHealthInsight(coaching = buildCoachingContext()) {
   const signals = [
     { label: "Sleep", value: hasValue(sleepValue) ? `${sleepValue} h` : "Not available", detail: hasValue(health.sleepHours) && hasValue(health.baselines?.sleep7Day) ? `7-day ${health.baselines.sleep7Day} h` : hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "No recent reading" },
     { label: "Resting HR", value: hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.restingHr) && hasValue(health.baselines?.restingHr7Day) ? `7-day ${health.baselines.restingHr7Day} bpm` : hasValue(health.restingHr) ? "Latest Garmin value" : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "No recent reading" },
-    { label: "Stress", value: hasValue(health.stress) ? health.stress : "Not available", detail: "Latest Garmin value" },
-    { label: "Body Battery", value: hasValue(health.bodyBattery) ? health.bodyBattery : "Not available", detail: "Latest Garmin value" },
+    { label: "Stress", value: hasValue(health.stress) ? health.stress : "Not available", detail: "" },
+    { label: "Body Battery", value: hasValue(health.bodyBattery) ? health.bodyBattery : "Not available", detail: "" },
     { label: "Weight", value: hasValue(health.weightLbs) ? `${Number(health.weightLbs).toFixed(1)} lb` : "Not logged", detail: weightDate ? `Garmin weigh-in · ${weightDate}` : "Latest Garmin weigh-in" },
-    { label: "Steps", value: hasValue(health.steps) ? Number(health.steps).toLocaleString() : "Not available", detail: "Latest Garmin value" },
+    { label: "Steps", value: hasValue(health.steps) ? Number(health.steps).toLocaleString() : "Not available", detail: "" },
   ];
 
   document.getElementById("todayHealthFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
   document.getElementById("todayHealthLead").textContent = hasGarmin ? coaching.health.title : "Connecting the full picture";
   document.getElementById("todayHealthPoints").innerHTML = points.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
-  document.getElementById("todayHealthSource").textContent = hasGarmin ? "Whole-health synthesis • live Garmin + personal context" : "Waiting for Garmin data";
-  document.getElementById("todayHealthSignals").innerHTML = signals.map((signal) => `<div class="health-signal"><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong><small>${escapeHtml(signal.detail)}</small></div>`).join("");
+  document.getElementById("todayHealthSignals").innerHTML = signals.map((signal) => `<div class="health-signal"><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong>${signal.detail ? `<small>${escapeHtml(signal.detail)}</small>` : ""}</div>`).join("");
 }
 
 function buildWeeklyReview(coaching, now = new Date()) {
@@ -1584,7 +1561,6 @@ function buildWeeklyReview(coaching, now = new Date()) {
   else if (coaching.training.zoneRead && ["hard-heavy", "middle-heavy"].includes(coaching.training.zoneRead.state)) watch = coaching.training.zoneRead.title;
   const choiceCount = learned.followed;
   const aiCount = learned.matched;
-  const recommendationNote = choiceCount ? ` You logged the AI recommendation for ${aiCount} of ${choiceCount} reflected session${choiceCount === 1 ? "" : "s"}; outcomes will matter more as that sample grows.` : " Add optional post-workout feedback when a session feels notably better or worse than the numbers suggest.";
   const title = Number.isFinite(loadChange) && loadChange <= -20
     ? "A lighter running week leaves room to rebuild without rushing"
     : Number.isFinite(loadChange) && loadChange >= 25
@@ -1592,7 +1568,13 @@ function buildWeeklyReview(coaching, now = new Date()) {
       : coaching.health.status === "caution"
         ? "Training only pays off if this recovery dip resolves"
         : "The week is broadly repeatable—keep the easy/hard split clear";
-  const summary = `${Number.isFinite(rollingMiles) ? `${rollingMiles.toFixed(1)} miles across ${completed} run${completed === 1 ? "" : "s"}` : `${completed} recent run${completed === 1 ? "" : "s"}`}${Number.isFinite(loadChange) ? ` is ${Math.abs(loadChange).toFixed(0)}% ${loadChange < 0 ? "below" : "above"} the prior seven days` : ""}. ${hot.length ? `${hot.length} workout${hot.length === 1 ? " had" : "s had"} meaningful heat context. ` : ""}${recommendationNote}`;
+  const summary = [
+    Number.isFinite(rollingMiles) ? `${rollingMiles.toFixed(1)} miles` : "",
+    `${completed} run${completed === 1 ? "" : "s"}`,
+    Number.isFinite(loadChange) ? `${Math.abs(loadChange).toFixed(0)}% ${loadChange < 0 ? "below" : "above"} prior week` : "",
+    hot.length ? `${hot.length} heat-affected workout${hot.length === 1 ? "" : "s"}` : "",
+    choiceCount ? `${aiCount}/${choiceCount} reflections followed the AI option` : "",
+  ].filter(Boolean).join(" • ");
   return {
     title,
     summary,
@@ -1609,7 +1591,6 @@ function renderWeeklyReview(coaching) {
   document.getElementById("weeklyReviewSummary").textContent = review.summary;
   document.getElementById("weeklyReviewWin").textContent = review.win;
   document.getElementById("weeklyReviewWatch").textContent = review.watch;
-  document.getElementById("weeklyReviewNext").textContent = review.next;
   document.getElementById("weeklyReviewConfidence").textContent = review.confidence;
 }
 
@@ -1627,7 +1608,6 @@ function renderInsights(coaching = buildCoachingContext()) {
   document.getElementById("coachingFocusAction").textContent = hasGarmin ? focus.action : "Follow the fixed plan without catch-up work";
   document.getElementById("coachingFocusSuccess").textContent = hasGarmin ? focus.successMarker : "A connected Garmin snapshot and repeatable training";
   document.getElementById("coachingFocusHorizon").textContent = hasGarmin ? focus.horizon : "Waiting for data";
-  document.getElementById("coachingFocusEvidence").textContent = hasGarmin ? coaching.source : "Waiting for Garmin data";
   renderWeeklyReview(coaching);
 
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
@@ -1648,7 +1628,7 @@ function renderInsights(coaching = buildCoachingContext()) {
   renderTrainingIntelligence(training.analytics);
 
   const insightCards = buildInsightCards(coaching, hasGarmin);
-  document.getElementById("insightGrid").innerHTML = insightCards.map((item) => `<article class="glass-card insight-card"><p class="eyebrow">${escapeHtml(item.label)}</p><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p><small class="insight-evidence">Based on ${escapeHtml(item.source || "your current data")}</small></article>`).join("");
+  document.getElementById("insightGrid").innerHTML = insightCards.map((item) => `<article class="glass-card insight-card"><p class="eyebrow">${escapeHtml(item.label)}</p><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p></article>`).join("");
 
 }
 
@@ -1679,15 +1659,13 @@ function renderTrainingIntelligence(analytics) {
   const stateGrid = document.getElementById("trainingStateGrid");
   const chart = document.getElementById("trainingLoadChart");
   const detailGrid = document.getElementById("trainingDetailGrid");
-  const method = document.getElementById("trainingMethod");
-  if (!stateGrid || !chart || !detailGrid || !method) return;
+  if (!stateGrid || !chart || !detailGrid) return;
   const current = analytics?.current || {};
   const series = Array.isArray(analytics?.series) ? analytics.series.filter((item) => item && hasValue(item.fitness) && hasValue(item.fatigue) && hasValue(item.form)) : [];
   if (!analytics || !series.length) {
     stateGrid.innerHTML = '<div class="empty-state">Training intelligence will appear after the next Garmin history refresh.</div>';
     chart.innerHTML = '<div class="training-chart-empty">Waiting for longitudinal load history</div>';
     detailGrid.innerHTML = "";
-    method.textContent = "Fitness, fatigue, and form are estimates derived from recorded workout load—not medical or readiness scores.";
     return;
   }
 
@@ -1732,7 +1710,6 @@ function renderTrainingIntelligence(analytics) {
     { label: "Strength exposure", value: hasValue(current.strengthMinutes7Day) ? `${Math.round(current.strengthMinutes7Day)} min` : "—", detail: "kept separate from run load" },
   ];
   detailGrid.innerHTML = secondary.map((item) => `<article><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong><small>${escapeHtml(item.detail)}</small></article>`).join("");
-  method.textContent = `${analytics.loadMethod} Fitness uses a ${analytics.references?.fitnessTimeConstantDays || 42}-day response and fatigue a ${analytics.references?.fatigueTimeConstantDays || 7}-day response. Only Garmin-recorded workouts contribute load. Values are estimates in arbitrary load points—not health, injury-risk, or readiness scores.`;
 }
 
 function buildInsightCards(coaching, hasGarmin) {
