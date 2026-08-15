@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 
 const ICONS = {
   home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
