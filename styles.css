@@ -377,6 +377,37 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .activity-stat-grid span { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .activity-stat-grid strong { margin-top: 9px; font-size: 16px; font-variant-numeric: tabular-nums; }
 .activity-detail-note { margin: 13px 1px 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.activity-hr-zones { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.hr-zone-block-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.hr-zone-block-head span, .hr-zone-block-head strong { display: block; }
+.hr-zone-block-head span { color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.hr-zone-block-head strong { margin-top: 5px; font-size: 14px; }
+.hr-zone-block-head > small { color: var(--muted-bright); font-size: 9px; font-variant-numeric: tabular-nums; }
+.hr-zone-stack { display: flex; width: 100%; height: 14px; margin-top: 14px; overflow: hidden; border-radius: 4px; background: #07131f; }
+.hr-zone-stack > span { display: block; min-width: 0; }
+.hr-zone-1 { --zone-color: #6388a5; }
+.hr-zone-2 { --zone-color: #3caeb9; }
+.hr-zone-3 { --zone-color: #67bf86; }
+.hr-zone-4 { --zone-color: #d8aa58; }
+.hr-zone-5 { --zone-color: #dc6b6b; }
+.hr-zone-stack > span, .hr-zone-item i { background: var(--zone-color); }
+.hr-zone-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin-top: 9px; }
+.hr-zone-item { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: #091827; }
+.hr-zone-item > span, .hr-zone-item strong, .hr-zone-item small { display: block; }
+.hr-zone-item > span { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .08em; }
+.hr-zone-item i { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 2px; }
+.hr-zone-item strong { margin-top: 7px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.hr-zone-item small { margin-top: 3px; color: var(--muted); font-size: 8px; font-variant-numeric: tabular-nums; }
+.activity-hr-zones > p, .hr-zone-method { margin: 10px 0 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.hr-zone-empty { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.hr-zone-empty strong { font-size: 11px; }
+.hr-zone-empty span { color: var(--muted); font-size: 9px; text-align: right; }
+.hr-zone-ytd-panel { margin-top: 14px; padding: 22px; }
+.hr-zone-ytd-overview { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 20px; }
+.hr-zone-ytd-overview > div { padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: #091827; }
+.hr-zone-ytd-overview strong, .hr-zone-ytd-overview span { display: block; }
+.hr-zone-ytd-overview strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.hr-zone-ytd-overview span { margin-top: 5px; color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .workout-analysis-panel { margin-top: 14px; padding: 22px; }
 .workout-analysis-status { color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
 .workout-analysis-copy { max-width: 850px; margin-top: 20px; }
@@ -654,6 +685,13 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .progress-summary-card { padding: 23px; }
   .progress-number-row strong { font-size: 66px; }
   .latest-activity-primary strong { font-size: 30px; }
+  .hr-zone-grid { gap: 4px; }
+  .hr-zone-item { padding: 8px 5px; }
+  .hr-zone-item > span { gap: 4px; font-size: 7px; }
+  .hr-zone-item strong { font-size: 13px; }
+  .hr-zone-item small { font-size: 7px; }
+  .hr-zone-ytd-panel { padding: 19px 18px; }
+  .hr-zone-ytd-overview { margin-top: 16px; }
   .workout-analysis-panel { padding: 19px 18px; }
   .workout-analysis-copy { margin-top: 16px; }
   .workout-analysis-grid { grid-template-columns: 1fr; }

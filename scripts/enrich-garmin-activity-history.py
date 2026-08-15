@@ -42,6 +42,75 @@ def rounded(value: float | None, digits: int = 1) -> float | None:
     return round(value, digits) if isinstance(value, (int, float)) and math.isfinite(value) else None
 
 
+def activity_hr_zones(activity: dict[str, Any]) -> dict[str, Any] | None:
+    """Normalize Garmin's activity zone fields to seconds and five-zone percentages."""
+    raw_zones = [
+        max(0.0, numeric(first(activity.get(f"hrTimeInZone_{zone}"), activity.get(f"hrTimeInZone{zone}"))) or 0.0)
+        for zone in range(1, 6)
+    ]
+    raw_total = sum(raw_zones)
+    if raw_total <= 0:
+        return None
+
+    duration_seconds = numeric(activity.get("duration")) or 0.0
+    scale = 1000.0 if duration_seconds > 0 and raw_total > duration_seconds * 20 else 1.0
+    seconds = [value / scale for value in raw_zones]
+    total_seconds = sum(seconds)
+    below_raw = max(0.0, numeric(first(activity.get("hrTimeInZone_0"), activity.get("hrTimeInZone0"))) or 0.0)
+    below_seconds = below_raw / scale
+    zones = [
+        {
+            "zone": index + 1,
+            "seconds": rounded(value, 1),
+            "percent": rounded(value / total_seconds * 100, 1),
+        }
+        for index, value in enumerate(seconds)
+    ]
+    return {
+        "zones": zones,
+        "totalSeconds": rounded(total_seconds, 1),
+        "belowZoneSeconds": rounded(below_seconds, 1),
+        "activityCoveragePct": rounded((total_seconds + below_seconds) / duration_seconds * 100, 1) if duration_seconds > 0 else None,
+        "source": "Garmin activity heart-rate zones",
+    }
+
+
+def aggregate_hr_zones(activity_details: list[dict[str, Any]], start_date: date, end_date: date) -> dict[str, Any] | None:
+    totals = [0.0] * 5
+    below_total = 0.0
+    activity_count = 0
+    for activity in activity_details:
+        zone_data = activity.get("hrZones")
+        zones = zone_data.get("zones") if isinstance(zone_data, dict) else None
+        if not isinstance(zones, list) or len(zones) != 5:
+            continue
+        values = [numeric(zone.get("seconds")) or 0.0 for zone in zones if isinstance(zone, dict)]
+        if len(values) != 5 or sum(values) <= 0:
+            continue
+        totals = [current + value for current, value in zip(totals, values)]
+        below_total += numeric(zone_data.get("belowZoneSeconds")) or 0.0
+        activity_count += 1
+    total_seconds = sum(totals)
+    if total_seconds <= 0:
+        return None
+    return {
+        "startDate": start_date.isoformat(),
+        "endDate": end_date.isoformat(),
+        "activityCount": activity_count,
+        "totalSeconds": rounded(total_seconds, 1),
+        "belowZoneSeconds": rounded(below_total, 1),
+        "zones": [
+            {
+                "zone": index + 1,
+                "seconds": rounded(value, 1),
+                "percent": rounded(value / total_seconds * 100, 1),
+            }
+            for index, value in enumerate(totals)
+        ],
+        "source": "Garmin activity heart-rate zones",
+    }
+
+
 def activity_load(activity: dict[str, Any], resting_hr: float, max_hr: float) -> tuple[float, str]:
     duration_minutes = (numeric(activity.get("duration")) or 0) / 60
     average_hr = numeric(activity.get("averageHR"))
@@ -73,7 +142,7 @@ def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> d
         numeric(activity.get("averageCadence")),
     )
     elevation_meters = first(numeric(activity.get("elevationGain")), numeric(activity.get("totalElevationGain")))
-    return {
+    detail = {
         "date": current_date,
         "startTimeLocal": first(activity.get("startTimeLocal"), activity.get("startTimeGMT")),
         "type": kind,
@@ -91,6 +160,10 @@ def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> d
         "anaerobicEffect": rounded(numeric(activity.get("anaerobicTrainingEffect")), 1),
         "vo2Max": rounded(numeric(activity.get("vO2MaxValue")), 0),
     }
+    hr_zones = activity_hr_zones(activity)
+    if hr_zones:
+        detail["hrZones"] = hr_zones
+    return detail
 
 
 def ewma_series(values: list[float], time_constant: int) -> list[float]:
@@ -265,6 +338,7 @@ def main() -> int:
         "activityCount": len(activities),
         "activeDays": len({item["date"] for item in activities}),
     }
+    training["hrZonesYtd"] = aggregate_hr_zones(activity_details, start_date, today)
     training["analytics"] = analytics
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(training["activityHistory"]))

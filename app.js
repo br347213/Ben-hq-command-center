@@ -9,7 +9,14 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.2.0";
+const HR_ZONE_META = [
+  { zone: 1, label: "Z1" },
+  { zone: 2, label: "Z2" },
+  { zone: 3, label: "Z3" },
+  { zone: 4, label: "Z4" },
+  { zone: 5, label: "Z5" },
+];
 
 const ICONS = {
   home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
@@ -447,6 +454,7 @@ function renderProgress() {
   document.getElementById("consistencyCalendar").innerHTML = cells.join("");
   renderLastGarminActivity();
   renderWorkoutAnalysis();
+  renderYtdHrZones();
 }
 
 function renderLastGarminActivity() {
@@ -485,12 +493,14 @@ function renderLastGarminActivity() {
     hasValue(activity.averageCadence) && Number(activity.averageCadence) > 0 ? { label: "Avg cadence", value: `${Math.round(Number(activity.averageCadence))} spm` } : null,
     hasValue(activity.vo2Max) ? { label: "VO₂ max", value: Number(activity.vo2Max).toFixed(0) } : null,
   ].filter((item) => item && item.value);
+  const workoutHrZones = hrZoneBreakdownMarkup(activity.hrZones, "workout");
 
   container.innerHTML = `<div class="latest-activity-hero">
     <div class="latest-activity-title"><span>${escapeHtml(formatActivityDate(activity))}</span><h4>${escapeHtml(name)}</h4><small>${escapeHtml(activityTypeLabel(activity.type))}</small></div>
     <div class="latest-activity-primary"><strong>${escapeHtml(primaryValue)}</strong><span>${escapeHtml(primaryLabel)}</span></div>
   </div>
   ${stats.length ? `<div class="activity-stat-grid">${stats.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`).join("")}</div>` : '<p class="activity-detail-note">More workout metrics will appear after the next Garmin history refresh.</p>'}
+  ${workoutHrZones}
   <p class="activity-detail-note">Synced from Garmin · Refresh from the header for the latest workout.</p>`;
 }
 
@@ -698,6 +708,63 @@ function formatActivityPace(value) {
     seconds = 0;
   }
   return `${whole}:${String(seconds).padStart(2, "0")} /mi`;
+}
+
+function normalizeHrZones(value) {
+  if (!value || typeof value !== "object" || !Array.isArray(value.zones)) return null;
+  const zones = HR_ZONE_META.map((meta) => {
+    const input = value.zones.find((item) => Number(item?.zone) === meta.zone) || {};
+    const seconds = hasValue(input.seconds) ? Math.max(0, Number(input.seconds)) : 0;
+    return { ...meta, seconds: Number.isFinite(seconds) ? seconds : 0 };
+  });
+  const calculatedTotal = zones.reduce((sum, zone) => sum + zone.seconds, 0);
+  if (!Number.isFinite(calculatedTotal) || calculatedTotal <= 0) return null;
+  const totalSeconds = hasValue(value.totalSeconds) && Number(value.totalSeconds) > 0 ? Number(value.totalSeconds) : calculatedTotal;
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return null;
+  return {
+    zones: zones.map((zone) => ({ ...zone, percent: zone.seconds / calculatedTotal * 100 })),
+    totalSeconds,
+    belowZoneSeconds: hasValue(value.belowZoneSeconds) ? Math.max(0, Number(value.belowZoneSeconds)) : 0,
+    activityCount: hasValue(value.activityCount) ? Math.max(0, Number(value.activityCount)) : null,
+  };
+}
+
+function formatZoneDuration(value, compact = false) {
+  const seconds = Math.max(0, Math.round(Number(value) || 0));
+  if (seconds < 60) return seconds ? `<1m` : "0m";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours) return compact ? `${hours}h ${minutes}m` : `${hours} hr ${minutes} min`;
+  const remainder = seconds % 60;
+  return compact ? `${minutes}m` : `${minutes} min ${remainder} sec`;
+}
+
+function hrZoneBreakdownMarkup(value, variant = "workout") {
+  const data = normalizeHrZones(value);
+  if (!data) {
+    return variant === "workout"
+      ? '<div class="hr-zone-empty"><strong>Heart-rate zones</strong><span>Zone timing will appear after the next Garmin history refresh.</span></div>'
+      : '<div class="empty-state">Year-to-date heart-rate zones will appear after Garmin rebuilds the activity history.</div>';
+  }
+  const stackedBar = `<div class="hr-zone-stack" role="img" aria-label="${data.zones.map((zone) => `${zone.label} ${zone.percent.toFixed(1)} percent`).join(", ")}">${data.zones.map((zone) => `<span class="hr-zone-${zone.zone}" style="width:${zone.percent.toFixed(2)}%"></span>`).join("")}</div>`;
+  const zoneGrid = `<div class="hr-zone-grid">${data.zones.map((zone) => `<div class="hr-zone-item hr-zone-${zone.zone}"><span><i></i>${zone.label}</span><strong>${zone.percent.toFixed(1)}%</strong><small>${formatZoneDuration(zone.seconds, true)}</small></div>`).join("")}</div>`;
+  const belowNote = data.belowZoneSeconds > 0 ? ` ${formatZoneDuration(data.belowZoneSeconds, true)} below Zone 1 is excluded.` : "";
+  if (variant === "workout") {
+    return `<section class="activity-hr-zones" aria-label="Workout heart-rate zone split">
+      <div class="hr-zone-block-head"><div><span>Heart-rate zones</span><strong>This workout</strong></div><small>${formatZoneDuration(data.totalSeconds, true)} zoned</small></div>
+      ${stackedBar}${zoneGrid}
+      <p>Garmin-assigned Zones 1–5.${belowNote}</p>
+    </section>`;
+  }
+  return `<div class="hr-zone-ytd-overview"><div><strong>${formatZoneDuration(data.totalSeconds)}</strong><span>time in Zones 1–5</span></div><div><strong>${Math.round(data.activityCount || 0)}</strong><span>workouts with zone data</span></div></div>
+    ${stackedBar}${zoneGrid}
+    <p class="hr-zone-method">Percentages use Garmin's zone assignment for each recorded workout.${belowNote}</p>`;
+}
+
+function renderYtdHrZones() {
+  const container = document.getElementById("ytdHrZoneSplit");
+  if (!container) return;
+  container.innerHTML = hrZoneBreakdownMarkup(privatePacket.training?.hrZonesYtd, "ytd");
 }
 
 function formatActivityDate(activity) {
