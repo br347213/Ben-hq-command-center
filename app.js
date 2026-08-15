@@ -9,13 +9,17 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "1.4.0";
-const COACHING_MODEL_VERSION = "1.1";
+const APP_VERSION = "1.5.0";
+const COACHING_MODEL_VERSION = "1.2";
 const ATHLETE_PROFILE = Object.freeze({
   name: "Ben",
   currentPhase: "General fitness, strength, physique, athletic capability, and sustainable running; no active race goal.",
   priorities: ["general fitness", "strength", "physique", "sustainable running", "healthy consistency"],
-  trainingPhilosophy: "Run and lift. Use cycling, rowing, climbing, or jump rope for variety and low-impact aerobic substitutions.",
+  trainingPhilosophy: "Run and lift. Use the bike or jump rope for available aerobic substitutions; rowing and bouldering are historical interests, not assumed current options.",
+  equipment: {
+    setting: "Home garage gym",
+    available: ["rack", "basic dumbbell set", "plates", "resistance bands"],
+  },
   running: {
     normalFrequency: "4–5 runs per week",
     easyRunMiles: [3, 4],
@@ -29,6 +33,8 @@ const ATHLETE_PROFILE = Object.freeze({
     historicalMaxHr: 194,
     historicalZones: { z1: [121, 136], z2: [136, 151], z3: [151, 165], z4: [165, 180], z5: [180, 194] },
     typicalCadenceSpm: [155, 160],
+    hrSensor: "Garmin Forerunner 245 wrist optical heart-rate sensor",
+    hrInterpretation: "Use heart-rate zones and trends as useful evidence, while allowing for wrist-sensor noise during rapid intensity changes and avoiding false precision.",
   },
   strength: {
     sustainableBaseline: "Two foundational sessions plus a short Friday upper-body/arms session when it remains low-friction.",
@@ -36,7 +42,8 @@ const ATHLETE_PROFILE = Object.freeze({
     rule: "Avoid lower-body fatigue that degrades Saturday quality work or Sunday's longer run.",
   },
   crossTraining: {
-    preferred: ["rowing", "indoor bouldering", "cycling", "jump rope"],
+    currentlyAvailable: ["jump rope", "bike on Saris trainer", "outdoor road cycling"],
+    historicalInterests: ["rowing", "indoor bouldering"],
     jumpRope: "Use mostly 45-second-or-shorter work intervals with generous recovery; do not prescribe a 30–45 minute session.",
   },
   environment: "Western North Carolina hills, heat, and humidity can materially change pace at the same effort.",
@@ -796,6 +803,7 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   const restingHrDelta = Number.isFinite(restingHr) && Number.isFinite(restingHrBaseline) ? restingHr - restingHrBaseline : NaN;
   const bodyBattery = finiteNumber(health.bodyBattery);
   const stress = finiteNumber(health.stress);
+  const weightLbs = finiteNumber(health.weightLbs);
   const currentRecoverySignalCount = [sleep, restingHr, bodyBattery, stress].filter(Number.isFinite).length;
   let recoveryScore = 0;
   if (Number.isFinite(sleep)) recoveryScore += sleep < 6 ? -3 : sleep < 7 ? -1 : sleep >= 7.5 ? 1 : 0;
@@ -891,7 +899,7 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
     focus = {
       title: "Hold mileage here and protect training quality",
       rationale: `The current seven-day total is ${weeklyMiles.toFixed(1)} miles. Your history says 20–25 miles is usually sustainable and 30-plus has reduced motivation, recovery, and long-run quality.`,
-      action: "Do not add mileage this week. Keep the next run easy, preserve one quality session at most, and use cycling—or rowing if available—when you want more aerobic work.",
+      action: "Do not add mileage this week. Keep the next run easy, preserve one quality session at most, and use the Saris trainer or an easy road ride when you want more aerobic work.",
       successMarker: "Running quality and motivation remain intact while weekly mileage returns to a repeatable range",
       horizon: "This week",
     };
@@ -986,7 +994,7 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
     modelVersion: COACHING_MODEL_VERSION,
     profile: ATHLETE_PROFILE,
     generatedAt: packet.generatedAt || "",
-    health: { status: recoveryStatus, score: recoveryScore, title: healthTitle, points: healthPoints, sleep, sleepBaseline, restingHr, restingHrBaseline, bodyBattery, stress },
+    health: { status: recoveryStatus, score: recoveryScore, title: healthTitle, points: healthPoints, sleep, sleepBaseline, restingHr, restingHrBaseline, bodyBattery, stress, weightLbs, weightDate: health.weightDate || "" },
     training: { runSessions7, priorRunSessions, weeklyMiles, loadChange, fitness, fatigue, form, ramp, loadBalance, recent28, latestActivity, latestEffort, zoneMix, zoneRead, overHardMileageCeiling, nearSustainableMileageCeiling },
     consistency: { annual, month, week },
     focus,
@@ -1132,11 +1140,16 @@ function renderTodayHealthInsight(coaching = buildCoachingContext()) {
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
   const hasGarmin = hasHealthData();
   const points = hasGarmin ? coaching.health.points : ["Connect Garmin to combine sleep, heart-rate, and exercise context in one daily read."];
+  const weightDate = /^\d{4}-\d{2}-\d{2}$/.test(health.weightDate || "")
+    ? parseLocalDateKey(health.weightDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "";
   const signals = [
     { label: "Sleep", value: hasValue(sleepValue) ? `${sleepValue} h` : "Not available", detail: hasValue(health.sleepHours) && hasValue(health.baselines?.sleep7Day) ? `7-day ${health.baselines.sleep7Day} h` : hasValue(health.sleepHours) ? (health.sleepScore ? `Score ${health.sleepScore}` : "Latest Garmin value") : hasValue(health.baselines?.sleep7Day) ? "7-day average" : "No recent reading" },
     { label: "Resting HR", value: hasValue(restingHrValue) ? `${restingHrValue} bpm` : "Not available", detail: hasValue(health.restingHr) && hasValue(health.baselines?.restingHr7Day) ? `7-day ${health.baselines.restingHr7Day} bpm` : hasValue(health.restingHr) ? "Latest Garmin value" : hasValue(health.baselines?.restingHr7Day) ? "7-day average" : "No recent reading" },
     { label: "Stress", value: hasValue(health.stress) ? health.stress : "Not available", detail: "Latest Garmin value" },
     { label: "Body Battery", value: hasValue(health.bodyBattery) ? health.bodyBattery : "Not available", detail: "Latest Garmin value" },
+    { label: "Weight", value: hasValue(health.weightLbs) ? `${Number(health.weightLbs).toFixed(1)} lb` : "Not logged", detail: weightDate ? `Garmin weigh-in · ${weightDate}` : "Latest Garmin weigh-in" },
+    { label: "Steps", value: hasValue(health.steps) ? Number(health.steps).toLocaleString() : "Not available", detail: "Latest Garmin value" },
   ];
 
   document.getElementById("todayHealthFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";

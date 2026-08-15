@@ -6,6 +6,7 @@ on:
     branches:
       - gh-pages
     paths:
+      - scripts/fetch-garmin-summary.py
       - scripts/enrich-garmin-activity-history.py
       - scripts/build-garmin-packet.mjs
       - .github/workflows/refresh-garmin.yml

@@ -39,6 +39,88 @@ def hours(seconds: Any) -> float | None:
     return round(float(seconds) / 3600, 2) if isinstance(seconds, (int, float)) else None
 
 
+def parsed_timestamp(value: Any) -> datetime | None:
+    if isinstance(value, (int, float)):
+        raw = float(value)
+        if raw > 10_000_000_000:
+            raw /= 1000
+        try:
+            return datetime.fromtimestamp(raw)
+        except (OSError, OverflowError, ValueError):
+            return None
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value.strip().replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        return None
+
+
+def normalized_weight(weight: Any, key: str, unit: str = "") -> tuple[float, float] | None:
+    if not isinstance(weight, (int, float)) or float(weight) <= 0:
+        return None
+    value = float(weight)
+    key_text = key.lower()
+    unit_text = unit.lower()
+    if "gram" in key_text or value >= 1_000:
+        kilograms = value / 1_000
+    elif "pound" in key_text or "lbs" in key_text or "pound" in unit_text or "lbs" in unit_text:
+        kilograms = value / 2.2046226218
+    else:
+        kilograms = value
+    if not 30 <= kilograms <= 300:
+        return None
+    return round(kilograms, 1), round(kilograms * 2.2046226218, 1)
+
+
+def latest_weight(payload: Any) -> dict[str, Any] | None:
+    """Find the newest dated weigh-in in Garmin's range response."""
+    candidates: list[tuple[datetime, float, float]] = []
+    weight_keys = ("weight", "weightInGrams", "weightInKg", "weightKg", "weightInLbs", "weightLbs")
+    date_keys = ("calendarDate", "summaryDate", "date", "dateTimestamp", "gmtTimestamp", "timestampGMT", "timestampLocal")
+
+    def visit(value: Any, inherited_date: Any = None, inherited_unit: str = "") -> None:
+        if isinstance(value, list):
+            for item in value:
+                visit(item, inherited_date, inherited_unit)
+            return
+        if not isinstance(value, dict):
+            return
+
+        record_date = first(*(value.get(key) for key in date_keys), inherited_date)
+        unit = str(first(value.get("weightUnit"), value.get("unitKey"), value.get("unit"), inherited_unit) or "")
+        timestamp = parsed_timestamp(record_date)
+        if timestamp is not None:
+            for key in weight_keys:
+                converted = normalized_weight(value.get(key), key, unit)
+                if converted is not None:
+                    kilograms, pounds = converted
+                    candidates.append((timestamp, kilograms, pounds))
+                    break
+
+        for child in value.values():
+            if isinstance(child, (dict, list)):
+                visit(child, record_date, unit)
+
+    visit(payload)
+    if not candidates:
+        return None
+    timestamp, kilograms, pounds = max(candidates, key=lambda candidate: candidate[0])
+    return {"weightKg": kilograms, "weightLbs": pounds, "weightDate": timestamp.date().isoformat()}
+
+
+def fetch_latest_weight(api: Garmin, today: date) -> dict[str, Any]:
+    for lookback_days in (365, 3650):
+        try:
+            payload = api.get_weigh_ins((today - timedelta(days=lookback_days)).isoformat(), today.isoformat()) or {}
+            result = latest_weight(payload)
+            if result:
+                return result
+        except Exception:
+            continue
+    return {}
+
+
 def status_payload(status: str, note: str) -> dict[str, Any]:
     return {
         "source": "Garmin Connect",
@@ -153,6 +235,7 @@ def main() -> int:
     prior_duration = round(sum(hours(item.get("duration")) or 0 for item in prior_runs), 2)
     latest_activity = activities[0] if activities else {}
     activity_type = nested(latest_activity, "activityType", "typeKey", default="")
+    weight = fetch_latest_weight(api, today)
 
     payload = {
         "source": "Garmin Connect",
@@ -167,6 +250,7 @@ def main() -> int:
             "steps": first(stats.get("totalSteps"), stats.get("steps")),
             "stress": first(stats.get("averageStressLevel"), stats.get("avgStressLevel")),
             "bodyBattery": first(stats.get("bodyBatteryHighestValue"), stats.get("bodyBatteryMostRecentValue")),
+            **weight,
             "baselines": {
                 "sleep7Day": rounded_average(sleep_values),
                 "hrv7Day": rounded_average(hrv_values),

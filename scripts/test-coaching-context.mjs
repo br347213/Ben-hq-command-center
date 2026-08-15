@@ -49,6 +49,8 @@ function packet(overrides = {}) {
       restingHr: 52,
       bodyBattery: 78,
       stress: 24,
+      weightLbs: 171.8,
+      weightDate: "2026-08-10",
       baselines: { sleep7Day: 8, restingHr7Day: 50.1 },
       ...overrides.health,
     },
@@ -77,8 +79,15 @@ function packet(overrides = {}) {
 
 const normal = buildCoachingContext(packet(), now);
 assert.equal(normal.health.status, "supportive");
+assert.equal(normal.health.weightLbs, 171.8);
+assert.equal(normal.health.weightDate, "2026-08-10");
 assert.match(normal.focus.title, /easy-run frequency/i);
 assert.match(normal.insightCards[1].title, /fresh/i);
+assert.equal(normal.profile.equipment.setting, "Home garage gym");
+assert.deepEqual(Array.from(normal.profile.equipment.available), ["rack", "basic dumbbell set", "plates", "resistance bands"]);
+assert.match(normal.profile.running.hrSensor, /Forerunner 245 wrist optical/i);
+assert.deepEqual(Array.from(normal.profile.crossTraining.currentlyAvailable), ["jump rope", "bike on Saris trainer", "outdoor road cycling"]);
+assert.deepEqual(Array.from(normal.profile.crossTraining.historicalInterests), ["rowing", "indoor bouldering"]);
 
 const recovery = buildCoachingContext(packet({
   health: { sleepHours: 5.2, restingHr: 58, bodyBattery: 20, stress: 60, baselines: { sleep7Day: 8, restingHr7Day: 50 } },
