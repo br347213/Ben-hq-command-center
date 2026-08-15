@@ -9,20 +9,51 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "1.3.0";
-const COACHING_MODEL_VERSION = "1.0";
+const APP_VERSION = "1.4.0";
+const COACHING_MODEL_VERSION = "1.1";
 const ATHLETE_PROFILE = Object.freeze({
   name: "Ben",
-  primaryGoal: "Stay generally fit, healthy, and consistent throughout the year without making training feel like maintenance.",
-  trainingPhilosophy: "Run and lift. Use biking or jump rope when running does not fit.",
-  runningGoal: "Maintain aerobic fitness, rebuild comfortable six-mile long runs, and keep occasional controlled tempo or speed work.",
-  strengthGoal: "Build the arms while maintaining or improving abs and core strength.",
-  optionalLongTermGoal: "An unweighted at-home Murph in 2027 is optional, not an obligation.",
-  consistencyRule: "Count cumulative active days without streak pressure, punishment workouts, or catch-up mileage.",
-  scheduleRule: "Keep the weekly schedule fixed as a low-friction default; adapt execution without requiring app upkeep.",
-  recoveryRule: "Protect a positive relationship with training and favor repeatability over maximizing any single day.",
+  currentPhase: "General fitness, strength, physique, athletic capability, and sustainable running; no active race goal.",
+  priorities: ["general fitness", "strength", "physique", "sustainable running", "healthy consistency"],
+  trainingPhilosophy: "Run and lift. Use cycling, rowing, climbing, or jump rope for variety and low-impact aerobic substitutions.",
+  running: {
+    normalFrequency: "4–5 runs per week",
+    easyRunMiles: [3, 4],
+    longRunMiles: [5, 6],
+    enjoyableLongRunCeilingMiles: 8,
+    sustainableWeeklyMiles: [20, 25],
+    hardWeeklyCeilingMiles: 30,
+    qualitySessionsPerWeek: 1,
+    preferredQualityDay: "Saturday",
+    preferredLongRunDay: "Sunday",
+    historicalMaxHr: 194,
+    historicalZones: { z1: [121, 136], z2: [136, 151], z3: [151, 165], z4: [165, 180], z5: [180, 194] },
+    typicalCadenceSpm: [155, 160],
+  },
+  strength: {
+    sustainableBaseline: "Two foundational sessions plus a short Friday upper-body/arms session when it remains low-friction.",
+    emphasis: ["upper body", "arms", "core", "compound strength", "enough lower body to support running"],
+    rule: "Avoid lower-body fatigue that degrades Saturday quality work or Sunday's longer run.",
+  },
+  crossTraining: {
+    preferred: ["rowing", "indoor bouldering", "cycling", "jump rope"],
+    jumpRope: "Use mostly 45-second-or-shorter work intervals with generous recovery; do not prescribe a 30–45 minute session.",
+  },
+  environment: "Western North Carolina hills, heat, and humidity can materially change pace at the same effort.",
+  historicalPerformance: {
+    halfMarathon2020: "about 1:53",
+    fiveKPr2025: "22:32",
+    twoMile2025: "14:01",
+    mile2025: "6:07",
+    rule: "Historical performances show prior capacity; current workouts and recovery set present intensity.",
+  },
+  consistencyRule: "Count cumulative active days without streak pressure, punishment workouts, catch-up mileage, or automatic progression after one completed session.",
+  scheduleRule: "Keep the weekly schedule fixed as a low-friction default; substitutions do not make the week a failure and the app does not silently rewrite the plan.",
+  recoveryRule: "Treat motivation, enjoyment, unusual fatigue, sleep disruption, soreness, and pain as real programming inputs; favor repeatability over maximizing any single day.",
   constraints: [
     "Persistent upper-left-arm pain after pull-ups: pull-ups remain paused, pulling must be pain-free, and evaluation is appropriate before resuming them.",
+    "Old left-pinky/hand deformity is painless but may affect grip span; adjust grip-intensive lifting, rowing, or climbing only if discomfort or limitation is reported.",
+    "Do not provide medication advice or alter treatment. Seek clarification when panic/anxiety symptoms, medication changes, unusual fatigue, sleep disruption, pain, or heart-related symptoms affect training.",
   ],
 });
 const HR_ZONE_META = [
@@ -531,7 +562,7 @@ function workoutEffortRead(activity, training, health) {
 
   const averageHrRaw = activity.averageHr ?? activity.averageHR;
   const restingHrRaw = training.analytics?.references?.restingHr ?? health.baselines?.restingHr7Day ?? health.restingHr;
-  const observedMaxHrRaw = training.analytics?.references?.observedMaxHr;
+  const observedMaxHrRaw = training.analytics?.references?.observedMaxHr ?? ATHLETE_PROFILE.running.historicalMaxHr;
   const averageHr = hasValue(averageHrRaw) ? Number(averageHrRaw) : NaN;
   const restingHr = hasValue(restingHrRaw) ? Number(restingHrRaw) : NaN;
   const observedMaxHr = hasValue(observedMaxHrRaw) ? Number(observedMaxHrRaw) : NaN;
@@ -567,15 +598,20 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
   const form = hasValue(current.form) ? Number(current.form) : NaN;
   const ramp = hasValue(current.ramp7Day) ? Number(current.ramp7Day) : NaN;
   const restingHrRaw = references.restingHr ?? health.baselines?.restingHr7Day ?? health.restingHr;
-  const observedMaxHrRaw = references.observedMaxHr;
+  const observedMaxHrRaw = references.observedMaxHr ?? ATHLETE_PROFILE.running.historicalMaxHr;
   const restingHr = hasValue(restingHrRaw) ? Number(restingHrRaw) : NaN;
   const observedMaxHr = hasValue(observedMaxHrRaw) ? Number(observedMaxHrRaw) : NaN;
   const reserveFraction = Number.isFinite(averageHr) && Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && averageHr > restingHr && observedMaxHr > restingHr
     ? (averageHr - restingHr) / (observedMaxHr - restingHr)
     : NaN;
   const sessionMaxFraction = Number.isFinite(averageHr) && Number.isFinite(maxHr) && maxHr > 0 ? averageHr / maxHr : NaN;
-  const easyLow = Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && observedMaxHr > restingHr ? Math.round(restingHr + .6 * (observedMaxHr - restingHr)) : NaN;
-  const easyHigh = Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && observedMaxHr > restingHr ? Math.round(restingHr + .7 * (observedMaxHr - restingHr)) : NaN;
+  const calculatedEasyLow = Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && observedMaxHr > restingHr ? Math.round(restingHr + .6 * (observedMaxHr - restingHr)) : NaN;
+  const calculatedEasyHigh = Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && observedMaxHr > restingHr ? Math.round(restingHr + .7 * (observedMaxHr - restingHr)) : NaN;
+  const [historicalEasyLow, historicalEasyHigh] = ATHLETE_PROFILE.running.historicalZones.z2;
+  const intersectedEasyLow = Number.isFinite(calculatedEasyLow) ? Math.max(calculatedEasyLow, historicalEasyLow) : historicalEasyLow;
+  const intersectedEasyHigh = Number.isFinite(calculatedEasyHigh) ? Math.min(calculatedEasyHigh, historicalEasyHigh) : historicalEasyHigh;
+  const easyLow = intersectedEasyLow <= intersectedEasyHigh ? intersectedEasyLow : calculatedEasyLow;
+  const easyHigh = intersectedEasyLow <= intersectedEasyHigh ? intersectedEasyHigh : calculatedEasyHigh;
   const hardRun = isRun && (["very-hard", "hard"].includes(effort.level) || reserveFraction >= .8 || sessionMaxFraction >= .89);
   const moderateRun = isRun && !hardRun && (effort.level === "building" || reserveFraction >= .7 || sessionMaxFraction >= .84);
   const workoutZones = normalizeHrZones(activity.hrZones);
@@ -803,18 +839,22 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
 
   const runSessions7 = Number.isFinite(finiteNumber(weekly.activities)) ? finiteNumber(weekly.activities) : recentActivityCounts(training, 7, now).run;
   const priorRunSessions = finiteNumber(weekly.previousActivities);
+  const weeklyMiles = finiteNumber(weekly.distanceMiles);
   const loadChange = finiteNumber(weekly.distanceChangePct);
   const fitness = finiteNumber(current.fitness);
   const fatigue = finiteNumber(current.fatigue);
   const form = finiteNumber(current.form);
   const ramp = finiteNumber(current.ramp7Day);
   const loadBalance = finiteNumber(current.loadBalance);
+  const overHardMileageCeiling = Number.isFinite(weeklyMiles) && weeklyMiles >= ATHLETE_PROFILE.running.hardWeeklyCeilingMiles;
+  const nearSustainableMileageCeiling = Number.isFinite(weeklyMiles) && weeklyMiles >= ATHLETE_PROFILE.running.sustainableWeeklyMiles[1];
   const loadHigh = (Number.isFinite(loadBalance) && loadBalance > 1.35)
     || (Number.isFinite(form) && form < -10)
-    || (Number.isFinite(loadChange) && loadChange > 40);
-  const runRhythmLow = runSessions7 <= 2 && (
-    (Number.isFinite(priorRunSessions) && priorRunSessions >= 3)
-    || (Number.isFinite(loadChange) && loadChange <= -25)
+    || (Number.isFinite(loadChange) && loadChange > 40)
+    || overHardMileageCeiling;
+  const runRhythmLow = runSessions7 < 4 && (
+    (Number.isFinite(priorRunSessions) && priorRunSessions >= 4)
+    || (Number.isFinite(loadChange) && loadChange < 0)
     || (Number.isFinite(ramp) && ramp < 0)
   );
   const latestRunHard = latestActivity && activityGroup(latestActivity) === "run" && ["hard", "very-hard"].includes(latestEffort?.level);
@@ -822,7 +862,9 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   const candidates = [
     { type: "steady", score: 40 },
     ...(recoveryStatus === "caution" ? [{ type: "recovery", score: 100 }] : []),
+    ...(overHardMileageCeiling ? [{ type: "volume-ceiling", score: 96 }] : []),
     ...(loadHigh ? [{ type: "absorb-load", score: 92 }] : []),
+    ...(nearSustainableMileageCeiling && recoveryStatus !== "supportive" ? [{ type: "volume-ceiling", score: 88 }] : []),
     ...(runRhythmLow ? [{ type: "run-rhythm", score: 86 }] : []),
     ...(zoneRead && ["hard-heavy", "middle-heavy"].includes(zoneRead.state) ? [{ type: "intensity", score: 74 + (latestRunHard ? 8 : 0) }] : []),
     ...(recent28.total >= 4 && recent28.strength < 4 ? [{ type: "strength", score: 64 }] : []),
@@ -845,6 +887,14 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
       successMarker: "Two or three days of normal-feeling energy with sleep and resting HR near baseline",
       horizon: "Next 3–5 days",
     };
+  } else if (priority === "volume-ceiling") {
+    focus = {
+      title: "Hold mileage here and protect training quality",
+      rationale: `The current seven-day total is ${weeklyMiles.toFixed(1)} miles. Your history says 20–25 miles is usually sustainable and 30-plus has reduced motivation, recovery, and long-run quality.`,
+      action: "Do not add mileage this week. Keep the next run easy, preserve one quality session at most, and use cycling—or rowing if available—when you want more aerobic work.",
+      successMarker: "Running quality and motivation remain intact while weekly mileage returns to a repeatable range",
+      horizon: "This week",
+    };
   } else if (priority === "absorb-load") {
     focus = {
       title: "Absorb the recent load before asking for more",
@@ -856,7 +906,7 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   } else if (priority === "run-rhythm") {
     focus = {
       title: "Rebuild repeatable easy-run frequency before adding intensity",
-      rationale: `You have ${runSessions7} recorded run${runSessions7 === 1 ? "" : "s"} in the last seven days${Number.isFinite(priorRunSessions) ? ` versus ${priorRunSessions} in the prior seven` : ""}${Number.isFinite(ramp) ? `, while 42-day fitness is moving ${ramp < 0 ? "down" : "up"} (${ramp > 0 ? "+" : ""}${ramp})` : ""}. The gap is aerobic repetition, not a shortage of hard work.`,
+      rationale: `You have ${runSessions7} recorded run${runSessions7 === 1 ? "" : "s"} in the last seven days${Number.isFinite(priorRunSessions) ? ` versus ${priorRunSessions} in the prior seven` : ""}${Number.isFinite(ramp) ? `, while 42-day fitness is moving ${ramp < 0 ? "down" : "up"} (${ramp > 0 ? "+" : ""}${ramp})` : ""}. Your sustainable pattern is normally four to five runs; the gap is aerobic repetition, not a shortage of hard work.`,
       action: "Complete the next two scheduled runs conversationally. No catch-up miles; let frequency itself be the progression.",
       successMarker: "Three repeatable runs in a rolling week, with the long run moving toward six miles",
       horizon: "Next 2 weeks",
@@ -910,7 +960,11 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   ];
 
   let loadCard;
-  if (Number.isFinite(form) && Number.isFinite(ramp) && form > 2 && ramp < 0) {
+  if (overHardMileageCeiling) {
+    loadCard = { label: "Load response", title: "Mileage is above your useful ceiling", body: `${weeklyMiles.toFixed(1)} miles in seven days is above the 30-mile level that has historically hurt recovery, motivation, and long-run quality. More is not the productive direction this week.` };
+  } else if (nearSustainableMileageCeiling) {
+    loadCard = { label: "Load response", title: "Mileage is at the top of your sustainable range", body: `${weeklyMiles.toFixed(1)} miles is around the upper end of the 20–25 mile range that has worked best. Hold here unless recovery, enjoyment, and run quality all remain strong.` };
+  } else if (Number.isFinite(form) && Number.isFinite(ramp) && form > 2 && ramp < 0) {
     loadCard = { label: "Load response", title: "You are fresh because recent load is lighter", body: `Form is +${form} while the fitness ramp is ${ramp}. That is useful freshness, but not evidence that more intensity is missing; restore repeatable volume first.` };
   } else if (Number.isFinite(form) && form < -3) {
     loadCard = { label: "Load response", title: "Short-term fatigue is outrunning fitness", body: `Form is ${form}${Number.isFinite(loadBalance) ? ` and load balance is ${loadBalance}` : ""}. Let the current work settle before increasing either mileage or intensity.` };
@@ -933,11 +987,11 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
     profile: ATHLETE_PROFILE,
     generatedAt: packet.generatedAt || "",
     health: { status: recoveryStatus, score: recoveryScore, title: healthTitle, points: healthPoints, sleep, sleepBaseline, restingHr, restingHrBaseline, bodyBattery, stress },
-    training: { runSessions7, priorRunSessions, loadChange, fitness, fatigue, form, ramp, loadBalance, recent28, latestActivity, latestEffort, zoneMix, zoneRead },
+    training: { runSessions7, priorRunSessions, weeklyMiles, loadChange, fitness, fatigue, form, ramp, loadBalance, recent28, latestActivity, latestEffort, zoneMix, zoneRead, overHardMileageCeiling, nearSustainableMileageCeiling },
     consistency: { annual, month, week },
     focus,
     insightCards: [intensityCard, loadCard, consistencyCard],
-    source: `Fitness HQ coaching model v${COACHING_MODEL_VERSION} • Garmin + checkoffs + goals + fixed plan`,
+    source: `Fitness HQ coaching model v${COACHING_MODEL_VERSION} • Garmin + checkoffs + plan + athlete history`,
   };
 }
 

@@ -4,6 +4,9 @@ import vm from "node:vm";
 
 const source = readFileSync(new URL("../app.js", import.meta.url), "utf8")
   .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis };\n");
+for (const privateMedicalDetail of ["Xanax", "mirtazapine", "fluvoxamine", "buspirone", "bipolar disorder"]) {
+  assert.equal(source.includes(privateMedicalDetail), false, `${privateMedicalDetail} must not be published in client source`);
+}
 const storage = new Map();
 const context = {
   console,
@@ -97,9 +100,20 @@ const overload = buildCoachingContext(packet({
 }), now);
 assert.match(overload.focus.title, /absorb/i);
 
+const highMileage = buildCoachingContext(packet({
+  training: {
+    weeklyLoad: { activities: 5, previousActivities: 5, distanceMiles: 32, distanceChangePct: 18 },
+    analytics: { references: { restingHr: 50, observedMaxHr: 196 }, current: { fitness: 22, fatigue: 24, form: -2, ramp7Day: 1, loadBalance: 1.09 } },
+  },
+}), now);
+assert.match(highMileage.focus.title, /hold mileage/i);
+assert.match(highMileage.focus.rationale, /20–25 miles/i);
+
 const workout = buildWorkoutAnalysis(packet().training.lastWorkoutDetail, packet().training, packet().health, normal);
 assert.match(workout.title, /quality workout/i);
 assert.match(workout.body, /Zones 4–5/i);
 assert.match(workout.effect, /year-to-date/i);
+assert.match(workout.next, /138–151 bpm/i);
+assert.match(workout.source, /athlete history/i);
 
 console.log("Coaching context scenarios passed.");
