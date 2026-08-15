@@ -2,6 +2,13 @@ name: Refresh Garmin dashboard
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - gh-pages
+    paths:
+      - scripts/enrich-garmin-activity-history.py
+      - scripts/build-garmin-packet.mjs
+      - .github/workflows/refresh-garmin.yml
 
 permissions:
   contents: write
