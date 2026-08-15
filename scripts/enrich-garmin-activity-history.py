@@ -170,6 +170,58 @@ def weather_location(activity: dict[str, Any]) -> tuple[float, float]:
     return latitude, longitude
 
 
+def download_weather(latitude: float, longitude: float, start_date: str, end_date: str, recent: bool) -> dict[str, Any] | None:
+    endpoint = "https://api.open-meteo.com/v1/forecast" if recent else "https://archive-api.open-meteo.com/v1/archive"
+    query = urllib.parse.urlencode({
+        "latitude": latitude,
+        "longitude": longitude,
+        "start_date": start_date,
+        "end_date": end_date,
+        "hourly": "temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,wind_speed_10m",
+        "temperature_unit": "fahrenheit",
+        "wind_speed_unit": "mph",
+        "precipitation_unit": "inch",
+        "timezone": "auto",
+    })
+    try:
+        request = urllib.request.Request(f"{endpoint}?{query}", headers={"User-Agent": "Fitness-HQ/2 weather enrichment"})
+        with urllib.request.urlopen(request, timeout=25) as response:
+            return json.load(response)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+
+
+def prefetch_weather(raw_activities: list[dict[str, Any]], start_date: date, end_date: date) -> dict[tuple[str, float, float], dict[str, Any] | None]:
+    """Fetch a regional date range once instead of one request per workout."""
+    groups: dict[tuple[float, float], dict[str, Any]] = {}
+    for activity in raw_activities:
+        current_date = activity_date(activity)
+        if not current_date:
+            continue
+        latitude, longitude = weather_location(activity)
+        group_key = (round(latitude, 1), round(longitude, 1))
+        group = groups.setdefault(group_key, {"latitude": latitude, "longitude": longitude, "dates": set()})
+        group["dates"].add(current_date)
+
+    cache: dict[tuple[str, float, float], dict[str, Any] | None] = {}
+    for (latitude_key, longitude_key), group in groups.items():
+        group_dates = sorted(date.fromisoformat(value) for value in group["dates"])
+        group_start = max(start_date, group_dates[0])
+        group_end = min(end_date, group_dates[-1])
+        recent_start = max(group_start, group_end - timedelta(days=5))
+        historical_end = recent_start - timedelta(days=1)
+        payloads: list[tuple[date, date, dict[str, Any] | None]] = []
+        if group_start <= historical_end:
+            payloads.append((group_start, historical_end, download_weather(group["latitude"], group["longitude"], group_start.isoformat(), historical_end.isoformat(), False)))
+        if recent_start <= group_end:
+            payloads.append((recent_start, group_end, download_weather(group["latitude"], group["longitude"], recent_start.isoformat(), group_end.isoformat(), True)))
+        for current_date in group["dates"]:
+            parsed = date.fromisoformat(current_date)
+            payload = next((item for lower, upper, item in payloads if lower <= parsed <= upper), None)
+            cache[(current_date, latitude_key, longitude_key)] = payload
+    return cache
+
+
 def weather_at_activity(activity: dict[str, Any], current_date: str, cache: dict[tuple[str, float, float], dict[str, Any] | None]) -> dict[str, Any] | None:
     started_at = str(first(activity.get("startTimeLocal"), activity.get("startTimeGMT"), f"{current_date}T12:00:00"))
     try:
@@ -177,27 +229,10 @@ def weather_at_activity(activity: dict[str, Any], current_date: str, cache: dict
     except ValueError:
         target = datetime.fromisoformat(f"{current_date}T12:00:00")
     latitude, longitude = weather_location(activity)
-    key = (current_date, round(latitude, 2), round(longitude, 2))
+    key = (current_date, round(latitude, 1), round(longitude, 1))
     if key not in cache:
         recent = date.today() - date.fromisoformat(current_date) <= timedelta(days=5)
-        endpoint = "https://api.open-meteo.com/v1/forecast" if recent else "https://archive-api.open-meteo.com/v1/archive"
-        query = urllib.parse.urlencode({
-            "latitude": latitude,
-            "longitude": longitude,
-            "start_date": current_date,
-            "end_date": current_date,
-            "hourly": "temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,wind_speed_10m",
-            "temperature_unit": "fahrenheit",
-            "wind_speed_unit": "mph",
-            "precipitation_unit": "inch",
-            "timezone": "auto",
-        })
-        try:
-            request = urllib.request.Request(f"{endpoint}?{query}", headers={"User-Agent": "Fitness-HQ/2 weather enrichment"})
-            with urllib.request.urlopen(request, timeout=15) as response:
-                cache[key] = json.load(response)
-        except (OSError, ValueError, json.JSONDecodeError):
-            cache[key] = None
+        cache[key] = download_weather(latitude, longitude, current_date, current_date, recent)
     payload = cache[key]
     hourly = payload.get("hourly") if isinstance(payload, dict) else None
     times = hourly.get("time") if isinstance(hourly, dict) else None
@@ -331,7 +366,7 @@ def main() -> int:
     analysis_activities = []
     activity_details = []
     seen_ids = set()
-    weather_cache: dict[tuple[str, float, float], dict[str, Any] | None] = {}
+    weather_cache = prefetch_weather(raw_activities, start_date, today)
     for item in raw_activities:
         if not isinstance(item, dict):
             continue
