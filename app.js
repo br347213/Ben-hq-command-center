@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 
 const ICONS = {
   home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
@@ -528,63 +528,103 @@ function buildWorkoutAnalysis(activity, training, health) {
   const isRun = type.includes("run") || /run/i.test(name);
   const isRide = type.includes("cycl") || type.includes("bike") || /ride|cycling|bike/i.test(name);
   const isStrength = type.includes("strength") || /strength|lift|weight/i.test(name);
-  const distance = Number(activity.distanceMiles);
   const durationMinutes = Number(activity.durationMinutes);
   const averageHrRaw = activity.averageHr ?? activity.averageHR;
   const maxHrRaw = activity.maxHr ?? activity.maxHR ?? activity.maximumHr ?? activity.maximumHR;
   const averageHr = hasValue(averageHrRaw) ? Number(averageHrRaw) : NaN;
   const maxHr = hasValue(maxHrRaw) ? Number(maxHrRaw) : NaN;
   const aerobicEffect = hasValue(activity.aerobicEffect) ? Number(activity.aerobicEffect) : NaN;
-  const anaerobicEffect = hasValue(activity.anaerobicEffect) ? Number(activity.anaerobicEffect) : NaN;
-  const pace = hasValue(activity.averagePaceMinutesPerMile) ? Number(activity.averagePaceMinutesPerMile) : NaN;
   const effort = workoutEffortRead(activity, training, health);
   const weeklyLoad = training.weeklyLoad || {};
+  const references = training.analytics?.references || {};
   const current = training.analytics?.current || {};
   const loadChange = hasValue(weeklyLoad.distanceChangePct) ? Number(weeklyLoad.distanceChangePct) : NaN;
   const form = hasValue(current.form) ? Number(current.form) : NaN;
-  const loadBalance = hasValue(current.loadBalance) ? Number(current.loadBalance) : NaN;
+  const ramp = hasValue(current.ramp7Day) ? Number(current.ramp7Day) : NaN;
+  const restingHrRaw = references.restingHr ?? health.baselines?.restingHr7Day ?? health.restingHr;
+  const observedMaxHrRaw = references.observedMaxHr;
+  const restingHr = hasValue(restingHrRaw) ? Number(restingHrRaw) : NaN;
+  const observedMaxHr = hasValue(observedMaxHrRaw) ? Number(observedMaxHrRaw) : NaN;
+  const reserveFraction = Number.isFinite(averageHr) && Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && averageHr > restingHr && observedMaxHr > restingHr
+    ? (averageHr - restingHr) / (observedMaxHr - restingHr)
+    : NaN;
+  const sessionMaxFraction = Number.isFinite(averageHr) && Number.isFinite(maxHr) && maxHr > 0 ? averageHr / maxHr : NaN;
+  const easyLow = Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && observedMaxHr > restingHr ? Math.round(restingHr + .6 * (observedMaxHr - restingHr)) : NaN;
+  const easyHigh = Number.isFinite(restingHr) && Number.isFinite(observedMaxHr) && observedMaxHr > restingHr ? Math.round(restingHr + .7 * (observedMaxHr - restingHr)) : NaN;
+  const hardRun = isRun && (["very-hard", "hard"].includes(effort.level) || reserveFraction >= .8 || sessionMaxFraction >= .89);
+  const moderateRun = isRun && !hardRun && (effort.level === "building" || reserveFraction >= .7 || sessionMaxFraction >= .84);
 
   let title;
-  if (isRun && ["very-hard", "hard"].includes(effort.level)) title = "This run delivered a hard stimulus; the gain now comes from absorbing it";
-  else if (isRun && effort.level === "building") title = "This was a productive aerobic session, not just another checked box";
-  else if (isRun && ["maintaining", "light"].includes(effort.level)) title = "This run's main value was aerobic consistency without a large recovery bill";
-  else if (isRide) title = ["very-hard", "hard"].includes(effort.level) ? "The ride created meaningful cardiovascular load" : "The ride preserved the aerobic rhythm with lower impact";
-  else if (isStrength) title = "This session adds to the strength base; repeatability matters more than squeezing out extra work";
-  else title = "This session moved the year forward and now has useful training context";
+  let body;
+  let impact;
+  let next;
 
-  const facts = [];
-  if (isRun && Number.isFinite(distance) && distance > 0) facts.push(`${distance.toFixed(2)} miles`);
-  else if (Number.isFinite(durationMinutes) && durationMinutes > 0) facts.push(formatActivityDuration(durationMinutes));
-  if (isRun && Number.isFinite(pace) && pace > 0) facts.push(`${formatActivityPace(pace)} average pace`);
-  if (Number.isFinite(averageHr) && averageHr > 0) facts.push(`${Math.round(averageHr)} bpm average HR`);
-  if (Number.isFinite(maxHr) && maxHr > 0) facts.push(`${Math.round(maxHr)} bpm max`);
-  const evidence = facts.length ? `${facts.join(", ")}.` : "Garmin recorded the completed session.";
+  if (isRun) {
+    if (hardRun) title = "This was a quality workout, not an easy aerobic run";
+    else if (moderateRun) title = "This run landed in the middle: useful, but too hard to count as easy";
+    else title = "This intensity is suitable for rebuilding your aerobic base";
 
-  let interpretation = `${effort.label}, based on ${effort.evidence.toLowerCase()}.`;
-  if (Number.isFinite(anaerobicEffect) && anaerobicEffect >= 2.5) interpretation += ` The ${anaerobicEffect.toFixed(1)} anaerobic effect shows a meaningful faster-effort component as well.`;
-  else if (Number.isFinite(aerobicEffect) && aerobicEffect >= 3.5) interpretation += " Treat it as a key workout rather than adding more intensity around it.";
+    const heartRateEvidence = [];
+    if (Number.isFinite(sessionMaxFraction)) heartRateEvidence.push(`${Math.round(sessionMaxFraction * 100)}% of the session max`);
+    if (Number.isFinite(reserveFraction)) heartRateEvidence.push(`about ${Math.round(reserveFraction * 100)}% of observed heart-rate reserve`);
+    if (heartRateEvidence.length && Number.isFinite(averageHr)) {
+      body = `Your ${Math.round(averageHr)} bpm average was ${heartRateEvidence.join(" and ")}.`;
+    } else if (Number.isFinite(aerobicEffect)) {
+      body = `Garmin assigned this run a ${aerobicEffect.toFixed(1)} aerobic effect.`;
+    } else {
+      body = "Garmin did not provide enough heart-rate context to classify the intensity confidently.";
+    }
+    if (hardRun) body += ` ${Number.isFinite(aerobicEffect) ? `The ${aerobicEffect.toFixed(1)} aerobic effect reinforces that this was sustained moderate-hard work` : "That pattern points to sustained moderate-hard work"}, regardless of pace.`;
+    else if (moderateRun) body += " That is more cardiovascular load than an easy day should usually carry.";
+    else body += " That leaves room to repeat the work without turning every run into a recovery problem.";
 
-  let next = "Follow the fixed plan; no compensatory work is needed.";
-  if (["very-hard", "hard"].includes(effort.level) || (Number.isFinite(loadBalance) && loadBalance > 1.3) || (Number.isFinite(form) && form < -8)) {
-    next = "Protect the next easy or rest day and let this session settle before adding intensity.";
-  } else if (isRun && Number.isFinite(loadChange) && loadChange <= -30) {
-    next = "Keep the next run easy and on schedule; rebuild frequency before adding intensity or catch-up miles.";
-  } else if (isRun && Number.isFinite(loadChange) && loadChange >= 30) {
-    next = "Hold the next run genuinely easy so the recent mileage increase can settle.";
+    if (Number.isFinite(loadChange) && loadChange <= -30) {
+      impact = "Your current limiter is repeatable run frequency and easy-volume durability—not a lack of intensity. Comfortable six-mile fitness will come back faster by keeping more runs truly easy.";
+    } else if (Number.isFinite(loadChange) && loadChange >= 30) {
+      impact = `Seven-day mileage is already up ${Math.round(loadChange)}%. Adding hard running while volume is rising increases the recovery cost without solving a clear weakness.`;
+    } else {
+      impact = hardRun || moderateRun
+        ? "This can count as a quality session, but comfortable six-mile fitness still depends on separating hard work from genuinely easy volume."
+        : "This is the kind of low-cost aerobic work that can be repeated and gradually extended toward comfortable six-mile runs.";
+    }
+    if (Number.isFinite(form) && form > 2 && Number.isFinite(ramp) && ramp < 0) {
+      impact += " Your positive form is partly freshness from reduced recent load, not a signal that extra intensity is needed.";
+    }
+
+    const easyGuardrail = Number.isFinite(easyLow) && Number.isFinite(easyHigh) ? ` Use roughly ${easyLow}–${easyHigh} bpm as a starting guardrail from your recent HR data` : " Use conversational breathing as the guardrail";
+    if (hardRun) {
+      next = `Count this as the quality run. Make the next run 3–4 conversational miles.${easyGuardrail}; slow down or add brief walk breaks if heart rate keeps climbing. Do not stack another tempo effort on top of this.`;
+    } else if (moderateRun) {
+      next = `Make the next run clearly easier rather than repeating the middle.${easyGuardrail}, and finish with enough left to run again on schedule.`;
+    } else if (Number.isFinite(loadChange) && loadChange <= -30) {
+      next = `Repeat an easy 3–4 miles on schedule before adding speed.${easyGuardrail}; frequency is the progression right now.`;
+    } else {
+      next = `Keep the next easy run at this effort and extend distance gradually.${easyGuardrail}; pace is secondary.`;
+    }
+  } else if (isRide) {
+    const hardRide = ["very-hard", "hard"].includes(effort.level);
+    title = hardRide ? "This ride became a quality cardio session" : "This ride preserved aerobic work without adding running impact";
+    body = `${effort.evidence}. ${hardRide ? "Treat the cardiovascular cost like a hard run even though the mechanical load was lower." : "That makes it useful when running is unavailable or your legs need less impact."}`;
+    impact = "The bike supports aerobic continuity, but it does not fully replace the running-specific durability needed for comfortable six-mile runs.";
+    next = hardRide ? "Keep the next cardio session easy and return to running only when the legs feel normal." : "Return to the fixed run schedule without adding make-up mileage.";
   } else if (isStrength) {
-    next = "Return to the fixed schedule, and keep any painful pulling out of the next lift.";
+    title = "The value of this lift is what it lets you repeat next week";
+    body = Number.isFinite(durationMinutes) && durationMinutes > 0 ? `This was ${formatActivityDuration(durationMinutes)} of strength work. Garmin heart-rate load cannot tell whether the sets were effective, so the analysis should not pretend it can.` : "Garmin heart-rate data cannot judge rep quality, proximity to failure, or whether the target muscles did the work.";
+    impact = "For arm growth and general strength, consistent pain-free sets and gradual progression matter more than a single session's calorie or heart-rate total.";
+    next = "Keep painful pulling out, note whether reps or load improved, and leave enough margin to complete the next scheduled session.";
+  } else {
+    title = "This workout counts, but Garmin does not provide enough context for a strong coaching verdict";
+    body = `${effort.evidence}. The available fields describe cardiovascular demand, not whether the session matched its intended purpose.`;
+    impact = "The useful question is whether this supported consistency without interfering with the next planned run or lift.";
+    next = "Follow the fixed schedule and use soreness, pain, and motivation—not the calorie number—to choose the full or minimum version.";
   }
-
-  let impact = effort.label;
-  if (isRun && Number.isFinite(loadChange)) impact += loadChange <= -30 ? " · rebuilding run frequency" : loadChange >= 30 ? " · rising weekly mileage" : " · steady weekly rhythm";
-  else if (Number.isFinite(form)) impact += ` · current form ${form > 0 ? "+" : ""}${form}`;
 
   return {
     title,
-    body: `${evidence} ${interpretation}`,
+    body,
     effect: impact,
     next,
-    source: "Latest Garmin activity + 7-day load + fitness–fatigue context",
+    source: "Coaching read from Garmin intensity, recent load, fitness–fatigue context, and your goals",
   };
 }
 
