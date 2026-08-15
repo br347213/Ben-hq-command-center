@@ -167,6 +167,10 @@ def weather_location(activity: dict[str, Any]) -> tuple[float, float]:
     longitude = first(numeric(activity.get("startLongitude")), numeric(activity.get("longitude")))
     if latitude is None or longitude is None or not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
         return FALLBACK_WEATHER_LOCATION
+    # Most training occurs within one weather region. Collapsing local starts to
+    # a single cell keeps refreshes fast and avoids retaining precise locations.
+    if 34.5 <= latitude <= 36.8 and -84.5 <= longitude <= -80.5:
+        return FALLBACK_WEATHER_LOCATION
     return latitude, longitude
 
 
@@ -269,7 +273,7 @@ def weather_at_activity(activity: dict[str, Any], current_date: str, cache: dict
         "precipitationIn": rounded(hourly_value("precipitation"), 2),
         "windSpeedMph": rounded(hourly_value("wind_speed_10m"), 0),
         "heatLoad": heat_load,
-        "source": "Open-Meteo hourly conditions nearest workout start",
+        "source": "Open-Meteo hourly conditions for the workout's regional weather cell",
     }
 
 
@@ -511,7 +515,10 @@ def main() -> int:
     training["hrZonesYtd"] = aggregate_hr_zones(activity_details, start_date, today, resting_hr, max_hr)
     training["analytics"] = analytics
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    print(json.dumps(training["activityHistory"]))
+    print(json.dumps({
+        **training["activityHistory"],
+        "weatherEnrichedActivities": sum(1 for item in activity_details if item.get("weather")),
+    }))
     return 0
 
 

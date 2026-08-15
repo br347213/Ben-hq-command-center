@@ -38,7 +38,12 @@ def test_zone_weighted_load() -> None:
     assert round(load, 1) == 35.0
 
 
+def test_western_nc_weather_is_privacy_minimized() -> None:
+    assert module.weather_location({"startLatitude": 35.43, "startLongitude": -82.50}) == module.FALLBACK_WEATHER_LOCATION
+
+
 if __name__ == "__main__":
     test_hrr_boundaries()
     test_zone_weighted_load()
+    test_western_nc_weather_is_privacy_minimized()
     print("Training enrichment scenarios passed.")
