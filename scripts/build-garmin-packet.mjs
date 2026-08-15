@@ -127,6 +127,7 @@ function main() {
       lastWorkoutDetail: summary.training?.lastWorkoutDetail || null,
       weeklyLoad: summary.training?.weeklyLoad || {},
       activities: Array.isArray(summary.training?.activities) ? summary.training.activities : [],
+      activityDetails: Array.isArray(summary.training?.activityDetails) ? summary.training.activityDetails : [],
       activityHistory: summary.training?.activityHistory || null,
       hrZonesYtd: summary.training?.hrZonesYtd || null,
       analytics: summary.training?.analytics || null,

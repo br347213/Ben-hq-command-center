@@ -122,8 +122,14 @@ const workout = buildWorkoutAnalysis(packet().training.lastWorkoutDetail, packet
 assert.match(workout.title, /quality workout/i);
 assert.match(workout.body, /Zones 4–5/i);
 assert.match(workout.effect, /year-to-date/i);
-assert.match(workout.next, /138–151 bpm/i);
+assert.match(workout.next, /136–151 bpm/i);
 assert.match(workout.source, /athlete history/i);
+
+const hotWorkoutPacket = packet();
+hotWorkoutPacket.training.lastWorkoutDetail.weather = { temperatureF: 88, apparentTemperatureF: 94, relativeHumidityPct: 72, dewPointF: 74, heatLoad: "high" };
+const hotWorkout = buildWorkoutAnalysis(hotWorkoutPacket.training.lastWorkoutDetail, hotWorkoutPacket.training, hotWorkoutPacket.health, normal);
+assert.match(hotWorkout.body, /88°F.*72% humidity.*Heat and humidity/i);
+assert.match(hotWorkout.next, /similar heat/i);
 
 const saturday = new Date(2026, 7, 15, 8, 0, 0);
 assert.equal(buildAiRunRecommendation(now, normal, packet(), now), null);

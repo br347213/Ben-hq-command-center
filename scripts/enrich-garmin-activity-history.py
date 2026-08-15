@@ -5,12 +5,19 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import urllib.parse
+import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from statistics import mean, pstdev
 from typing import Any
 
 from garminconnect import Garmin
+
+
+CONFIGURED_MAX_HR = 194.0
+FALLBACK_WEATHER_LOCATION = (35.5951, -82.5515)  # Asheville-area context; coordinates are never published.
+HRR_ZONE_FRACTIONS = ((0.50, 0.60), (0.60, 0.70), (0.70, 0.80), (0.80, 0.90), (0.90, 1.00))
 
 
 def first(*values: Any) -> Any:
@@ -42,7 +49,21 @@ def rounded(value: float | None, digits: int = 1) -> float | None:
     return round(value, digits) if isinstance(value, (int, float)) and math.isfinite(value) else None
 
 
-def activity_hr_zones(activity: dict[str, Any]) -> dict[str, Any] | None:
+def hrr_boundaries(resting_hr: float, max_hr: float) -> list[dict[str, Any]]:
+    reserve = max_hr - resting_hr
+    return [
+        {
+            "zone": index + 1,
+            "lowerBpm": round(resting_hr + lower * reserve),
+            "upperBpm": round(resting_hr + upper * reserve),
+            "lowerHrrPct": round(lower * 100),
+            "upperHrrPct": round(upper * 100),
+        }
+        for index, (lower, upper) in enumerate(HRR_ZONE_FRACTIONS)
+    ]
+
+
+def activity_hr_zones(activity: dict[str, Any], resting_hr: float, max_hr: float) -> dict[str, Any] | None:
     """Normalize Garmin's activity zone fields to seconds and five-zone percentages."""
     raw_zones = [
         max(0.0, numeric(first(activity.get(f"hrTimeInZone_{zone}"), activity.get(f"hrTimeInZone{zone}"))) or 0.0)
@@ -71,11 +92,15 @@ def activity_hr_zones(activity: dict[str, Any]) -> dict[str, Any] | None:
         "totalSeconds": rounded(total_seconds, 1),
         "belowZoneSeconds": rounded(below_seconds, 1),
         "activityCoveragePct": rounded((total_seconds + below_seconds) / duration_seconds * 100, 1) if duration_seconds > 0 else None,
-        "source": "Garmin activity heart-rate zones",
+        "model": "heart-rate reserve",
+        "restingHr": rounded(resting_hr, 1),
+        "maxHr": rounded(max_hr, 0),
+        "boundaries": hrr_boundaries(resting_hr, max_hr),
+        "source": "Garmin activity zone time interpreted with Ben's %HRR model",
     }
 
 
-def aggregate_hr_zones(activity_details: list[dict[str, Any]], start_date: date, end_date: date) -> dict[str, Any] | None:
+def aggregate_hr_zones(activity_details: list[dict[str, Any]], start_date: date, end_date: date, resting_hr: float, max_hr: float) -> dict[str, Any] | None:
     totals = [0.0] * 5
     below_total = 0.0
     activity_count = 0
@@ -107,7 +132,11 @@ def aggregate_hr_zones(activity_details: list[dict[str, Any]], start_date: date,
             }
             for index, value in enumerate(totals)
         ],
-        "source": "Garmin activity heart-rate zones",
+        "model": "heart-rate reserve",
+        "restingHr": rounded(resting_hr, 1),
+        "maxHr": rounded(max_hr, 0),
+        "boundaries": hrr_boundaries(resting_hr, max_hr),
+        "source": "Garmin activity zone time interpreted with Ben's %HRR model",
     }
 
 
@@ -116,6 +145,14 @@ def activity_load(activity: dict[str, Any], resting_hr: float, max_hr: float) ->
     average_hr = numeric(activity.get("averageHR"))
     if duration_minutes <= 0:
         return 0, "none"
+    zones = activity_hr_zones(activity, resting_hr, max_hr)
+    if zones:
+        # A compact TRIMP-style cardiovascular load. Hard minutes cost more, while
+        # easy minutes still contribute to fitness rather than disappearing.
+        weights = (0.5, 1.0, 2.0, 3.0, 4.0)
+        weighted_minutes = sum((numeric(zone.get("seconds")) or 0) / 60 * weights[index] for index, zone in enumerate(zones["zones"]))
+        if weighted_minutes > 0:
+            return weighted_minutes, "HRR zone-weighted duration"
     if average_hr is not None and max_hr > resting_hr:
         intensity = min(1.0, max(0.0, (average_hr - resting_hr) / (max_hr - resting_hr)))
         return duration_minutes * intensity, "heart-rate reserve"
@@ -125,7 +162,83 @@ def activity_load(activity: dict[str, Any], resting_hr: float, max_hr: float) ->
     return duration_minutes * 0.35, "duration estimate"
 
 
-def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> dict[str, Any]:
+def weather_location(activity: dict[str, Any]) -> tuple[float, float]:
+    latitude = first(numeric(activity.get("startLatitude")), numeric(activity.get("latitude")))
+    longitude = first(numeric(activity.get("startLongitude")), numeric(activity.get("longitude")))
+    if latitude is None or longitude is None or not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+        return FALLBACK_WEATHER_LOCATION
+    return latitude, longitude
+
+
+def weather_at_activity(activity: dict[str, Any], current_date: str, cache: dict[tuple[str, float, float], dict[str, Any] | None]) -> dict[str, Any] | None:
+    started_at = str(first(activity.get("startTimeLocal"), activity.get("startTimeGMT"), f"{current_date}T12:00:00"))
+    try:
+        target = datetime.fromisoformat(started_at.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        target = datetime.fromisoformat(f"{current_date}T12:00:00")
+    latitude, longitude = weather_location(activity)
+    key = (current_date, round(latitude, 2), round(longitude, 2))
+    if key not in cache:
+        recent = date.today() - date.fromisoformat(current_date) <= timedelta(days=5)
+        endpoint = "https://api.open-meteo.com/v1/forecast" if recent else "https://archive-api.open-meteo.com/v1/archive"
+        query = urllib.parse.urlencode({
+            "latitude": latitude,
+            "longitude": longitude,
+            "start_date": current_date,
+            "end_date": current_date,
+            "hourly": "temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,wind_speed_10m",
+            "temperature_unit": "fahrenheit",
+            "wind_speed_unit": "mph",
+            "precipitation_unit": "inch",
+            "timezone": "auto",
+        })
+        try:
+            request = urllib.request.Request(f"{endpoint}?{query}", headers={"User-Agent": "Fitness-HQ/2 weather enrichment"})
+            with urllib.request.urlopen(request, timeout=15) as response:
+                cache[key] = json.load(response)
+        except (OSError, ValueError, json.JSONDecodeError):
+            cache[key] = None
+    payload = cache[key]
+    hourly = payload.get("hourly") if isinstance(payload, dict) else None
+    times = hourly.get("time") if isinstance(hourly, dict) else None
+    if not isinstance(times, list) or not times:
+        return None
+    candidates: list[tuple[float, int]] = []
+    for index, value in enumerate(times):
+        try:
+            candidates.append((abs((datetime.fromisoformat(str(value)) - target).total_seconds()), index))
+        except ValueError:
+            continue
+    if not candidates:
+        return None
+    index = min(candidates)[1]
+
+    def hourly_value(field: str) -> float | None:
+        values = hourly.get(field)
+        return numeric(values[index]) if isinstance(values, list) and index < len(values) else None
+
+    temperature = hourly_value("temperature_2m")
+    humidity = hourly_value("relative_humidity_2m")
+    dew_point = hourly_value("dew_point_2m")
+    apparent = hourly_value("apparent_temperature")
+    heat_load = "low"
+    if (apparent is not None and apparent >= 85) or (dew_point is not None and dew_point >= 70) or (temperature is not None and humidity is not None and temperature >= 80 and humidity >= 70):
+        heat_load = "high"
+    elif (apparent is not None and apparent >= 75) or (dew_point is not None and dew_point >= 60):
+        heat_load = "moderate"
+    return {
+        "temperatureF": rounded(temperature, 0),
+        "apparentTemperatureF": rounded(apparent, 0),
+        "relativeHumidityPct": rounded(humidity, 0),
+        "dewPointF": rounded(dew_point, 0),
+        "precipitationIn": rounded(hourly_value("precipitation"), 2),
+        "windSpeedMph": rounded(hourly_value("wind_speed_10m"), 0),
+        "heatLoad": heat_load,
+        "source": "Open-Meteo hourly conditions nearest workout start",
+    }
+
+
+def activity_detail(activity: dict[str, Any], current_date: str, kind: str, resting_hr: float, max_hr: float, weather_cache: dict[tuple[str, float, float], dict[str, Any] | None]) -> dict[str, Any]:
     duration_minutes = (numeric(activity.get("duration")) or 0) / 60
     distance_miles = (numeric(activity.get("distance")) or 0) / 1609.344
     average_speed_mps = numeric(activity.get("averageSpeed"))
@@ -143,6 +256,7 @@ def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> d
     )
     elevation_meters = first(numeric(activity.get("elevationGain")), numeric(activity.get("totalElevationGain")))
     detail = {
+        "activityId": str(first(activity.get("activityId"), f"{current_date}:{activity.get('activityName')}:{activity.get('duration')}")),
         "date": current_date,
         "startTimeLocal": first(activity.get("startTimeLocal"), activity.get("startTimeGMT")),
         "type": kind,
@@ -160,9 +274,12 @@ def activity_detail(activity: dict[str, Any], current_date: str, kind: str) -> d
         "anaerobicEffect": rounded(numeric(activity.get("anaerobicTrainingEffect")), 1),
         "vo2Max": rounded(numeric(activity.get("vO2MaxValue")), 0),
     }
-    hr_zones = activity_hr_zones(activity)
+    hr_zones = activity_hr_zones(activity, resting_hr, max_hr)
     if hr_zones:
         detail["hrZones"] = hr_zones
+    weather = weather_at_activity(activity, current_date, weather_cache)
+    if weather:
+        detail["weather"] = weather
     return detail
 
 
@@ -207,12 +324,14 @@ def main() -> int:
     baseline = summary.get("health", {}).get("baselines", {})
     resting_hr = numeric(first(baseline.get("restingHr7Day"), summary.get("health", {}).get("restingHr"))) or 50.0
     observed_max_values = [numeric(item.get("maxHR")) for item in raw_activities if isinstance(item, dict)]
-    observed_max_hr = max((value for value in observed_max_values if value is not None), default=resting_hr + 100)
+    observed_peak_hr = max((value for value in observed_max_values if value is not None), default=CONFIGURED_MAX_HR)
+    max_hr = CONFIGURED_MAX_HR
 
     activities = []
     analysis_activities = []
     activity_details = []
     seen_ids = set()
+    weather_cache: dict[tuple[str, float, float], dict[str, Any] | None] = {}
     for item in raw_activities:
         if not isinstance(item, dict):
             continue
@@ -223,13 +342,13 @@ def main() -> int:
             continue
         seen_ids.add(activity_id)
         kind = activity_type(item)
-        load, load_method = activity_load(item, resting_hr, observed_max_hr)
+        load, load_method = activity_load(item, resting_hr, max_hr)
         activities.append({
             "date": current_date,
             "type": kind,
             "name": str(first(item.get("activityName"), kind)),
         })
-        activity_details.append(activity_detail(item, current_date, kind))
+        activity_details.append(activity_detail(item, current_date, kind, resting_hr, max_hr, weather_cache))
         analysis_activities.append({
             "date": current_date,
             "type": kind,
@@ -240,6 +359,7 @@ def main() -> int:
             "averageHr": numeric(item.get("averageHR")),
             "aerobicEffect": numeric(item.get("aerobicTrainingEffect")),
             "vo2Max": numeric(item.get("vO2MaxValue")),
+            "elevationGainFeet": (first(numeric(item.get("elevationGain")), numeric(item.get("totalElevationGain"))) or 0) * 3.28084,
         })
 
     daily_dates = []
@@ -257,6 +377,10 @@ def main() -> int:
     form_series = [fitness - fatigue for fitness, fatigue in zip(fitness_series, fatigue_series)]
 
     last_7 = loads[-7:]
+    last_7_start = today - timedelta(days=6)
+    recent_7_activities = [item for item in analysis_activities if date.fromisoformat(item["date"]) >= last_7_start]
+    recent_7_runs = [item for item in recent_7_activities if item["type"] == "running"]
+    recent_7_strength = [item for item in recent_7_activities if "strength" in item["type"] or "training" in item["type"]]
     last_28_start = today - timedelta(days=27)
     prior_28_start = today - timedelta(days=55)
     recent_runs = [item for item in analysis_activities if item["type"] == "running" and date.fromisoformat(item["date"]) >= last_28_start]
@@ -291,10 +415,16 @@ def main() -> int:
         "generatedAt": datetime.now().astimezone().isoformat(),
         "model": "fitness-fatigue impulse response",
         "loadUnit": "estimated load points",
-        "loadMethod": "Duration multiplied by heart-rate-reserve intensity; duration and Garmin aerobic effect are used when heart rate is missing.",
+        "loadMethod": "Cardiovascular load weights minutes in Ben's %HRR zones; average HR, aerobic effect, and duration provide fallbacks when zone time is missing.",
         "references": {
             "restingHr": rounded(resting_hr, 1),
-            "observedMaxHr": rounded(observed_max_hr, 1),
+            "configuredMaxHr": rounded(max_hr, 0),
+            "observedMaxHr": rounded(max_hr, 0),
+            "observedPeakHr": rounded(observed_peak_hr, 0),
+            "hrZoneModel": "heart-rate reserve",
+            "hrSensor": "Garmin Forerunner 245 wrist optical",
+            "hrCaveat": "Short spikes and rapid intensity changes can be noisy; trends and zone duration carry more weight than a single peak.",
+            "hrrBoundaries": hrr_boundaries(resting_hr, max_hr),
             "fitnessTimeConstantDays": 42,
             "fatigueTimeConstantDays": 7,
         },
@@ -305,6 +435,10 @@ def main() -> int:
             "ramp7Day": rounded(fitness - fitness_7_days_ago),
             "loadBalance": rounded(load_balance, 2),
             "sevenDayLoad": rounded(seven_day_load),
+            "cardioLoad7Day": rounded(sum(item["load"] for item in recent_7_activities)),
+            "runMiles7Day": rounded(sum(item["distanceMiles"] for item in recent_7_runs), 1),
+            "runVerticalFeet7Day": rounded(sum(item["elevationGainFeet"] for item in recent_7_runs), 0),
+            "strengthMinutes7Day": rounded(sum(item["durationMinutes"] for item in recent_7_strength), 0),
             "monotony7Day": rounded(monotony, 2),
             "strain7Day": rounded(seven_day_load * monotony),
             "activeDays28": len({item["date"] for item in analysis_activities if date.fromisoformat(item["date"]) >= last_28_start}),
@@ -338,7 +472,8 @@ def main() -> int:
         "activityCount": len(activities),
         "activeDays": len({item["date"] for item in activities}),
     }
-    training["hrZonesYtd"] = aggregate_hr_zones(activity_details, start_date, today)
+    training["activityDetails"] = activity_details
+    training["hrZonesYtd"] = aggregate_hr_zones(activity_details, start_date, today, resting_hr, max_hr)
     training["analytics"] = analytics
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(training["activityHistory"]))

@@ -10,7 +10,7 @@
     <title>My Fitness Command Center</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="stylesheet" href="styles.css?v=20260814-fitness-29" />
+    <link rel="stylesheet" href="styles.css?v=20260815-fitness-30" />
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -209,6 +209,24 @@
             </div>
             <div id="lastGarminActivity"></div>
           </article>
+          <article class="glass-panel workout-feedback-panel" aria-labelledby="workoutFeedbackHeading">
+            <div class="section-heading compact-heading">
+              <div><p class="eyebrow">Optional reflection</p><h3 id="workoutFeedbackHeading">How did that actually feel?</h3></div>
+              <span class="feedback-saved-state" id="feedbackSavedState">Not required</span>
+            </div>
+            <form id="workoutFeedbackForm">
+              <div class="feedback-rating-grid">
+                <label><span>Effort</span><select id="feedbackRpe"><option value="">—</option><option value="1">1 · Very light</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 · Moderate</option><option value="6">6</option><option value="7">7 · Hard</option><option value="8">8</option><option value="9">9</option><option value="10">10 · Maximal</option></select></label>
+                <label><span>How you felt</span><select id="feedbackFeel"><option value="">—</option><option value="1">1 · Exhausted</option><option value="2">2</option><option value="3">3 · Okay</option><option value="4">4</option><option value="5">5 · Fantastic</option></select></label>
+                <label><span>Enjoyment</span><select id="feedbackEnjoyment"><option value="">—</option><option value="1">1 · Dreaded it</option><option value="2">2</option><option value="3">3 · Neutral</option><option value="4">4</option><option value="5">5 · Loved it</option></select></label>
+                <label><span>Body signal</span><select id="feedbackBodySignal"><option value="">No note</option><option value="normal">Normal</option><option value="sore">Sore / tight</option><option value="pain">Pain</option></select></label>
+                <label><span>Workout intent</span><select id="feedbackIntent"><option value="">Let the app infer</option><option value="easy">Easy</option><option value="recovery">Recovery</option><option value="long">Long run</option><option value="quality">Tempo / quality</option><option value="strength">Strength</option><option value="cross-training">Cross-training</option></select></label>
+                <label><span>What you followed</span><select id="feedbackPlanChoice"><option value="">No selection</option><option value="ai">AI recommended</option><option value="static">Static plan</option><option value="modified">Modified either option</option><option value="other">Did something else</option></select></label>
+              </div>
+              <label class="feedback-note-label" for="feedbackNote"><span>Your notes</span><textarea id="feedbackNote" rows="4" maxlength="1200" placeholder="Heavy legs, felt smooth, heat got to me, motivation was low, arm hurt… whatever matters."></textarea></label>
+              <div class="feedback-actions"><button class="secondary-button" type="submit">Save reflection</button><button class="text-button" id="clearWorkoutFeedback" type="button">Clear</button><small id="feedbackLearningNote">Your notes stay on this device and shape future coaching.</small></div>
+            </form>
+          </article>
           <article class="glass-panel workout-analysis-panel" aria-labelledby="workoutAnalysisHeading">
             <div class="section-heading compact-heading">
               <div><p class="eyebrow">Workout analysis</p><h3 id="workoutAnalysisHeading">What the session means</h3></div>
@@ -221,6 +239,8 @@
             <div class="workout-analysis-grid">
               <div><span>Why it matters</span><strong id="workoutAnalysisEffect">Waiting for workout data</strong></div>
               <div><span>Best next move</span><strong id="workoutAnalysisNext">Follow the fixed plan</strong></div>
+              <div><span>Planned → performed</span><strong id="workoutAnalysisIntent">Waiting for workout data</strong></div>
+              <div><span>Confidence</span><strong id="workoutAnalysisConfidence">Limited context</strong></div>
             </div>
             <small class="workout-analysis-source" id="workoutAnalysisSource">Latest Garmin activity + recent training context</small>
           </article>
@@ -252,6 +272,11 @@
               <div><span>Progress looks like</span><strong id="coachingFocusSuccess">More repeatable training with no catch-up work</strong></div>
             </div>
             <small class="coaching-focus-evidence" id="coachingFocusEvidence">Based on your Garmin history, current plan, recovery context, and goals</small>
+          </article>
+          <article class="glass-panel weekly-review-panel" aria-labelledby="weeklyReviewHeading">
+            <div class="section-heading compact-heading"><div><p class="eyebrow">Seven-day review</p><h3 id="weeklyReviewHeading">What changed this week</h3></div><span class="workout-analysis-status" id="weeklyReviewConfidence">Building</span></div>
+            <div class="weekly-review-lead"><h4 id="weeklyReviewTitle">Waiting for a full week of context</h4><p id="weeklyReviewSummary">Your review will combine completed work, load, recovery, weather, and your own reflections.</p></div>
+            <div class="weekly-review-grid"><div><span>Working</span><strong id="weeklyReviewWin">Keep following the fixed rhythm</strong></div><div><span>Watch</span><strong id="weeklyReviewWatch">No repeated issue yet</strong></div><div><span>Next seven days</span><strong id="weeklyReviewNext">Keep easy days easy</strong></div></div>
           </article>
           <div class="health-metric-grid" id="healthMetricGrid"></div>
           <section class="glass-panel training-intelligence-panel" aria-labelledby="trainingIntelligenceHeading">
@@ -305,7 +330,7 @@
     </div>
 
     <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Primary navigation"></nav>
-    <div class="mobile-app-version" data-app-version aria-label="Fitness HQ version 1.6.0">v1.6.0</div>
+    <div class="mobile-app-version" data-app-version aria-label="Fitness HQ version 2.0.0">v2.0.0</div>
     <div class="secure-entry-backdrop" id="syncKeyPanel" hidden>
       <section class="secure-entry-card" role="dialog" aria-modal="true" aria-labelledby="syncKeyTitle">
         <button class="secure-entry-close" id="closeSyncKeyPanel" type="button" aria-label="Close private key entry">×</button>
@@ -324,6 +349,6 @@
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js?v=20260815-fitness-33"></script>
+    <script src="app.js?v=20260815-fitness-34"></script>
   </body>
 </html>
