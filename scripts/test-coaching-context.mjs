@@ -4,9 +4,14 @@ import vm from "node:vm";
 
 const source = readFileSync(new URL("../app.js", import.meta.url), "utf8")
   .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation };\n");
+const markup = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 for (const privateMedicalDetail of ["Xanax", "mirtazapine", "fluvoxamine", "buspirone", "bipolar disorder"]) {
   assert.equal(source.includes(privateMedicalDetail), false, `${privateMedicalDetail} must not be published in client source`);
 }
+for (const bodyMindSignal of ["fatigued", "sick", "burnt-out", "motivated", "strong"]) {
+  assert.match(markup, new RegExp(`<option value="${bodyMindSignal}">`), `${bodyMindSignal} body/mind signal must be available`);
+}
+assert.match(markup, /Coach’s confidence/);
 const storage = new Map();
 const context = {
   console,
@@ -94,6 +99,20 @@ const recovery = buildCoachingContext(packet({
 }), now);
 assert.equal(recovery.health.status, "caution");
 assert.match(recovery.focus.title, /recovery/i);
+
+vm.runInContext('workoutFeedback = { latest: { date: "2026-08-14", updatedAt: "2026-08-14T07:45:00-04:00", bodySignal: "sick" } };', context);
+const sickContext = buildCoachingContext(packet(), now);
+assert.equal(sickContext.health.status, "caution");
+assert.match(sickContext.focus.rationale, /feel sick/i);
+const sickRecommendation = buildAiRunRecommendation(new Date(2026, 7, 15, 8, 0, 0), sickContext, packet(), now);
+assert.match(sickRecommendation.title, /recovery run or full rest/i);
+
+vm.runInContext('workoutFeedback = { latest: { date: "2026-08-14", updatedAt: "2026-08-14T07:45:00-04:00", bodySignal: "burnt-out" } };', context);
+const burnoutContext = buildCoachingContext(packet(), now);
+assert.match(burnoutContext.focus.rationale, /burnt out/i);
+assert.match(burnoutContext.focus.action, /motivation/i);
+
+vm.runInContext("workoutFeedback = {};", context);
 
 const incomplete = buildCoachingContext(packet({
   health: { sleepHours: null, restingHr: null, bodyBattery: null, stress: null, baselines: { sleep7Day: 8.1, restingHr7Day: 50.2 } },

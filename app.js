@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.0.1";
 const COACHING_MODEL_VERSION = "2.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -88,6 +88,17 @@ const HR_ZONE_META = [
   { zone: 4, label: "Z4" },
   { zone: 5, label: "Z5" },
 ];
+
+const BODY_MIND_SIGNAL_META = Object.freeze({
+  normal: { label: "normal", pattern: "neutral", recoveryDelta: 0 },
+  sore: { label: "sore or tight", pattern: "soreness", recoveryDelta: -1 },
+  fatigued: { label: "fatigued", pattern: "fatigue", recoveryDelta: -2 },
+  sick: { label: "sick", pattern: "illness", recoveryDelta: -4 },
+  "burnt-out": { label: "burnt out", pattern: "burnout", recoveryDelta: -3 },
+  motivated: { label: "motivated", pattern: "motivation", recoveryDelta: 1 },
+  strong: { label: "strong", pattern: "strength", recoveryDelta: 1 },
+  pain: { label: "pain", pattern: "pain", recoveryDelta: -4 },
+});
 
 const ICONS = {
   home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
@@ -306,7 +317,9 @@ function feedbackSignals(feedback) {
     ["fueling", /fuel|food|eat|hydr|water|gi|stomach/],
   ];
   groups.forEach(([label, pattern]) => { if (pattern.test(text)) signals.push(label); });
-  return signals;
+  const selectedSignal = BODY_MIND_SIGNAL_META[feedback.bodySignal]?.pattern;
+  if (selectedSignal && selectedSignal !== "neutral") signals.push(selectedSignal);
+  return [...new Set(signals)];
 }
 
 function feedbackLearning(now = new Date()) {
@@ -322,9 +335,12 @@ function feedbackLearning(now = new Date()) {
   const lowFeel = recent.filter((item) => Number(item.feel) > 0 && Number(item.feel) <= 2).length;
   const highRpe = recent.filter((item) => Number(item.rpe) >= 8).length;
   const painFlags = recent.filter((item) => item.bodySignal === "pain").length;
+  const sicknessFlags = recent.filter((item) => item.bodySignal === "sick").length;
+  const burnoutFlags = recent.filter((item) => item.bodySignal === "burnt-out").length;
+  const fatigueFlags = recent.filter((item) => item.bodySignal === "fatigued").length;
   const followed = recent.filter((item) => item.planChoice).length;
   const matched = recent.filter((item) => item.planChoice === "ai").length;
-  return { recent, latest, counts, lowFeel, highRpe, painFlags, followed, matched };
+  return { recent, latest, counts, lowFeel, highRpe, painFlags, sicknessFlags, burnoutFlags, fatigueFlags, followed, matched };
 }
 
 function weatherSummary(weather) {
@@ -422,7 +438,8 @@ function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingCon
     || (Number.isFinite(training.loadChange) && training.loadChange > 40);
   const intensityNeedsEasy = ["hard-heavy", "middle-heavy"].includes(training.zoneRead?.state);
   const learned = feedbackLearning(now);
-  const feedbackCaution = learned.painFlags > 0 || learned.lowFeel >= 2 || learned.highRpe >= 2;
+  const latestBodyMindSignal = learned.latest?.bodySignal || "";
+  const feedbackCaution = ["pain", "sick", "burnt-out", "fatigued"].includes(latestBodyMindSignal) || learned.lowFeel >= 2 || learned.highRpe >= 2;
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const provisional = (targetKey !== todayKey && date > startOfToday) || health.status === "incomplete";
   const confidence = coachingConfidence(coaching, training.latestActivity);
@@ -442,7 +459,15 @@ function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingCon
     return { ...base, kind: "recovery", title: "Recovery run or full rest", summary: "Recovery is the clearest constraint today. Preserve the habit only if movement makes you feel better, not because the schedule needs to be defended.", prescription: ["20–30 minutes very easy, or choose intentional rest", easyGuardrail, "Stop if energy, breathing, or heart rate feels unusually off"] };
   }
   if (feedbackCaution) {
-    const reason = learned.painFlags ? "A recent pain flag outweighs the schedule." : "Recent sessions have repeatedly felt harder than their planned cost.";
+    const reason = latestBodyMindSignal === "pain"
+      ? "Your latest reflection includes pain, which outweighs the schedule."
+      : latestBodyMindSignal === "sick"
+        ? "Your latest reflection says you feel sick, so training load is not the priority."
+        : latestBodyMindSignal === "burnt-out"
+          ? "Your latest reflection says you feel burnt out, which is a real training constraint."
+          : latestBodyMindSignal === "fatigued"
+            ? "Your latest reflection says you feel fatigued, so the next session should be inexpensive."
+            : "Recent sessions have repeatedly felt harder than their planned cost.";
     return { ...base, kind: "recovery", title: "Keep this run deliberately low-cost", summary: `${reason} The coaching model is protecting repeatability until your next feedback says the pattern has settled.`, prescription: ["20–30 minutes very easy, or take intentional rest", easyGuardrail, "Add a short post-workout note so the next recommendation can respond"] };
   }
   if (loadDemanding) {
@@ -964,6 +989,8 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
     if (conditions) {
       body += ` Conditions were ${conditions}.${heatAffected ? " Heat and humidity can raise heart rate at the same pace, so the cardiovascular cost matters more here than judging the pace by itself." : " The weather does not appear to be the main explanation for the session cost."}`;
     }
+    const bodyMindSignal = BODY_MIND_SIGNAL_META[feedback?.bodySignal];
+    if (bodyMindSignal && feedback.bodySignal !== "normal") body += ` You marked your body/mind signal as ${bodyMindSignal.label}; that subjective signal is part of the coaching read, not an afterthought.`;
     if (feedback?.note) body += ` Your note adds: “${String(feedback.note).slice(0, 180)}${String(feedback.note).length > 180 ? "…" : ""}”`;
 
     if (Number.isFinite(loadChange) && loadChange <= -30) {
@@ -999,6 +1026,9 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
     }
     if (heatAffected) next += " In similar heat, slow the pace early and preserve the intended effort rather than trying to reproduce a cool-weather split.";
     if (feedback?.bodySignal === "pain") next = "Do not progress this session. Use pain-free movement only and reassess before the next demanding workout.";
+    else if (feedback?.bodySignal === "sick") next = "Skip the next workout while you feel sick. Resume with an easy or minimum version only after normal daily activity feels normal again.";
+    else if (feedback?.bodySignal === "burnt-out") next = "Take pressure off the next session: choose intentional rest or a genuinely enjoyable, low-cost option. Do not use catch-up work to rebuild motivation.";
+    else if (feedback?.bodySignal === "fatigued") next = "Keep the next session deliberately easy or use the minimum version. Let normal energy return before adding distance or intensity.";
   } else if (isRide) {
     const hardRide = ["very-hard", "hard"].includes(effort.level);
     title = hardRide ? "This ride became a quality cardio session" : "This ride preserved aerobic work without adding running impact";
@@ -1137,10 +1167,11 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   if (Number.isFinite(restingHrDelta)) recoveryScore += restingHrDelta >= 5 ? -3 : restingHrDelta >= 3 ? -1 : restingHrDelta <= -2 ? 1 : 0;
   if (Number.isFinite(bodyBattery)) recoveryScore += bodyBattery < 25 ? -3 : bodyBattery < 45 ? -1 : bodyBattery >= 65 ? 1 : 0;
   if (Number.isFinite(stress)) recoveryScore += stress >= 50 ? -2 : stress >= 35 ? -1 : stress <= 25 ? 1 : 0;
-  if (latestFeedback?.bodySignal === "pain") recoveryScore -= 4;
+  recoveryScore += BODY_MIND_SIGNAL_META[latestFeedback?.bodySignal]?.recoveryDelta || 0;
   if (Number(latestFeedback?.feel) > 0 && Number(latestFeedback.feel) <= 2) recoveryScore -= 2;
   if (Number(latestFeedback?.rpe) >= 9) recoveryScore -= 1;
-  const recoveryStatus = currentRecoverySignalCount === 0 && !latestFeedback ? "incomplete" : recoveryScore <= -3 ? "caution" : recoveryScore < 0 ? "mixed" : "supportive";
+  const criticalBodyMindSignal = ["pain", "sick"].includes(latestFeedback?.bodySignal);
+  const recoveryStatus = currentRecoverySignalCount === 0 && !latestFeedback ? "incomplete" : criticalBodyMindSignal || recoveryScore <= -3 ? "caution" : recoveryScore < 0 ? "mixed" : "supportive";
 
   const recoveryEvidence = [];
   if (Number.isFinite(sleep)) {
@@ -1198,7 +1229,9 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
 
   const candidates = [
     { type: "steady", score: 40 },
-    ...(latestFeedback?.bodySignal === "pain" ? [{ type: "recovery", score: 112 }] : []),
+    ...(["pain", "sick"].includes(latestFeedback?.bodySignal) ? [{ type: "recovery", score: 112 }] : []),
+    ...(latestFeedback?.bodySignal === "burnt-out" ? [{ type: "recovery", score: 108 }] : []),
+    ...(latestFeedback?.bodySignal === "fatigued" ? [{ type: "recovery", score: 102 }] : []),
     ...(recoveryStatus === "caution" ? [{ type: "recovery", score: 100 }] : []),
     ...(overHardMileageCeiling ? [{ type: "volume-ceiling", score: 96 }] : []),
     ...(loadHigh ? [{ type: "absorb-load", score: 92 }] : []),
@@ -1213,6 +1246,12 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   if (priority === "recovery") {
     const limitingSignal = latestFeedback?.bodySignal === "pain"
       ? "your latest reflection includes pain"
+      : latestFeedback?.bodySignal === "sick"
+        ? "your latest reflection says you feel sick"
+        : latestFeedback?.bodySignal === "burnt-out"
+          ? "your latest reflection says you feel burnt out"
+          : latestFeedback?.bodySignal === "fatigued"
+            ? "your latest reflection says you feel fatigued"
       : Number.isFinite(sleepDelta) && sleepDelta <= -1
       ? `sleep is ${Math.abs(sleepDelta).toFixed(1)} hours below baseline`
       : Number.isFinite(restingHrDelta) && restingHrDelta >= 3
@@ -1223,8 +1262,14 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
     focus = {
       title: "Make recovery quality the short-term training priority",
       rationale: `Your clearest current constraint is recovery: ${limitingSignal}. Fitness work only helps when you can absorb and repeat it.`,
-      action: "Keep the schedule fixed, but use the minimum version or genuinely easy effort until sleep and resting-HR signals settle.",
-      successMarker: "Two or three days of normal-feeling energy with sleep and resting HR near baseline",
+      action: latestFeedback?.bodySignal === "sick"
+        ? "Skip training while you feel sick. Return with the minimum version only when normal daily activity feels normal again."
+        : latestFeedback?.bodySignal === "burnt-out"
+          ? "Reduce the next session to something restorative or take intentional rest; protect motivation before adding load."
+          : "Keep the schedule fixed, but use the minimum version or genuinely easy effort until energy, sleep, and resting-HR signals settle.",
+      successMarker: latestFeedback?.bodySignal === "burnt-out"
+        ? "Training feels appealing again without pressure to catch up"
+        : "Two or three days of normal-feeling energy with sleep and resting HR near baseline",
       horizon: "Next 3–5 days",
     };
   } else if (priority === "volume-ceiling") {
@@ -1531,6 +1576,9 @@ function buildWeeklyReview(coaching, now = new Date()) {
     : "No Garmin-recorded workout yet this week; there is nothing to make up.";
   let watch = "No repeated issue is strong enough to override the normal plan.";
   if (learned.painFlags) watch = `${learned.painFlags} recent pain flag${learned.painFlags === 1 ? "" : "s"}; pain takes priority over load targets.`;
+  else if (learned.sicknessFlags) watch = `${learned.sicknessFlags} recent sick flag${learned.sicknessFlags === 1 ? "" : "s"}; return to training only as normal daily energy comes back.`;
+  else if (learned.burnoutFlags) watch = `${learned.burnoutFlags} recent burnt-out flag${learned.burnoutFlags === 1 ? "" : "s"}; protect motivation and remove pressure before adding load.`;
+  else if (learned.fatigueFlags >= 2) watch = `${learned.fatigueFlags} recent fatigued flags form a pattern; keep the next work low-cost until energy normalizes.`;
   else if (learned.lowFeel >= 2) watch = `${learned.lowFeel} recent sessions were rated 1–2 for feel, which is a pattern rather than one bad day.`;
   else if (hot.length) watch = `${hot.length} session${hot.length === 1 ? " was" : "s were"} completed in meaningful heat or humidity; pace comparisons need that adjustment.`;
   else if (coaching.training.zoneRead && ["hard-heavy", "middle-heavy"].includes(coaching.training.zoneRead.state)) watch = coaching.training.zoneRead.title;
