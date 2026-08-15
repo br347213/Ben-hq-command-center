@@ -9,8 +9,8 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "1.5.0";
-const COACHING_MODEL_VERSION = "1.2";
+const APP_VERSION = "1.6.0";
+const COACHING_MODEL_VERSION = "1.3";
 const ATHLETE_PROFILE = Object.freeze({
   name: "Ben",
   currentPhase: "General fitness, strength, physique, athletic capability, and sustainable running; no active race goal.",
@@ -254,6 +254,118 @@ function workoutForDate(date = new Date()) {
   return WEEK[date.getDay()];
 }
 
+function dateForPlanningWeekday(weekday, now = new Date()) {
+  const daysAhead = (weekday - now.getDay() + 7) % 7;
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysAhead);
+}
+
+function recommendationEvidence(coaching) {
+  const evidence = [];
+  const health = coaching.health || {};
+  const training = coaching.training || {};
+  const recovery = [
+    Number.isFinite(health.sleep) ? `${health.sleep.toFixed(1)}h sleep` : "",
+    Number.isFinite(health.restingHr) ? `${Math.round(health.restingHr)} resting HR` : "",
+    Number.isFinite(health.bodyBattery) ? `Body Battery ${Math.round(health.bodyBattery)}` : "",
+    Number.isFinite(health.stress) ? `stress ${Math.round(health.stress)}` : "",
+  ].filter(Boolean).join(" · ");
+  if (recovery) evidence.push(recovery);
+  if (Number.isFinite(training.runSessions7) || Number.isFinite(training.weeklyMiles)) {
+    evidence.push(`${Number.isFinite(training.runSessions7) ? `${training.runSessions7} runs` : "Recent running"}${Number.isFinite(training.weeklyMiles) ? ` · ${training.weeklyMiles.toFixed(1)} mi in 7 days` : ""}${Number.isFinite(training.loadChange) ? ` · ${training.loadChange > 0 ? "+" : ""}${training.loadChange.toFixed(0)}% vs prior 7 days` : ""}`);
+  }
+  if (training.zoneMix) evidence.push(`${training.zoneMix.easy.toFixed(0)}% Z1–2 · ${training.zoneMix.hard.toFixed(0)}% Z4–5 YTD`);
+  return evidence.slice(0, 3);
+}
+
+function recommendedEasyHrRange(packet = privatePacket) {
+  const health = packet.health || {};
+  const references = packet.training?.analytics?.references || {};
+  const resting = finiteNumber(references.restingHr ?? health.baselines?.restingHr7Day ?? health.restingHr);
+  const max = finiteNumber(references.observedMaxHr ?? ATHLETE_PROFILE.running.historicalMaxHr);
+  if (!Number.isFinite(resting) || !Number.isFinite(max) || max <= resting) return ATHLETE_PROFILE.running.historicalZones.z2;
+  const calculated = [Math.round(resting + .6 * (max - resting)), Math.round(resting + .7 * (max - resting))];
+  const historical = ATHLETE_PROFILE.running.historicalZones.z2;
+  const low = Math.max(calculated[0], historical[0]);
+  const high = Math.min(calculated[1], historical[1]);
+  return low <= high ? [low, high] : calculated;
+}
+
+function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingContext(), packet = privatePacket, now = new Date()) {
+  const workout = workoutForDate(date);
+  if (workout.type !== "Run") return null;
+
+  const training = coaching.training || {};
+  const health = coaching.health || {};
+  const targetKey = localDateKey(date);
+  const todayKey = localDateKey(now);
+  const sameDayRun = targetKey === todayKey && Array.isArray(packet.training?.activities)
+    && packet.training.activities.some((activity) => activity?.date === targetKey && activityGroup(activity) === "run");
+  const alreadyMarked = targetKey === todayKey && ["completed", "minimum"].includes(getOutcome(targetKey));
+  const [easyLow, easyHigh] = recommendedEasyHrRange(packet);
+  const easyGuardrail = `Keep breathing conversational; use ${easyLow}–${easyHigh} bpm as a loose wrist-HR guardrail, not a pace target.`;
+  const latestDate = firstText(training.latestActivity?.date, training.latestActivity?.startTimeLocal)?.slice(0, 10);
+  const daysSinceLatest = /^\d{4}-\d{2}-\d{2}$/.test(latestDate)
+    ? Math.round((parseLocalDateKey(targetKey) - parseLocalDateKey(latestDate)) / 86400000)
+    : NaN;
+  const hardRunRecently = training.latestActivity && activityGroup(training.latestActivity) === "run"
+    && ["hard", "very-hard"].includes(training.latestEffort?.level)
+    && Number.isFinite(daysSinceLatest) && daysSinceLatest >= 0 && daysSinceLatest <= 2;
+  const loadDemanding = training.overHardMileageCeiling
+    || (Number.isFinite(training.loadBalance) && training.loadBalance > 1.35)
+    || (Number.isFinite(training.form) && training.form < -10)
+    || (Number.isFinite(training.loadChange) && training.loadChange > 40);
+  const intensityNeedsEasy = ["hard-heavy", "middle-heavy"].includes(training.zoneRead?.state);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const provisional = (targetKey !== todayKey && date > startOfToday) || health.status === "incomplete";
+  const base = {
+    label: "AI Recommended",
+    status: provisional ? "Provisional" : "Current",
+    evidence: recommendationEvidence(coaching),
+    source: `Coaching model v${COACHING_MODEL_VERSION} · Garmin + training history + goals + fixed plan`,
+    note: provisional ? "Uses the latest available data and updates again after the next Garmin refresh." : "Updates whenever Garmin and the coaching context refresh.",
+  };
+
+  if (sameDayRun || alreadyMarked) {
+    return { ...base, kind: "complete", title: "Let today’s completed run stand", summary: "No second run is recommended. The useful move now is absorbing the work and returning to the normal schedule.", prescription: ["No make-up or bonus miles", "Use easy movement only if it sounds restorative"] };
+  }
+  if (health.status === "caution") {
+    return { ...base, kind: "recovery", title: "Recovery run or full rest", summary: "Recovery is the clearest constraint today. Preserve the habit only if movement makes you feel better, not because the schedule needs to be defended.", prescription: ["20–30 minutes very easy, or choose intentional rest", easyGuardrail, "Stop if energy, breathing, or heart rate feels unusually off"] };
+  }
+  if (loadDemanding) {
+    return { ...base, kind: "recovery", title: "Short easy run—do not add load", summary: "Recent load is already high enough to create adaptation. The best return comes from absorbing it instead of stacking another demanding session.", prescription: ["20–35 minutes easy", easyGuardrail, "No tempo, strides, fast finish, or catch-up miles"] };
+  }
+  if (hardRunRecently) {
+    return { ...base, kind: "easy", title: "Easy aerobic reset", summary: "The latest run already supplied the quality stimulus. This run should restore separation between hard and easy days.", prescription: ["3 relaxed miles, with 4 only if the effort stays easy", easyGuardrail, "No strides or fast finish"] };
+  }
+  if (date.getDay() === 0) {
+    const distance = Number.isFinite(training.weeklyMiles) && training.weeklyMiles >= ATHLETE_PROFILE.running.sustainableWeeklyMiles[1] ? "3–4" : "5–6";
+    return { ...base, kind: "long", title: `${distance} easy miles`, summary: distance === "5–6" ? "The long run is the most useful aerobic progression here, provided it stays repeatable and does not become a test." : "Weekly mileage is already at the top of your useful range, so the long-run benefit comes from easy duration rather than more distance.", prescription: [`Run ${distance} miles conversationally`, easyGuardrail, "Start the first mile deliberately easy and skip the fast finish"] };
+  }
+  if (date.getDay() === 6) {
+    const qualityFits = health.status === "supportive"
+      && !intensityNeedsEasy
+      && Number.isFinite(training.runSessions7) && training.runSessions7 >= 3
+      && (!Number.isFinite(training.loadChange) || (training.loadChange >= -20 && training.loadChange <= 25));
+    if (qualityFits) {
+      return { ...base, kind: "quality", title: "Controlled tempo—4 miles total", summary: "Recovery, recent frequency, load direction, and the year-to-date intensity mix leave room for the week’s single purposeful quality session.", prescription: ["1 mile easy", "2 × 10 minutes at controlled tempo with 2 minutes easy between", "Cool down easy to 4 miles total; finish with another rep available"] };
+    }
+    return { ...base, kind: "easy", title: "4 easy miles—skip tempo today", summary: intensityNeedsEasy ? "Your longer-term zone distribution already contains enough moderate-hard work. The higher-value stimulus is another truly easy aerobic run." : "The current combination of frequency, load, and recovery does not make added intensity the best trade today.", prescription: ["Run 4 miles conversationally", easyGuardrail, "Finish with enough left to repeat the schedule tomorrow"] };
+  }
+  const distance = training.runSessions7 < 3 ? "3" : "3–4";
+  return { ...base, kind: "easy", title: `${distance} easy miles`, summary: training.runSessions7 < 3 ? "Run frequency is the short-term opportunity. A low-cost aerobic deposit is more valuable than making this session impressive." : "This keeps aerobic work repeatable while preserving the week’s single quality option and strength sessions.", prescription: [`Run ${distance} miles conversationally`, easyGuardrail, "No pace target and no make-up mileage"] };
+}
+
+function runRecommendationMarkup(recommendation, compact = false) {
+  if (!recommendation) return "";
+  return `<div class="ai-run-heading"><span>${escapeHtml(recommendation.label)}</span><small>${escapeHtml(recommendation.status)}</small></div>
+    <div class="ai-run-content">
+      <div><h3>${escapeHtml(recommendation.title)}</h3><p>${escapeHtml(recommendation.summary)}</p></div>
+      <ol>${recommendation.prescription.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>
+    </div>
+    ${compact ? "" : `<div class="ai-run-evidence">${recommendation.evidence.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`}
+    <div class="ai-run-footer"><span>${escapeHtml(recommendation.note)}</span><small>${escapeHtml(recommendation.source)}</small></div>`;
+}
+
 function greeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning, Ben.";
@@ -317,10 +429,16 @@ function clearTodayOutcome() {
   showToast("Today's mark was cleared.");
 }
 
-function renderTodayWorkout() {
+function renderTodayWorkout(coaching = buildCoachingContext()) {
   const now = new Date();
   const workout = workoutForDate(now);
   const status = getOutcome(localDateKey(now));
+  const recommendation = buildAiRunRecommendation(now, coaching);
+  const recommendationElement = document.getElementById("todayAiRunRecommendation");
+  const staticCaption = document.getElementById("todayStaticPlanCaption");
+  recommendationElement.hidden = !recommendation;
+  recommendationElement.innerHTML = recommendation ? runRecommendationMarkup(recommendation) : "";
+  staticCaption.hidden = !recommendation;
   document.getElementById("todayDayPill").textContent = workout.day;
   document.getElementById("todayDuration").textContent = workout.duration;
   document.getElementById("todayHeading").textContent = workout.title;
@@ -460,18 +578,19 @@ function toggleDateCompletion(key, target) {
   }
 }
 
-function renderPlan() {
+function renderPlan(coaching = buildCoachingContext()) {
   const todayIndex = new Date().getDay();
   document.getElementById("weekPlan").innerHTML = WEEK.map((workout, index) => {
     const open = index === todayIndex;
+    const recommendation = workout.type === "Run" ? buildAiRunRecommendation(dateForPlanningWeekday(index), coaching) : null;
     const detail = (label, items) => `<div class="plan-detail-block"><strong>${label}</strong><ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
     return `<article class="plan-day ${open ? "is-today open" : ""}" data-plan-day="${index}">
       <button class="plan-day-button" type="button" aria-expanded="${open}">
         <span class="plan-day-name"><strong>${workout.short}</strong><span>${workout.type}</span></span>
-        <span class="plan-day-copy"><strong>${escapeHtml(workout.title)}</strong><span>${escapeHtml(workout.subtitle)}</span></span>
+        <span class="plan-day-copy"><strong>${escapeHtml(workout.title)}</strong><span>${escapeHtml(workout.subtitle)}</span>${recommendation ? '<em>AI recommendation available</em>' : ""}</span>
         <span class="plan-chevron" aria-hidden="true">›</span>
       </button>
-      <div class="plan-day-detail">${detail("Main work", workout.main)}${detail("Minimum", workout.minimum)}${detail("Optional", workout.optional)}</div>
+      <div class="plan-day-detail">${recommendation ? `<section class="ai-plan-recommendation">${runRecommendationMarkup(recommendation, true)}</section><div class="static-plan-divider"><span>Your static plan</span></div>` : ""}${detail("Main work", workout.main)}${detail("Minimum", workout.minimum)}${detail("Optional", workout.optional)}</div>
     </article>`;
   }).join("");
 }
@@ -1297,7 +1416,8 @@ function splitInsightSummary(value) {
 
 function renderAllTracking() {
   const coaching = buildCoachingContext();
-  renderTodayWorkout();
+  renderTodayWorkout(coaching);
+  renderPlan(coaching);
   renderYearCounter();
   renderProgress(coaching);
   renderGuidance(coaching);
@@ -1810,7 +1930,6 @@ async function init() {
   await restoreLegacySyncKey();
   renderNavigation();
   renderDateHeader();
-  renderPlan();
   renderAllTracking();
   renderSyncStatus();
   wireEvents();

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const source = readFileSync(new URL("../app.js", import.meta.url), "utf8")
-  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis };\n");
+  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation };\n");
 for (const privateMedicalDetail of ["Xanax", "mirtazapine", "fluvoxamine", "buspirone", "bipolar disorder"]) {
   assert.equal(source.includes(privateMedicalDetail), false, `${privateMedicalDetail} must not be published in client source`);
 }
@@ -37,7 +37,7 @@ context.globalThis = context;
 vm.createContext(context);
 vm.runInContext(source, context);
 
-const { buildCoachingContext, buildWorkoutAnalysis } = context.__coachingTest;
+const { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation } = context.__coachingTest;
 const now = new Date(2026, 7, 14, 8, 0, 0);
 const activityDates = ["2026-08-13", "2026-08-09", "2026-08-04", "2026-07-30"];
 
@@ -124,5 +124,45 @@ assert.match(workout.body, /Zones 4–5/i);
 assert.match(workout.effect, /year-to-date/i);
 assert.match(workout.next, /138–151 bpm/i);
 assert.match(workout.source, /athlete history/i);
+
+const saturday = new Date(2026, 7, 15, 8, 0, 0);
+assert.equal(buildAiRunRecommendation(now, normal, packet(), now), null);
+const currentRecommendation = buildAiRunRecommendation(saturday, normal, packet(), now);
+assert.match(currentRecommendation.label, /AI Recommended/i);
+assert.match(currentRecommendation.title, /easy/i);
+assert.equal(currentRecommendation.kind, "easy");
+assert.match(currentRecommendation.summary, /zone distribution/i);
+
+const recoveryRecommendation = buildAiRunRecommendation(saturday, recovery, packet({
+  health: { sleepHours: 5.2, restingHr: 58, bodyBattery: 20, stress: 60, baselines: { sleep7Day: 8, restingHr7Day: 50 } },
+}), now);
+assert.match(recoveryRecommendation.title, /recovery run or full rest/i);
+
+const qualityPacket = packet({
+  training: {
+    weeklyLoad: { activities: 4, previousActivities: 4, distanceMiles: 18, distanceChangePct: 4 },
+    activities: activityDates.map((date) => ({ date, type: "running", name: "Run" })),
+    lastWorkout: "Easy Run",
+    lastWorkoutDetail: {
+      date: "2026-08-13",
+      type: "running",
+      name: "Easy Run",
+      averageHr: 140,
+      maxHr: 154,
+      aerobicEffect: 2.0,
+      hrZones: { zones: [{ zone: 1, seconds: 600 }, { zone: 2, seconds: 1200 }, { zone: 3, seconds: 120 }, { zone: 4, seconds: 0 }, { zone: 5, seconds: 0 }] },
+    },
+    hrZonesYtd: { activityCount: 20, zones: [{ zone: 1, seconds: 3600 }, { zone: 2, seconds: 7200 }, { zone: 3, seconds: 1500 }, { zone: 4, seconds: 500 }, { zone: 5, seconds: 200 }] },
+    analytics: { references: { restingHr: 50.1, observedMaxHr: 196 }, current: { fitness: 16, fatigue: 15, form: 1, ramp7Day: .4, loadBalance: .94, activeDays28: 16, activities28: 18 } },
+  },
+});
+const qualityContext = buildCoachingContext(qualityPacket, now);
+const qualityRecommendation = buildAiRunRecommendation(saturday, qualityContext, qualityPacket, now);
+assert.match(qualityRecommendation.title, /controlled tempo/i);
+assert.equal(qualityRecommendation.kind, "quality");
+
+const sundayRecommendation = buildAiRunRecommendation(new Date(2026, 7, 16, 8, 0, 0), normal, packet(), now);
+assert.match(sundayRecommendation.title, /5–6 easy miles/i);
+assert.equal(sundayRecommendation.kind, "long");
 
 console.log("Coaching context scenarios passed.");
