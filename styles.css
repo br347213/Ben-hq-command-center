@@ -553,7 +553,7 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .app-shell { display: block; }
   .side-rail { display: none; }
   .main-stage { padding: 0 16px calc(106px + var(--safe-bottom)); }
-  .top-bar { min-height: 74px; margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+  .top-bar { min-height: 84px; margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; padding-bottom: 10px; }
   .top-bar-title h2 { font-size: 21px; }
   .refresh-button-copy { display: none; }
   .dashboard-refresh-button { width: 42px; min-height: 42px; padding: 3px; justify-content: center; }
