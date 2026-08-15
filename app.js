@@ -9,8 +9,8 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "2.1.0";
-const COACHING_MODEL_VERSION = "2.0";
+const APP_VERSION = "2.2.0";
+const COACHING_MODEL_VERSION = "2.1";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
     "Use current fitness rather than goal fitness to set intensity.",
@@ -25,7 +25,23 @@ const COACHING_KNOWLEDGE = Object.freeze({
     "Heat, humidity, and hills have repeatedly raised cardiovascular cost at the same pace.",
     "Two genuinely easier days have restored run quality more reliably than catch-up training.",
   ],
-  sources: ["Jack Daniels' Running Formula summary", "The Running Channel training philosophy", "JOG ON methodology and 5K Improver plan", "Ben's 2013 and 2024 training logs"],
+  sources: ["Jack Daniels' Running Formula summary", "The Running Channel training philosophy", "JOG ON methodology and 5K Improver plan", "Ben's Strava training history, 2014–2026"],
+});
+const STRAVA_TRAINING_HISTORY = Object.freeze({
+  coverage: { firstActivity: "2014-06-19", lastActivity: "2026-08-15", activities: 1245, runs: 819, writtenNotes: 263 },
+  runningLoad: {
+    2018: { miles: 323.6, activeWeeks: 35, medianActiveWeekMiles: 9.0, maxWeekMiles: 18.8 },
+    2024: { miles: 817.8, activeWeeks: 46, medianActiveWeekMiles: 15.7, maxWeekMiles: 31.3, weeksAtLeast25Miles: 13 },
+    2025: { miles: 1045.3, activeWeeks: 52, medianActiveWeekMiles: 20.1, maxWeekMiles: 36.2, weeksAtLeast25Miles: 17, weeksAtLeast30Miles: 10 },
+    2026: { milesThroughAugust15: 505.8, activeWeeksThroughAugust15: 33, medianActiveWeekMiles: 14.3, maxWeekMiles: 24.5 },
+  },
+  responsePatterns: {
+    pacing: "Conservative starts repeatedly produced stronger finishes, better execution, and more enjoyment than aggressive openings.",
+    load: "Forcing planned work through accumulated fatigue or making abrupt jumps repeatedly led to poor sessions; backing off restored run quality.",
+    conditions: "Heat, humidity, wind, and hills repeatedly raised session cost enough that effort was more informative than pace.",
+    crossTraining: "Cycling contributed meaningful leg fatigue and sometimes reduced the quality of the following run.",
+    bodyMind: "Pain, illness, burnout, motivation, and enjoyment have all materially affected repeatability and should be treated as training data.",
+  },
 });
 const ATHLETE_PROFILE = Object.freeze({
   name: "Ben",
@@ -397,9 +413,19 @@ function recommendationEvidence(coaching) {
   if (training.zoneMix) evidence.push(`${training.zoneMix.easy.toFixed(0)}% Z1–2 · ${training.zoneMix.hard.toFixed(0)}% Z4–5 YTD`);
   const latestWeather = weatherSummary(training.latestActivity?.weather);
   if (latestWeather) evidence.push(`Latest run: ${latestWeather}`);
+  if (training.recent7?.bike >= 2) evidence.push(`${training.recent7.bike} rides in 7 days · leg load counts`);
   const learned = feedbackLearning();
   if (learned.latest?.note) evidence.push(`Your latest note: ${String(learned.latest.note).slice(0, 72)}`);
   return evidence.slice(0, 3);
+}
+
+function historicalResponseCue(coaching, situation) {
+  const patterns = coaching.history?.responsePatterns || STRAVA_TRAINING_HISTORY.responsePatterns;
+  if (situation === "conditions") return patterns.conditions;
+  if (situation === "cross-training") return patterns.crossTraining;
+  if (situation === "pacing") return patterns.pacing;
+  if (situation === "load") return patterns.load;
+  return patterns.bodyMind;
 }
 
 function recommendedEasyHrRange(packet = privatePacket) {
@@ -437,6 +463,7 @@ function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingCon
     || (Number.isFinite(training.form) && training.form < -10)
     || (Number.isFinite(training.loadChange) && training.loadChange > 40);
   const intensityNeedsEasy = ["hard-heavy", "middle-heavy"].includes(training.zoneRead?.state);
+  const bikeLoadPresent = Number(training.recent7?.bike) >= 2;
   const learned = feedbackLearning(now);
   const latestBodyMindSignal = learned.latest?.bodySignal || "";
   const feedbackCaution = ["pain", "sick", "burnt-out", "fatigued"].includes(latestBodyMindSignal) || learned.lowFeel >= 2 || learned.highRpe >= 2;
@@ -471,7 +498,10 @@ function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingCon
     return { ...base, kind: "recovery", title: "Keep this run deliberately low-cost", summary: `${reason} The coaching model is protecting repeatability until your next feedback says the pattern has settled.`, prescription: ["20–30 minutes very easy, or take intentional rest", easyGuardrail, "Add a short post-workout note so the next recommendation can respond"] };
   }
   if (loadDemanding) {
-    return { ...base, kind: "recovery", title: "Short easy run—do not add load", summary: "Recent load is already high enough to create adaptation. The best return comes from absorbing it instead of stacking another demanding session.", prescription: ["20–35 minutes easy", easyGuardrail, "No tempo, strides, fast finish, or catch-up miles"] };
+    return { ...base, kind: "recovery", title: "Short easy run—do not add load", summary: `Recent load is already high enough to create adaptation. ${historicalResponseCue(coaching, "load")}`, prescription: ["20–35 minutes easy", easyGuardrail, "No tempo, strides, fast finish, or catch-up miles"] };
+  }
+  if (bikeLoadPresent && date.getDay() === 6) {
+    return { ...base, kind: "easy", title: "4 easy miles—let the bike load count", summary: historicalResponseCue(coaching, "cross-training"), prescription: ["Run 3–4 miles conversationally", easyGuardrail, "Skip tempo unless your legs feel unmistakably fresh after the first easy mile"] };
   }
   if (hardRunRecently) {
     return { ...base, kind: "easy", title: "Easy aerobic reset", summary: "The latest run already supplied the quality stimulus. This run should restore separation between hard and easy days.", prescription: ["3 relaxed miles, with 4 only if the effort stays easy", easyGuardrail, "No strides or fast finish"] };
@@ -486,7 +516,7 @@ function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingCon
       && Number.isFinite(training.runSessions7) && training.runSessions7 >= 3
       && (!Number.isFinite(training.loadChange) || (training.loadChange >= -20 && training.loadChange <= 25));
     if (qualityFits) {
-      return { ...base, kind: "quality", title: "Controlled tempo—4 miles total", summary: "Recovery, recent frequency, load direction, and the year-to-date intensity mix leave room for the week’s single purposeful quality session.", prescription: ["1 mile easy", "2 × 10 minutes at controlled tempo with 2 minutes easy between", "Cool down easy to 4 miles total; finish with another rep available"] };
+      return { ...base, kind: "quality", title: "Controlled tempo—4 miles total", summary: `Recovery, recent frequency, load direction, and the year-to-date intensity mix leave room for one purposeful quality session. ${historicalResponseCue(coaching, "pacing")}`, prescription: ["1 mile deliberately easy", "2 × 10 minutes at controlled tempo with 2 minutes easy between", "Cool down easy to 4 miles total; finish with another rep available"] };
     }
     return { ...base, kind: "easy", title: "4 easy miles—skip tempo today", summary: intensityNeedsEasy ? "Your longer-term zone distribution already contains enough moderate-hard work. The higher-value stimulus is another truly easy aerobic run." : "The current combination of frequency, load, and recovery does not make added intensity the best trade today.", prescription: ["Run 4 miles conversationally", easyGuardrail, "Finish with enough left to repeat the schedule tomorrow"] };
   }
@@ -969,7 +999,7 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
 
     const bodyMindSignal = BODY_MIND_SIGNAL_META[feedback?.bodySignal];
     body = hardRun && heatAffected
-      ? "Heat raised the cardiovascular cost. Treat this as the week’s quality run even though the intended effort was easier."
+      ? "Heat raised the cardiovascular cost. Treat this as the week’s quality run even though the intended effort was easier; your history shows this is a recurring response to hot, humid conditions."
       : hardRun
         ? "The effort data classifies this as quality work. It should occupy the hard-running slot for the week."
         : moderateRun
@@ -1025,7 +1055,7 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
     const hardRide = ["very-hard", "hard"].includes(effort.level);
     title = hardRide ? "This ride became a quality cardio session" : "This ride preserved aerobic work without adding running impact";
     body = `${effort.evidence}. ${hardRide ? "Treat the cardiovascular cost like a hard run even though the mechanical load was lower." : "That makes it useful when running is unavailable or your legs need less impact."}`;
-    impact = "The bike supports aerobic continuity, but it does not fully replace the running-specific durability needed for comfortable six-mile runs.";
+    impact = "The bike supports aerobic continuity, but your history shows that frequent or hard riding can still create enough leg fatigue to affect the next run.";
     next = hardRide ? "Keep the next cardio session easy and return to running only when the legs feel normal." : "Return to the fixed run schedule without adding make-up mileage.";
     signals = [{ label: "Effort", value: effort.label, detail: effort.evidence }];
   } else if (isStrength) {
@@ -1139,6 +1169,7 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   const current = analytics.current || {};
   const latestActivity = training.lastWorkoutDetail && typeof training.lastWorkoutDetail === "object" ? training.lastWorkoutDetail : null;
   const latestEffort = latestActivity ? workoutEffortRead(latestActivity, training, health) : null;
+  const recent7 = recentActivityCounts(training, 7, now);
   const recent28 = recentActivityCounts(training, 28, now);
   const annual = yearStats(now.getFullYear());
   const month = monthStats(now);
@@ -1270,7 +1301,7 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   } else if (priority === "run-rhythm") {
     focus = {
       title: "Rebuild repeatable easy-run frequency before adding intensity",
-      rationale: `You have ${runSessions7} recorded run${runSessions7 === 1 ? "" : "s"} in the last seven days${Number.isFinite(priorRunSessions) ? ` versus ${priorRunSessions} in the prior seven` : ""}${Number.isFinite(ramp) ? `, while 42-day fitness is moving ${ramp < 0 ? "down" : "up"} (${ramp > 0 ? "+" : ""}${ramp})` : ""}. Your sustainable pattern is normally four to five runs; the gap is aerobic repetition, not a shortage of hard work.`,
+      rationale: `You have ${runSessions7} recorded run${runSessions7 === 1 ? "" : "s"} in the last seven days${Number.isFinite(priorRunSessions) ? ` versus ${priorRunSessions} in the prior seven` : ""}${Number.isFinite(ramp) ? `, while 42-day fitness is moving ${ramp < 0 ? "down" : "up"} (${ramp > 0 ? "+" : ""}${ramp})` : ""}. Your strongest sustained year centered near a 20-mile median active week, but your notes favor reaching that rhythm gradually rather than forcing mileage.`,
       action: "Complete the next two scheduled runs conversationally. No catch-up miles; let frequency itself be the progression.",
       successMarker: "Three repeatable runs in a rolling week, with the long run moving toward six miles",
       horizon: "Next 2 weeks",
@@ -1279,7 +1310,7 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
     focus = {
       title: "Create a clearer easy-versus-hard split",
       rationale: `${zoneRead.body} Your goal is durable general fitness, so moderate-hard work should be deliberate rather than the default shape of ordinary runs.`,
-      action: "Keep routine runs conversational and reserve tempo for the planned quality option when recovery and motivation both support it.",
+      action: "Keep routine runs conversational and begin quality work conservatively; your strongest documented efforts came from controlled openings and stronger finishes.",
       successMarker: "Easy runs feel repeatable, while quality sessions remain distinct and purposeful",
       horizon: "Next 3–4 weeks",
     };
@@ -1355,8 +1386,8 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
   } : {
     label: "Historical response",
     title: "Your past logs favor repeatable training over heroic weeks",
-    body: "Your 2024 notes repeatedly improved after protecting recovery, easing back in heat, and separating leg fatigue from quality running. That personal response carries more weight than a generic mileage target.",
-    source: "your 2013 and 2024 training logs + current goals",
+    body: "Across your Strava notes, controlled starts, honest easy days, and backing off during heat, illness, or accumulated leg fatigue repeatedly produced better outcomes than forcing the written plan.",
+    source: "your 2014–2026 training history + current goals",
   };
 
   return {
@@ -1364,7 +1395,8 @@ function buildCoachingContext(packet = privatePacket, now = new Date()) {
     profile: ATHLETE_PROFILE,
     generatedAt: packet.generatedAt || "",
     health: { status: recoveryStatus, score: recoveryScore, title: healthTitle, points: healthPoints, sleep, sleepBaseline, restingHr, restingHrBaseline, bodyBattery, stress, weightLbs, weightDate: health.weightDate || "" },
-    training: { runSessions7, priorRunSessions, weeklyMiles, loadChange, fitness, fatigue, form, ramp, loadBalance, recent28, latestActivity, latestEffort, zoneMix, zoneRead, overHardMileageCeiling, nearSustainableMileageCeiling, feedback: learned },
+    training: { runSessions7, priorRunSessions, weeklyMiles, loadChange, fitness, fatigue, form, ramp, loadBalance, recent7, recent28, latestActivity, latestEffort, zoneMix, zoneRead, overHardMileageCeiling, nearSustainableMileageCeiling, feedback: learned },
+    history: STRAVA_TRAINING_HISTORY,
     consistency: { annual, month, week },
     focus,
     insightCards: [intensityCard, loadCard, feedbackCard],

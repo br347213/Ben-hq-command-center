@@ -93,6 +93,10 @@ assert.deepEqual(Array.from(normal.profile.equipment.available), ["rack", "basic
 assert.match(normal.profile.running.hrSensor, /Forerunner 245 wrist optical/i);
 assert.deepEqual(Array.from(normal.profile.crossTraining.currentlyAvailable), ["jump rope", "bike on Saris trainer", "outdoor road cycling"]);
 assert.deepEqual(Array.from(normal.profile.crossTraining.historicalInterests), ["rowing", "indoor bouldering"]);
+assert.equal(normal.history.coverage.runs, 819);
+assert.equal(normal.history.runningLoad[2025].medianActiveWeekMiles, 20.1);
+assert.equal(normal.history.responsePatterns.pacing.includes("Conservative starts"), true);
+assert.equal(normal.training.recent7.run, 2);
 
 const recovery = buildCoachingContext(packet({
   health: { sleepHours: 5.2, restingHr: 58, bodyBattery: 20, stress: 60, baselines: { sleep7Day: 8, restingHr7Day: 50 } },
@@ -149,6 +153,7 @@ const hotWorkoutPacket = packet();
 hotWorkoutPacket.training.lastWorkoutDetail.weather = { temperatureF: 88, apparentTemperatureF: 94, relativeHumidityPct: 72, dewPointF: 74, heatLoad: "high" };
 const hotWorkout = buildWorkoutAnalysis(hotWorkoutPacket.training.lastWorkoutDetail, hotWorkoutPacket.training, hotWorkoutPacket.health, normal);
 assert.match(hotWorkout.body, /Heat raised/i);
+assert.match(hotWorkout.body, /recurring response/i);
 assert.match(hotWorkout.signals.find((signal) => signal.label === "Conditions").value, /88°F.*72% humidity/i);
 assert.match(hotWorkout.next, /similar heat/i);
 
@@ -187,6 +192,22 @@ const qualityContext = buildCoachingContext(qualityPacket, now);
 const qualityRecommendation = buildAiRunRecommendation(saturday, qualityContext, qualityPacket, now);
 assert.match(qualityRecommendation.title, /controlled tempo/i);
 assert.equal(qualityRecommendation.kind, "quality");
+assert.match(qualityRecommendation.summary, /Conservative starts/i);
+
+const bikeLoadPacket = packet({
+  training: {
+    weeklyLoad: { activities: 4, previousActivities: 4, distanceMiles: 18, distanceChangePct: 4 },
+    activities: [
+      { date: "2026-08-14", type: "cycling", name: "Ride" },
+      { date: "2026-08-13", type: "cycling", name: "Trainer Ride" },
+      { date: "2026-08-12", type: "running", name: "Easy Run" },
+    ],
+  },
+});
+const bikeLoadContext = buildCoachingContext(bikeLoadPacket, now);
+const bikeLoadRecommendation = buildAiRunRecommendation(saturday, bikeLoadContext, bikeLoadPacket, now);
+assert.match(bikeLoadRecommendation.title, /bike load/i);
+assert.match(bikeLoadRecommendation.summary, /leg fatigue/i);
 
 const sundayRecommendation = buildAiRunRecommendation(new Date(2026, 7, 16, 8, 0, 0), normal, packet(), now);
 assert.match(sundayRecommendation.title, /5–6 easy miles/i);
