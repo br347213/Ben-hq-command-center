@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.3.1";
 const COACHING_MODEL_VERSION = "2.1";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -1515,7 +1515,7 @@ function renderGuidance(coaching = buildCoachingContext()) {
   let body = "Start the planned session. The minimum version still counts, and nothing needs to be made up later.";
 
   if (status === "completed" || status === "minimum") {
-    title = "Today's deposit is made";
+    title = "Today's work is done";
     body = "Let the completed work stand on its own. There is no reason to add bonus volume to make it more legitimate.";
   } else if (status === "rest") {
     title = "Rest is part of the rhythm";
