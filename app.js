@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "2.2.0";
+const APP_VERSION = "2.3.0";
 const COACHING_MODEL_VERSION = "2.1";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -1668,6 +1668,153 @@ function metricValue(value, suffix = "", fallback = "—") {
   return hasValue(value) ? `${value}${suffix}` : fallback;
 }
 
+function clampMetric(value, minimum = 0, maximum = 100) {
+  return Math.min(maximum, Math.max(minimum, Number(value) || 0));
+}
+
+function metricPosition(value, minimum, maximum) {
+  if (!Number.isFinite(Number(value)) || maximum <= minimum) return 0;
+  return clampMetric(((Number(value) - minimum) / (maximum - minimum)) * 100);
+}
+
+function rollingLoadReferences(series) {
+  const loads = Array.isArray(series) ? series.map((item) => Number(item?.load)).map((value) => Number.isFinite(value) ? value : 0) : [];
+  const sevenDayLoads = [];
+  const strains = [];
+  for (let index = 6; index < loads.length; index += 1) {
+    const window = loads.slice(index - 6, index + 1);
+    const total = window.reduce((sum, value) => sum + value, 0);
+    const average = total / window.length;
+    const variance = window.reduce((sum, value) => sum + ((value - average) ** 2), 0) / window.length;
+    const deviation = Math.sqrt(variance);
+    const monotony = deviation > 0 ? average / deviation : total > 0 ? 5 : 0;
+    sevenDayLoads.push(total);
+    strains.push(total * monotony);
+  }
+  return { sevenDayLoads, strains };
+}
+
+function personalPercentile(value, values) {
+  const current = Number(value);
+  const clean = Array.isArray(values) ? values.map(Number).filter(Number.isFinite) : [];
+  if (!Number.isFinite(current) || !clean.length) return NaN;
+  return (clean.filter((item) => item <= current).length / clean.length) * 100;
+}
+
+function ordinalNumber(value) {
+  const rounded = Math.round(value);
+  const lastTwo = rounded % 100;
+  const suffix = lastTwo >= 11 && lastTwo <= 13 ? "th" : rounded % 10 === 1 ? "st" : rounded % 10 === 2 ? "nd" : rounded % 10 === 3 ? "rd" : "th";
+  return `${rounded}${suffix}`;
+}
+
+function percentileReference(value, values, noun) {
+  const percentile = personalPercentile(value, values);
+  if (!Number.isFinite(percentile)) return null;
+  const label = percentile <= 25 ? `Low ${noun}` : percentile <= 65 ? `Typical ${noun}` : percentile <= 85 ? `Elevated ${noun}` : `High ${noun}`;
+  return {
+    label,
+    note: `${ordinalNumber(percentile)} percentile vs your 90d`,
+    position: percentile,
+    tone: percentile > 85 ? "caution" : percentile > 65 ? "watch" : "neutral",
+  };
+}
+
+function trainingMetricReference(key, current = {}, series = []) {
+  const value = Number(current[key]);
+  if (!Number.isFinite(value)) return null;
+  const rolling = rollingLoadReferences(series);
+  if (key === "loadBalance") {
+    return {
+      label: value < .8 ? "Fresh / lighter load" : value <= 1.2 ? "Balanced" : value <= 1.35 ? "Building load" : "High short-term load",
+      note: "useful middle 0.8–1.2",
+      position: metricPosition(value, 0, 1.8),
+      targetStart: metricPosition(.8, 0, 1.8),
+      targetEnd: metricPosition(1.2, 0, 1.8),
+      tone: value > 1.35 ? "caution" : value > 1.2 ? "watch" : "good",
+    };
+  }
+  if (key === "monotony7Day") {
+    return {
+      label: value < 1 ? "Low repetition" : value < 1.5 ? "Moderate variation" : value < 2 ? "Repetitive week" : "Very repetitive week",
+      note: "lower = more varied",
+      position: metricPosition(value, 0, 2.5),
+      targetStart: 0,
+      targetEnd: metricPosition(1.2, 0, 2.5),
+      tone: value >= 2 ? "caution" : value >= 1.5 ? "watch" : "good",
+    };
+  }
+  if (key === "strain7Day") return percentileReference(value, rolling.strains, "strain");
+  if (key === "cardioLoad7Day") return percentileReference(value, rolling.sevenDayLoads, "cardio load");
+  if (key === "runningEfficiency28") {
+    const change = Number(current.runningEfficiencyChangePct);
+    if (!Number.isFinite(change)) return null;
+    return {
+      label: change < -3 ? "Below recent" : change > 3 ? "Improving" : "Stable",
+      note: "higher = faster per heartbeat",
+      position: metricPosition(change, -10, 10),
+      targetStart: 50,
+      targetEnd: 100,
+      tone: change < -3 ? "watch" : change > 3 ? "good" : "neutral",
+    };
+  }
+  if (key === "vo2Max28") {
+    const change = Number(current.vo2MaxChangePct);
+    if (!Number.isFinite(change)) return null;
+    return {
+      label: change < -2 ? "Trending down" : change > 2 ? "Trending up" : "Stable",
+      note: "vs your prior 28d",
+      position: metricPosition(change, -6, 6),
+      targetStart: 50,
+      targetEnd: 100,
+      tone: change < -2 ? "watch" : change > 2 ? "good" : "neutral",
+    };
+  }
+  if (key === "activeDays28") {
+    return {
+      label: value < 8 ? "Light month" : value < 12 ? "Building" : value <= 20 ? "Steady" : "High frequency",
+      note: "12–20 active days / 28",
+      position: metricPosition(value, 0, 28),
+      targetStart: metricPosition(12, 0, 28),
+      targetEnd: metricPosition(20, 0, 28),
+      tone: value >= 12 && value <= 20 ? "good" : "neutral",
+    };
+  }
+  if (key === "runMiles7Day") {
+    return {
+      label: value < 12 ? "Light running week" : value < 20 ? "Rebuilding volume" : value <= 25 ? "Usual range" : value <= 30 ? "High for you" : "Above your ceiling",
+      note: "historical range 20–25 mi",
+      position: metricPosition(value, 0, 32),
+      targetStart: metricPosition(20, 0, 32),
+      targetEnd: metricPosition(25, 0, 32),
+      tone: value > 30 ? "caution" : value > 25 ? "watch" : value >= 20 ? "good" : "neutral",
+    };
+  }
+  if (key === "strengthMinutes7Day") {
+    return {
+      label: value === 0 ? "No recorded lift" : value < 50 ? "Light exposure" : value <= 90 ? "Baseline covered" : "High volume",
+      note: "baseline 50–70 min / week",
+      position: metricPosition(value, 0, 100),
+      targetStart: 50,
+      targetEnd: 70,
+      tone: value >= 50 && value <= 90 ? "good" : "neutral",
+    };
+  }
+  return null;
+}
+
+function metricReferenceMarkup(reference) {
+  if (!reference) return "";
+  const position = clampMetric(reference.position).toFixed(1);
+  const hasTarget = Number.isFinite(reference.targetStart) && Number.isFinite(reference.targetEnd);
+  const targetStart = hasTarget ? clampMetric(reference.targetStart).toFixed(1) : "0";
+  const targetWidth = hasTarget ? clampMetric(reference.targetEnd - reference.targetStart).toFixed(1) : "0";
+  return `<div class="metric-reference tone-${escapeHtml(reference.tone || "neutral")}">
+    <div class="metric-reference-copy"><em>${escapeHtml(reference.label)}</em><b>${escapeHtml(reference.note)}</b></div>
+    <div class="metric-reference-track" style="--metric-position:${position}%;--target-start:${targetStart}%;--target-width:${targetWidth}%">${hasTarget ? '<i aria-hidden="true"></i>' : ""}<span aria-hidden="true"></span></div>
+  </div>`;
+}
+
 function trainingStateLabel(form, balance) {
   if (!hasValue(form)) return "Building history";
   if (balance > 1.35 || form < -10) return "High short-term load";
@@ -1730,18 +1877,20 @@ function renderTrainingIntelligence(analytics) {
   </svg><div class="training-chart-dates"><span>${escapeHtml(firstDate)}</span><span>${escapeHtml(lastDate)}</span></div>`;
 
   const secondary = [
-    { label: "Load balance", value: metricValue(current.loadBalance), detail: "Fatigue ÷ fitness" },
-    { label: "7-day load", value: metricValue(current.sevenDayLoad), detail: analytics.loadUnit || "Load points" },
-    { label: "Monotony", value: metricValue(current.monotony7Day), detail: "7-day repetition" },
-    { label: "Strain", value: metricValue(current.strain7Day), detail: "Load × monotony" },
-    { label: "28-day consistency", value: metricValue(current.activeDays28, " days"), detail: `${metricValue(current.activities28)} activities` },
-    { label: "VO₂ max", value: metricValue(current.vo2Max28), detail: hasValue(current.vo2MaxChangePct) ? `${current.vo2MaxChangePct > 0 ? "+" : ""}${current.vo2MaxChangePct}% vs prior 28d` : "No prior comparison" },
-    { label: "Run efficiency", value: hasValue(current.runningEfficiency28) ? Number(current.runningEfficiency28).toFixed(2) : "—", detail: hasValue(current.runningEfficiencyChangePct) ? `${current.runningEfficiencyChangePct > 0 ? "+" : ""}${current.runningEfficiencyChangePct}% vs prior 28d` : "Speed per heartbeat" },
-    { label: "Cardio load", value: metricValue(current.cardioLoad7Day), detail: "7-day %HRR-weighted" },
-    { label: "Running impact", value: hasValue(current.runMiles7Day) ? `${current.runMiles7Day} mi` : "—", detail: hasValue(current.runVerticalFeet7Day) ? `${Math.round(current.runVerticalFeet7Day)} ft climbed` : "7-day mechanical context" },
-    { label: "Strength exposure", value: hasValue(current.strengthMinutes7Day) ? `${Math.round(current.strengthMinutes7Day)} min` : "—", detail: "kept separate from run load" },
+    { key: "loadBalance", label: "Load balance", value: metricValue(current.loadBalance), detail: "Fatigue ÷ fitness" },
+    { key: "monotony7Day", label: "Monotony", value: metricValue(current.monotony7Day), detail: "7-day repetition" },
+    { key: "strain7Day", label: "Strain", value: metricValue(current.strain7Day), detail: "Load × monotony" },
+    { key: "activeDays28", label: "28-day consistency", value: metricValue(current.activeDays28, " days"), detail: `${metricValue(current.activities28)} activities` },
+    { key: "vo2Max28", label: "VO₂ max", value: metricValue(current.vo2Max28), detail: hasValue(current.vo2MaxChangePct) ? `${current.vo2MaxChangePct > 0 ? "+" : ""}${current.vo2MaxChangePct}% vs prior 28d` : "No prior comparison" },
+    { key: "runningEfficiency28", label: "Run efficiency", value: hasValue(current.runningEfficiency28) ? Number(current.runningEfficiency28).toFixed(2) : "—", detail: hasValue(current.runningEfficiencyChangePct) ? `${current.runningEfficiencyChangePct > 0 ? "+" : ""}${current.runningEfficiencyChangePct}% vs prior 28d` : "Speed per heartbeat" },
+    { key: "cardioLoad7Day", label: "Cardio load", value: metricValue(current.cardioLoad7Day), detail: "7-day %HRR-weighted" },
+    { key: "runMiles7Day", label: "Running impact", value: hasValue(current.runMiles7Day) ? `${current.runMiles7Day} mi` : "—", detail: hasValue(current.runVerticalFeet7Day) ? `${Math.round(current.runVerticalFeet7Day)} ft climbed` : "7-day mechanical context" },
+    { key: "strengthMinutes7Day", label: "Strength exposure", value: hasValue(current.strengthMinutes7Day) ? `${Math.round(current.strengthMinutes7Day)} min` : "—", detail: "kept separate from run load" },
   ];
-  detailGrid.innerHTML = secondary.map((item) => `<article><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong><small>${escapeHtml(item.detail)}</small></article>`).join("");
+  detailGrid.innerHTML = secondary.map((item) => {
+    const reference = trainingMetricReference(item.key, current, series);
+    return `<article><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong><small>${escapeHtml(item.detail)}</small>${metricReferenceMarkup(reference)}</article>`;
+  }).join("");
 }
 
 function buildInsightCards(coaching, hasGarmin) {

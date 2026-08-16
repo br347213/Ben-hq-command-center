@@ -530,11 +530,22 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
 .chart-form { stroke: var(--teal); stroke-width: 1.8; stroke-dasharray: 5 4; }
 .training-chart-empty { height: 100%; display: grid; place-items: center; color: var(--muted); font-size: 11px; }
 .training-detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 13px; }
-.training-detail-grid article { min-height: 89px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.022); }
-.training-detail-grid span, .training-detail-grid strong, .training-detail-grid small { display: block; }
-.training-detail-grid span { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-.training-detail-grid strong { margin-top: 8px; font-size: 17px; letter-spacing: -.025em; }
-.training-detail-grid small { margin-top: 4px; color: var(--muted); font-size: 8px; line-height: 1.35; }
+.training-detail-grid article { min-height: 136px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.022); }
+.training-detail-grid article > span, .training-detail-grid article > strong, .training-detail-grid article > small { display: block; }
+.training-detail-grid article > span { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.training-detail-grid article > strong { margin-top: 8px; font-size: 17px; letter-spacing: -.025em; }
+.training-detail-grid article > small { margin-top: 4px; color: var(--muted); font-size: 8px; line-height: 1.35; }
+.metric-reference { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(151,190,222,.1); }
+.metric-reference-copy { display: flex; align-items: baseline; justify-content: space-between; gap: 7px; min-width: 0; }
+.metric-reference-copy em, .metric-reference-copy b { font-size: 7px; line-height: 1.2; }
+.metric-reference-copy em { color: var(--muted-bright); font-style: normal; font-weight: 800; }
+.metric-reference-copy b { overflow: hidden; color: var(--muted); font-weight: 600; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.metric-reference-track { position: relative; height: 4px; margin-top: 7px; border-radius: 99px; background: #152a3d; }
+.metric-reference-track i { position: absolute; left: var(--target-start); top: 0; width: var(--target-width); height: 100%; border-radius: inherit; background: #28625f; }
+.metric-reference-track span { position: absolute; left: var(--metric-position); top: 50%; width: 7px; height: 7px; border: 2px solid #071522; border-radius: 50%; background: #78bfea; transform: translate(-50%, -50%); }
+.metric-reference.tone-good .metric-reference-track span { background: var(--teal); }
+.metric-reference.tone-watch .metric-reference-track span { background: #e5b563; }
+.metric-reference.tone-caution .metric-reference-track span { background: #e9846f; }
 .insight-section { margin-top: 24px; }
 .insight-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 .insight-section-heading h3 { margin: 5px 0 0; font-size: 19px; }
@@ -767,7 +778,9 @@ button:focus-visible, input:focus-visible, .file-button:focus-visible { outline:
   .training-chart-legend { justify-content: flex-start; }
   .training-chart { height: 210px; }
   .training-detail-grid { gap: 7px; }
-  .training-detail-grid article { min-height: 82px; padding: 12px; }
+  .training-detail-grid article { min-height: 132px; padding: 12px; }
+  .metric-reference-copy { display: block; }
+  .metric-reference-copy b { display: block; margin-top: 3px; text-align: left; }
   .insight-card { min-height: auto; }
   .year-counter-foot { align-items: flex-start; flex-direction: column; gap: 4px; }
   .settings-card { padding: 18px; }

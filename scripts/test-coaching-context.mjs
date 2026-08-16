@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const source = readFileSync(new URL("../app.js", import.meta.url), "utf8")
-  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation };\n");
+  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference };\n");
 const markup = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 for (const privateMedicalDetail of ["Xanax", "mirtazapine", "fluvoxamine", "buspirone", "bipolar disorder"]) {
   assert.equal(source.includes(privateMedicalDetail), false, `${privateMedicalDetail} must not be published in client source`);
@@ -42,7 +42,7 @@ context.globalThis = context;
 vm.createContext(context);
 vm.runInContext(source, context);
 
-const { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation } = context.__coachingTest;
+const { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference } = context.__coachingTest;
 const now = new Date(2026, 7, 14, 8, 0, 0);
 const activityDates = ["2026-08-13", "2026-08-09", "2026-08-04", "2026-07-30"];
 
@@ -97,6 +97,10 @@ assert.equal(normal.history.coverage.runs, 819);
 assert.equal(normal.history.runningLoad[2025].medianActiveWeekMiles, 20.1);
 assert.equal(normal.history.responsePatterns.pacing.includes("Conservative starts"), true);
 assert.equal(normal.training.recent7.run, 2);
+assert.equal(trainingMetricReference("loadBalance", { loadBalance: 1.04 }).label, "Balanced");
+assert.equal(trainingMetricReference("monotony7Day", { monotony7Day: .83 }).label, "Low repetition");
+assert.equal(trainingMetricReference("runningEfficiency28", { runningEfficiency28: 3.72, runningEfficiencyChangePct: -5.3 }).label, "Below recent");
+assert.equal(trainingMetricReference("activeDays28", { activeDays28: 13 }).label, "Steady");
 
 const recovery = buildCoachingContext(packet({
   health: { sleepHours: 5.2, restingHr: 58, bodyBattery: 20, stress: 60, baselines: { sleep7Day: 8, restingHr7Day: 50 } },
