@@ -1,4 +1,4 @@
-const CACHE_NAME = "fitness-hq-v39";
+const CACHE_NAME = "fitness-hq-v40";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -30,10 +30,15 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        if (response.ok && url.origin === self.location.origin) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
         return response;
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html")))
+      .catch(() => caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return event.request.mode === "navigate" ? caches.match("./index.html") : Response.error();
+      }))
   );
 });

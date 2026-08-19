@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.3.2";
 const COACHING_MODEL_VERSION = "2.1";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -2446,7 +2446,9 @@ async function init() {
   wireEvents();
   refreshGarminData(false);
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    navigator.serviceWorker.register(`sw.js?build=${APP_VERSION}`, { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch(() => {});
   }
 }
 
