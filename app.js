@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "2.3.2";
+const APP_VERSION = "2.3.3";
 const COACHING_MODEL_VERSION = "2.1";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -1868,13 +1868,13 @@ function renderTrainingIntelligence(analytics) {
   const zeroY = height - ((0 - minValue) / (maxValue - minValue || 1)) * height;
   const firstDate = parseLocalDateKey(series[0].date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const lastDate = parseLocalDateKey(series[series.length - 1].date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+  chart.innerHTML = `<div class="training-chart-plot"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
     <defs><linearGradient id="fitnessFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5bcbff" stop-opacity=".22"/><stop offset="1" stop-color="#5bcbff" stop-opacity="0"/></linearGradient></defs>
     <line class="chart-zero" x1="0" y1="${zeroY.toFixed(1)}" x2="${width}" y2="${zeroY.toFixed(1)}"></line>
     <path class="chart-line chart-fitness" d="${fitnessPath}"></path>
     <path class="chart-line chart-fatigue" d="${fatiguePath}"></path>
     <path class="chart-line chart-form" d="${formPath}"></path>
-  </svg><div class="training-chart-dates"><span>${escapeHtml(firstDate)}</span><span>${escapeHtml(lastDate)}</span></div>`;
+  </svg></div><div class="training-chart-dates"><span>${escapeHtml(firstDate)}</span><span>${escapeHtml(lastDate)}</span></div>`;
 
   const secondary = [
     { key: "loadBalance", label: "Load balance", value: metricValue(current.loadBalance), detail: "Fatigue ÷ fitness" },
@@ -2037,6 +2037,22 @@ function normalizePacket(packet) {
   };
 }
 
+function preserveLongitudinalTraining(packet, previousPacket) {
+  const next = normalizePacket(packet);
+  const previous = normalizePacket(previousPacket);
+  const training = { ...next.training };
+  const previousTraining = previous.training || {};
+  const nextSeries = Array.isArray(training.analytics?.series) ? training.analytics.series : [];
+  const previousSeries = Array.isArray(previousTraining.analytics?.series) ? previousTraining.analytics.series : [];
+
+  if (!nextSeries.length && previousSeries.length) training.analytics = previousTraining.analytics;
+  if (!training.activityDetails.length && previousTraining.activityDetails?.length) training.activityDetails = previousTraining.activityDetails;
+  if (!training.activityHistory && previousTraining.activityHistory) training.activityHistory = previousTraining.activityHistory;
+  if (!training.hrZonesYtd && previousTraining.hrZonesYtd) training.hrZonesYtd = previousTraining.hrZonesYtd;
+
+  return { ...next, training };
+}
+
 function loadPrivatePacket() {
   return normalizePacket(readJson(STORAGE.packet, null) || readJson(STORAGE.legacyPacket, null));
 }
@@ -2139,7 +2155,7 @@ async function fetchLatestPrivatePacket() {
 
 function installPrivatePacket(packet, showResult = false) {
   const previousPacket = JSON.stringify(privatePacket);
-  privatePacket = packet;
+  privatePacket = preserveLongitudinalTraining(packet, privatePacket);
   savePrivatePacket();
   const importedDays = applyGarminActivityCompletions();
   syncSettings.status = "live";

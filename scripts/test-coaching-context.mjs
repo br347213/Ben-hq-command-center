@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const source = readFileSync(new URL("../app.js", import.meta.url), "utf8")
-  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference };\n");
+  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference, preserveLongitudinalTraining };\n");
 const markup = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 for (const privateMedicalDetail of ["Xanax", "mirtazapine", "fluvoxamine", "buspirone", "bipolar disorder"]) {
   assert.equal(source.includes(privateMedicalDetail), false, `${privateMedicalDetail} must not be published in client source`);
@@ -45,7 +45,7 @@ context.globalThis = context;
 vm.createContext(context);
 vm.runInContext(source, context);
 
-const { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference } = context.__coachingTest;
+const { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference, preserveLongitudinalTraining } = context.__coachingTest;
 const now = new Date(2026, 7, 14, 8, 0, 0);
 const activityDates = ["2026-08-13", "2026-08-09", "2026-08-04", "2026-07-30"];
 
@@ -84,6 +84,23 @@ function packet(overrides = {}) {
     },
   };
 }
+
+const historicalPacket = packet({
+  training: {
+    activityDetails: [{ date: "2026-08-13", name: "Run" }],
+    activityHistory: { activityCount: 20 },
+    hrZonesYtd: { activityCount: 20, zones: [{ zone: 2, seconds: 7200 }] },
+    analytics: { series: [{ date: "2026-08-13", fitness: 12, fatigue: 8, form: 4 }], current: { fitness: 12, fatigue: 8, form: 4 } },
+  },
+});
+const thinRefresh = packet({
+  training: { activityDetails: [], activityHistory: null, hrZonesYtd: null, analytics: null },
+});
+const guardedRefresh = preserveLongitudinalTraining(thinRefresh, historicalPacket);
+assert.equal(guardedRefresh.training.analytics.series.length, 1);
+assert.equal(guardedRefresh.training.activityDetails.length, 1);
+assert.equal(guardedRefresh.training.activityHistory.activityCount, 20);
+assert.equal(guardedRefresh.training.hrZonesYtd.activityCount, 20);
 
 const normal = buildCoachingContext(packet(), now);
 assert.equal(normal.health.status, "supportive");
