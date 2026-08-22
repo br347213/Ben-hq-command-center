@@ -12,9 +12,8 @@ for (const bodyMindSignal of ["fatigued", "sick", "burnt-out", "motivated", "str
   assert.match(markup, new RegExp(`<option value="${bodyMindSignal}">`), `${bodyMindSignal} body/mind signal must be available`);
 }
 assert.match(markup, /Coach’s confidence/);
-assert.match(markup, /<link rel="stylesheet" href="styles\.css"/);
-assert.match(markup, /<script src="app\.js"><\/script>/);
-assert.doesNotMatch(markup, /styles\.css\?v=|app\.js\?v=/);
+assert.match(markup, /<link rel="stylesheet" href="styles\.css\?v=\d+\.\d+\.\d+"/);
+assert.match(markup, /<script src="app\.js\?v=\d+\.\d+\.\d+"><\/script>/);
 const storage = new Map();
 const context = {
   console,

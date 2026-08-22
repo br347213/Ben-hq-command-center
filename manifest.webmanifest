@@ -8,6 +8,6 @@
   "theme_color": "#06141b",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "assets/my-command-center-logo.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "assets/fitness-hq-home-icon.png?v=3.0.4", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
   ]
 }
