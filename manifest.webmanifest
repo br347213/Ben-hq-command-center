@@ -4,8 +4,8 @@
   "description": "A low-friction personal fitness hub for today's workout, consistency, Garmin context, and direction.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#08111f",
-  "theme_color": "#08111f",
+  "background_color": "#06141b",
+  "theme_color": "#06141b",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "assets/my-command-center-logo.png", "sizes": "512x512", "type": "image/png" }

@@ -846,3 +846,262 @@ body::before { background-image: linear-gradient(rgba(142,190,235,.018) 1px, tra
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Maritime edition — an intentional personal training log, not a generic AI dashboard. */
+:root {
+  --bg: #06141b;
+  --bg-deep: #020a0f;
+  --panel: rgba(9, 28, 38, .9);
+  --panel-strong: rgba(12, 37, 49, .96);
+  --panel-soft: rgba(174, 226, 222, .045);
+  --line: rgba(156, 211, 215, .13);
+  --line-strong: rgba(167, 229, 226, .24);
+  --text: #edf7f5;
+  --muted: #77939a;
+  --muted-bright: #b3c8c9;
+  --blue: #4da6c5;
+  --blue-soft: #8cc8d5;
+  --cyan: #76d4d0;
+  --teal: #57d8bf;
+  --amber: #d7ad6d;
+  --rose: #e58183;
+  --shadow: 0 20px 50px rgba(0, 8, 12, .28);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 13px;
+  font-family: "Avenir Next", Aptos, "Segoe UI Variable", "Segoe UI", sans-serif;
+}
+
+body {
+  background: #06141b;
+  color: var(--text);
+}
+
+body::before {
+  opacity: .38;
+  background-image:
+    linear-gradient(180deg, rgba(3, 14, 20, .16), rgba(3, 13, 18, .88) 72%),
+    url("assets/ocean-bathymetry.webp");
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.74) 48%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.74) 48%, transparent 92%);
+}
+
+h1, h2, h3, h4, strong {
+  font-family: "Avenir Next", "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+}
+
+.eyebrow, .column-label, .app-version, .mobile-app-version,
+.training-state-card span, .metric-card > span, .training-detail-grid article > span {
+  font-family: "DIN Alternate", Bahnschrift, "Aptos Narrow", "Segoe UI", sans-serif;
+  letter-spacing: .14em;
+}
+
+.app-shell { grid-template-columns: 246px minmax(0, 1fr); }
+
+.side-rail {
+  padding: 22px 17px;
+  background: rgba(3, 14, 20, .9);
+  border-right-color: rgba(150, 213, 214, .1);
+  backdrop-filter: blur(28px) saturate(115%);
+}
+
+.brand-lockup {
+  gap: 12px;
+  margin-bottom: 30px;
+  padding: 12px;
+  border-color: rgba(157, 222, 222, .14);
+  border-radius: 18px 18px 7px 18px;
+  background: rgba(8, 30, 40, .78);
+  box-shadow: 0 18px 40px rgba(0, 7, 10, .26);
+}
+
+.brand-lockup::after { display: none; }
+.brand-mark { width: 50px; height: 50px; border-radius: 50%; border-color: rgba(176, 234, 226, .25); box-shadow: 0 0 0 5px rgba(92, 205, 192, .045); }
+.brand-wordmark span { color: #8fb2b5; font-size: 8px; }
+.brand-wordmark h1 { margin: 2px 0 3px; font-size: 15px; font-weight: 720; letter-spacing: -.01em; }
+.brand-wordmark p { color: #58767d; font-size: 7px; letter-spacing: .13em; }
+
+.desktop-nav { gap: 5px; }
+.nav-button { min-height: 51px; border-radius: 12px 12px 4px 12px; color: #94aaae; }
+.nav-button::before { left: auto; right: 10px; top: 22px; bottom: auto; width: 5px; height: 5px; border-radius: 50%; background: var(--teal); transform: scale(.3); }
+.nav-button:hover { transform: none; background: rgba(151, 217, 215, .04); }
+.nav-button.active { color: #ebf8f5; border-color: rgba(143, 218, 213, .16); background: #0c2c38; box-shadow: inset 0 1px 0 rgba(255,255,255,.025); }
+.nav-button.active::before { transform: scale(1); box-shadow: 0 0 0 4px rgba(87, 216, 191, .08); }
+.nav-button.active .nav-icon { color: var(--teal); filter: none; }
+.rail-footer { border-top-color: rgba(154, 215, 214, .1); }
+
+.main-stage { max-width: 1540px; padding-left: 38px; padding-right: 38px; }
+.top-bar { min-height: 96px; background: rgba(6, 20, 27, .88); backdrop-filter: blur(24px) saturate(120%); }
+.top-bar-title h2 { margin-top: 5px; font-size: clamp(23px, 2.2vw, 31px); font-weight: 650; letter-spacing: -.045em; }
+.top-bar-title .eyebrow { color: #8fb7bd; }
+.dashboard-refresh-button, .profile-button { border-color: rgba(142, 214, 211, .16); background: rgba(10, 38, 48, .86); box-shadow: none; }
+.dashboard-refresh-button { border-radius: 15px 15px 5px 15px; }
+.dashboard-refresh-button:hover:not(:disabled) { background: #0d3541; border-color: rgba(142,214,211,.26); }
+.refresh-button-icon { border: 0; background: transparent; }
+.profile-button { border-radius: 50%; }
+
+.page-view.active { padding-top: 18px; }
+.hero-panel, .glass-panel, .glass-card {
+  border-color: var(--line);
+  background: rgba(8, 27, 37, .9);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(110%);
+}
+.hero-panel { border-radius: 30px 30px 10px 30px; }
+.glass-panel { border-radius: 22px 22px 8px 22px; }
+.glass-card { border-radius: 20px 20px 7px 20px; }
+.today-layout { gap: 18px; }
+
+.workout-hero {
+  min-height: 540px;
+  padding: 32px;
+  border-color: rgba(151, 222, 218, .2);
+  background-image:
+    linear-gradient(112deg, rgba(5, 24, 34, .72) 0%, rgba(7, 34, 44, .79) 58%, rgba(9, 44, 53, .58) 100%),
+    url("assets/ocean-bathymetry.webp");
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 30px 70px rgba(0, 10, 14, .36);
+}
+.workout-hero::before, .workout-hero::after { display: none; }
+.hero-topline { position: relative; z-index: 1; }
+.day-pill, .duration-pill, .source-badge, .freshness {
+  border-color: rgba(164, 225, 221, .17);
+  border-radius: 10px 10px 3px 10px;
+  background: rgba(3, 21, 28, .48);
+}
+.day-pill { color: #d9eeeb; box-shadow: none; }
+.duration-pill::before { box-shadow: none; }
+.workout-hero-copy { margin-top: 54px; padding-left: 0; }
+.workout-hero-copy::before { display: none; }
+.workout-hero-copy h2 { max-width: 760px; margin: 10px 0 14px; font-size: clamp(43px, 5.2vw, 68px); font-weight: 650; line-height: .96; letter-spacing: -.065em; }
+.workout-hero-copy > p:last-child { color: #bbced0; }
+
+.ai-run-recommendation {
+  border-color: rgba(143, 214, 210, .16);
+  border-radius: 18px 18px 6px 18px;
+  background: rgba(2, 18, 25, .7);
+  box-shadow: 0 18px 44px rgba(0, 10, 14, .2);
+}
+.ai-run-heading { border-bottom-color: rgba(155, 218, 215, .1); }
+.ai-run-heading span { color: #9ce0d2; }
+.ai-run-content h3 { font-weight: 620; }
+.ai-run-evidence span, .exercise-preview span { border-color: rgba(156, 215, 213, .11); background: rgba(147, 211, 209, .045); }
+.exercise-preview span::before { background: #85d5c6; }
+
+.completion-button {
+  border-color: rgba(218, 255, 246, .25);
+  border-radius: 17px 17px 5px 17px;
+  background: #75d7c3;
+  color: #04221f;
+  box-shadow: 0 18px 36px rgba(14, 72, 68, .25);
+}
+.completion-button::after { display: none; }
+.completion-button:hover { filter: brightness(1.05); box-shadow: 0 20px 42px rgba(14,72,68,.29); }
+.completion-button small { color: rgba(4, 34, 31, .66); }
+.button-check { border-color: rgba(4, 34, 31, .24); background: rgba(3, 37, 33, .08); box-shadow: none; }
+.completion-button.selected { background: #4aa792; color: #f1fffb; }
+.completion-button.selected small { color: rgba(255,255,255,.7); }
+.outcome-button { border-radius: 12px 12px 4px 12px; background: rgba(148, 210, 208, .04); }
+
+.today-side-stack { gap: 12px; }
+.year-counter-card, .guidance-card, .body-note-card, .today-health-panel, .progress-summary-card, .coaching-focus-panel { background: rgba(9, 33, 43, .91); }
+.year-counter-card { border-color: rgba(135, 213, 207, .18); }
+.year-counter-card::before, .year-counter-card::after, .today-health-panel::before,
+.progress-summary-card::after, .coaching-focus-panel::before, .coaching-focus-panel::after { display: none; }
+.year-counter-badge, .focus-horizon, .estimate-badge { color: #8dd8ca; border-radius: 8px 8px 3px 8px; background: rgba(62, 133, 126, .16) !important; }
+.year-number-wrap { border-radius: 15px 15px 5px 15px; background: rgba(119, 201, 194, .055); box-shadow: none; }
+.year-number-wrap strong { color: #f2fbf8; font-weight: 600; }
+.guidance-card::before, .body-note-card::before { display: none; }
+.module-icon, .body-note-icon, .settings-icon, .health-read-mark { border-radius: 50%; background: rgba(104, 191, 184, .075); box-shadow: none; }
+.body-note-card { border-color: rgba(208, 171, 108, .18); background: rgba(38, 34, 27, .42); }
+
+.today-health-panel, .session-detail-panel, .substitutions-panel, .calendar-panel,
+.latest-activity-panel, .training-intelligence-panel, .goal-panel { margin-top: 18px; }
+.today-health-copy, .health-signal, .session-column, .substitution-grid > div,
+.metric-card, .training-state-card, .training-detail-grid article, .goal-chip-grid > div {
+  border-color: rgba(150, 209, 208, .1);
+  background: rgba(128, 197, 194, .035);
+}
+.today-health-copy { border-radius: 17px 17px 5px 17px; }
+.health-signal, .metric-card, .training-state-card, .training-detail-grid article { border-radius: 15px 15px 5px 15px; }
+.health-signal::after, .session-detail-panel::before, .session-column::after, .calendar-panel::before,
+.metric-card::before, .training-intelligence-panel::before, .training-state-card::after,
+.insight-card::before, .insight-card::after, .goal-panel::before, .goal-chip-grid > div::after, .settings-card::before { display: none; }
+
+.plan-day { border-radius: 18px 18px 6px 18px; border-color: rgba(151, 210, 208, .1); background: rgba(8, 27, 37, .86); box-shadow: none; }
+.plan-day:hover { border-color: rgba(151,210,208,.2); }
+.plan-day.is-today { border-color: rgba(111, 208, 195, .28); background: #0c3440; box-shadow: 0 18px 44px rgba(0, 13, 18, .2); }
+.plan-day.is-today::before { top: 20px; bottom: auto; left: auto; right: 17px; width: 6px; height: 6px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 5px rgba(87,216,191,.07); }
+
+.progress-summary-card {
+  background-image: linear-gradient(110deg, rgba(6, 29, 39, .76), rgba(9, 48, 56, .68)), url("assets/ocean-bathymetry.webp");
+  background-size: cover;
+  background-position: center 42%;
+}
+.progress-number-row strong, .latest-activity-primary strong, .training-state-card strong,
+.metric-card strong, .training-detail-grid strong, .health-signal strong { font-family: "DIN Alternate", Bahnschrift, "Aptos Display", sans-serif; font-weight: 600; }
+.calendar-day { border-radius: 7px 7px 2px 7px; }
+.calendar-day.complete { background: #397f86; color: #f4fffc; }
+.calendar-day.today { box-shadow: inset 0 0 0 1px rgba(121, 219, 204, .32); }
+
+.coaching-focus-panel { border-color: rgba(118, 216, 199, .22); border-radius: 24px 24px 8px 24px; box-shadow: var(--shadow); }
+.coaching-focus-grid > div, .training-chart-wrap, .training-detail-grid article, .goal-chip-grid > div { background: rgba(3, 20, 27, .46); }
+.training-chart-wrap { border-radius: 17px 17px 5px 17px; }
+.chart-zero { stroke: rgba(160, 215, 213, .12); }
+.chart-fitness { stroke: #74bcd0; }
+.chart-fatigue { stroke: #d3a968; }
+.chart-form { stroke: #62d1bb; }
+.metric-reference-track { background: #102b33; }
+.metric-reference-track i { background: #32685f; }
+
+.insight-card { min-height: 190px; }
+.insight-card h3 { font-weight: 620; }
+.settings-card { border-radius: 20px 20px 7px 20px; }
+.secondary-button { border-radius: 11px 11px 4px 11px; border-color: rgba(132, 213, 204, .2); background: rgba(75, 151, 144, .12); }
+.text-button { color: #83c9c3; }
+.toast { border-color: rgba(112, 207, 195, .28); border-radius: 14px 14px 5px 14px; background: rgba(5, 28, 36, .97); }
+
+@media (max-width: 1100px) {
+  .app-shell { grid-template-columns: 218px minmax(0, 1fr); }
+}
+
+@media (max-width: 820px) {
+  body::before { opacity: .3; background-position: 62% top; }
+  .main-stage { padding-left: 16px; padding-right: 16px; }
+  .top-bar { min-height: 94px; margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; background: rgba(6, 20, 27, .92); }
+  .top-bar-title h2 { font-size: 23px; }
+  .page-view.active { padding-top: 18px; }
+  .mobile-bottom-nav {
+    left: 12px;
+    right: 12px;
+    bottom: calc(14px + var(--safe-bottom));
+    min-height: 70px;
+    padding: 7px;
+    border-color: rgba(153, 220, 216, .17);
+    border-radius: 24px 24px 8px 24px;
+    background: rgba(4, 22, 29, .95);
+    box-shadow: 0 24px 60px rgba(0, 6, 9, .52);
+    backdrop-filter: blur(24px) saturate(120%);
+  }
+  .mobile-bottom-nav .nav-button { border-radius: 16px 16px 5px 16px; }
+  .mobile-bottom-nav .nav-button::before { left: 50%; right: auto; top: 5px; width: 4px; height: 4px; transform: translateX(-50%) scale(.3); }
+  .mobile-bottom-nav .nav-button.active::before { transform: translateX(-50%) scale(1); }
+  .mobile-bottom-nav .nav-button.active { border-color: rgba(113, 206, 194, .14); background: #0d3440; }
+}
+
+@media (max-width: 560px) {
+  .main-stage { padding-left: 12px; padding-right: 12px; }
+  .top-bar { margin-left: -12px; margin-right: -12px; padding-left: 16px; padding-right: 14px; }
+  .workout-hero { padding: 23px 20px 27px; border-radius: 26px 26px 8px 26px; background-position: 58% center; }
+  .workout-hero-copy { margin-top: 42px; }
+  .workout-hero-copy h2 { font-size: 41px; line-height: .98; }
+  .year-counter-card, .guidance-card, .body-note-card, .today-health-panel, .session-detail-panel,
+  .substitutions-panel, .calendar-panel, .latest-activity-panel, .goal-panel,
+  .training-intelligence-panel, .workout-feedback-panel, .weekly-review-panel { padding: 19px; }
+  .completion-button { min-height: 68px; }
+  .mobile-app-version { bottom: calc(1px + var(--safe-bottom)); color: rgba(132, 168, 170, .48); }
+}
