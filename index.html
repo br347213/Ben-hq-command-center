@@ -29,7 +29,7 @@
         <nav class="desktop-nav" id="desktopNav"></nav>
         <div class="rail-footer">
           <span class="rail-status"><span class="pulse-dot"></span><span id="railSyncLabel">Fitness data ready</span></span>
-          <span class="app-version" data-app-version>v3.0.0</span>
+          <span class="app-version" data-app-version>v3.0.1</span>
         </div>
       </aside>
 
@@ -69,7 +69,7 @@
               <div class="exercise-preview" id="todayExercisePreview"></div>
               <div class="hero-actions">
                 <button class="primary-button completion-button" data-completion="completed" type="button">
-                  <span class="button-check" aria-hidden="true">✓</span>
+                  <span class="button-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6.5 12.5 3.2 3.2 7.8-8"></path></svg></span>
                   <span><strong>Complete workout</strong><small>Mark today as done</small></span>
                 </button>
                 <div class="secondary-outcomes">
@@ -95,7 +95,7 @@
               </article>
 
               <article class="glass-card guidance-card" id="todayGuidanceCard">
-                <div class="module-icon direction-icon" aria-hidden="true">→</div>
+                <div class="module-icon direction-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 18c4.5 0 4.5-12 9-12 2.2 0 3.7 2 3.7 4.2"></path><path d="m13.5 9.5 3.2.7.8-3.2"></path><circle cx="4" cy="18" r="1.5"></circle><circle cx="17" cy="11" r="1.5"></circle></svg></div>
                 <div>
                   <p class="eyebrow">Today's direction</p>
                   <h3 id="guidanceTitle">Keep the decision small</h3>
@@ -104,7 +104,7 @@
               </article>
 
               <article class="glass-card body-note-card">
-                <div class="body-note-icon" aria-hidden="true">!</div>
+                <div class="body-note-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.2c0 4.2-2.8 7.4-7 9.3-4.2-1.9-7-5.1-7-9.3V6l7-2.5Z"></path><path d="M9 12h6"></path></svg></div>
                 <div>
                   <p class="eyebrow">Training guardrail</p>
                   <h3>Pull-ups are paused</h3>
@@ -124,7 +124,7 @@
             </div>
             <div class="today-health-layout">
               <div class="today-health-copy">
-                <span class="health-read-mark" aria-hidden="true">READ</span>
+                <span class="health-read-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l1.5-4 3 8 2-5 1.5 3H21"></path><path d="M4.5 6.5a9 9 0 0 1 15 0M4.5 17.5a9 9 0 0 0 15 0"></path></svg></span>
                 <div>
                   <h4 id="todayHealthLead">Connecting the full picture</h4>
                   <ul class="health-read-points" id="todayHealthPoints"></ul>
@@ -190,9 +190,9 @@
             </article>
             <article class="glass-panel calendar-panel">
               <div class="calendar-toolbar">
-                <button class="calendar-arrow" id="previousMonth" type="button" aria-label="Previous month">‹</button>
+                <button class="calendar-arrow" id="previousMonth" type="button" aria-label="Previous month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6"></path></svg></button>
                 <h3 id="calendarMonthTitle">Month</h3>
-                <button class="calendar-arrow" id="nextMonth" type="button" aria-label="Next month">›</button>
+                <button class="calendar-arrow" id="nextMonth" type="button" aria-label="Next month"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6"></path></svg></button>
               </div>
               <div class="calendar-weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
               <div class="consistency-calendar" id="consistencyCalendar"></div>
@@ -310,15 +310,15 @@
         <section class="page-view" id="view-settings" aria-label="Settings">
           <div class="settings-grid">
             <article class="glass-panel settings-card">
-              <div class="settings-icon" aria-hidden="true">G</div>
+              <div class="settings-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4V2.5h8V4M8 20v1.5h8V20"></path><rect x="5" y="4" width="14" height="16" rx="4"></rect><path d="M8.5 12h2l1.2-3 2 6 1.2-3H17"></path></svg></div>
               <div><p class="eyebrow">Primary health source</p><h3>Garmin Connect</h3><p id="garminStatusText">Checking your existing encrypted daily sync.</p><div class="settings-actions"><button class="secondary-button" id="enterSyncKey" type="button">Connect sync key</button></div></div>
             </article>
             <article class="glass-panel settings-card">
-              <div class="settings-icon" aria-hidden="true">⌂</div>
+              <div class="settings-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="3"></rect><path d="M9 7h6M12 16V9M9.5 11.5 12 9l2.5 2.5"></path><path d="M10 18h4"></path></svg></div>
               <div><p class="eyebrow">Phone access</p><h3>Add to Home Screen</h3><p>In Safari, use Share → Add to Home Screen for the fastest, app-like launch.</p></div>
             </article>
             <article class="glass-panel settings-card">
-              <div class="settings-icon" aria-hidden="true">↧</div>
+              <div class="settings-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7.5h14v12H5z"></path><path d="M8 7.5V4.5h8v3M12 9.5v6M9.5 13l2.5 2.5 2.5-2.5"></path></svg></div>
               <div><p class="eyebrow">Your consistency data</p><h3>Local backup</h3><p>Completion marks stay on this device. Export a small backup whenever you want.</p><div class="settings-actions"><button class="secondary-button" id="exportData" type="button">Export backup</button><label class="text-button file-button">Import backup<input id="importData" type="file" accept="application/json" /></label></div></div>
             </article>
           </div>
@@ -327,7 +327,7 @@
     </div>
 
     <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Primary navigation"></nav>
-    <div class="mobile-app-version" data-app-version aria-label="Fitness HQ version 3.0.0">v3.0.0</div>
+    <div class="mobile-app-version" data-app-version aria-label="Fitness HQ version 3.0.1">v3.0.1</div>
     <div class="secure-entry-backdrop" id="syncKeyPanel" hidden>
       <section class="secure-entry-card" role="dialog" aria-modal="true" aria-labelledby="syncKeyTitle">
         <button class="secure-entry-close" id="closeSyncKeyPanel" type="button" aria-label="Close private key entry">×</button>

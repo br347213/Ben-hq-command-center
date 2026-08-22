@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.0.0";
+const APP_VERSION = "3.0.1";
 const COACHING_MODEL_VERSION = "2.1";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -117,12 +117,12 @@ const BODY_MIND_SIGNAL_META = Object.freeze({
 });
 
 const ICONS = {
-  home: '<path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v10h13V10"></path><path d="M9.5 20v-6h5v6"></path>',
-  plan: '<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 9h8M8 13h8M8 17h5"></path>',
-  progress: '<path d="M4 18V9M10 18V5M16 18v-7M22 18V3"></path><path d="M2 21h22"></path>',
-  spark: '<path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"></path><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path>',
+  home: '<circle cx="12" cy="7.5" r="2.5"></circle><path d="M4 14.5c1.8-1.2 3.5-1.2 5.2 0s3.5 1.2 5.2 0 3.5-1.2 5.6 0"></path><path d="M5.5 18.5c1.5-.9 3-.9 4.5 0s3 .9 4.5 0 3-.9 4.5 0"></path><path d="M12 2v1.5"></path>',
+  plan: '<path d="M4 5.5 9 4l6 2 5-1.5v14L15 20l-6-2-5 1.5v-14Z"></path><path d="M9 4v14M15 6v14"></path><path d="M6.5 13c2-3 4.2-3.2 5.7-.8 1.3 2 3.1 1.8 5.3-1.7"></path><circle cx="6.5" cy="13" r=".7"></circle><circle cx="17.5" cy="10.5" r=".7"></circle>',
+  progress: '<path d="M3 18.5h18"></path><path d="M5 16v-3M9 16V9M13 16v-5M17 16V6"></path><path d="m4.5 8.5 4-2 4 1.5 5-4"></path><circle cx="18" cy="4" r="1"></circle>',
+  spark: '<circle cx="12" cy="12" r="7.5"></circle><path d="m14.8 8.2-1.5 5.1-5.1 1.5 1.5-5.1 5.1-1.5Z"></path><path d="M12 2v2M12 20v2M2 12h2M20 12h2"></path>',
   battery: '<rect x="3" y="6" width="16" height="12" rx="2"></rect><path d="M21 10v4"></path><path d="M6.5 9.5h7"></path>',
-  settings: '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"></path>',
+  settings: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect><path d="M7 9h10M7 15h10"></path><circle cx="10" cy="9" r="1.5"></circle><circle cx="15" cy="15" r="1.5"></circle>',
 };
 
 const WEEK = [
@@ -757,7 +757,7 @@ function renderPlan(coaching = buildCoachingContext()) {
       <button class="plan-day-button" type="button" aria-expanded="${open}">
         <span class="plan-day-name"><strong>${workout.short}</strong><span>${workout.type}</span></span>
         <span class="plan-day-copy"><strong>${escapeHtml(workout.title)}</strong><span>${escapeHtml(workout.subtitle)}</span>${recommendation ? '<em>AI recommendation available</em>' : ""}</span>
-        <span class="plan-chevron" aria-hidden="true">›</span>
+        <span class="plan-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"></path></svg></span>
       </button>
       <div class="plan-day-detail">${recommendation ? `<section class="ai-plan-recommendation">${runRecommendationMarkup(recommendation, true)}</section><div class="static-plan-divider"><span>Your static plan</span></div>` : ""}${detail("Main work", workout.main)}${detail("Minimum", workout.minimum)}${detail("Optional", workout.optional)}</div>
     </article>`;
