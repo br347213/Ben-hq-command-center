@@ -9,7 +9,7 @@ const NAV_ITEMS = [
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.0.2";
+const APP_VERSION = "3.0.3";
 const COACHING_MODEL_VERSION = "2.1";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
