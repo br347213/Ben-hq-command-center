@@ -1249,6 +1249,8 @@ body::before {
     padding-bottom: calc(132px + var(--safe-bottom));
   }
   .top-bar {
+    position: relative;
+    top: auto;
     min-height: 102px;
     margin-left: -16px;
     margin-right: -16px;
@@ -1256,12 +1258,43 @@ body::before {
     background: #06141b;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    transform: translateZ(0);
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+    filter: none;
+    transform: none;
+    will-change: auto;
+    contain: none;
+    isolation: isolate;
   }
+  .top-bar, .top-bar * { text-shadow: none; }
   .top-bar-title { min-width: 0; padding-right: 8px; }
   .top-bar-title h2 { margin-top: 5px; font-size: 22px; line-height: 1.08; letter-spacing: -.035em; }
+  .top-bar-title .eyebrow {
+    color: #a7c9cb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: .1em;
+    -webkit-font-smoothing: antialiased;
+  }
   .top-bar-actions { flex: 0 0 auto; gap: 8px; }
-  .dashboard-refresh-button, .profile-button { width: 44px; height: 44px; min-height: 44px; }
+  .dashboard-refresh-button, .profile-button {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    background: #0a2731;
+    border-color: #19434c;
+    box-shadow: none;
+    filter: none;
+    transform: none;
+  }
+  .refresh-button-icon, .refresh-button-icon svg, .profile-button img {
+    filter: none;
+    transform: none;
+    opacity: 1;
+  }
+  .refresh-button-icon svg { stroke-width: 2; }
   .page-view.active { padding-top: 23px; }
 
   .mobile-bottom-nav {
