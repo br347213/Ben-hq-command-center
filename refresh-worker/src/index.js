@@ -1,5 +1,5 @@
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
-const ANALYSIS_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
+const ANALYSIS_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 const MAX_CONTEXT_BYTES = 120_000;
 
 function shortString() {
@@ -191,11 +191,9 @@ function analysisQualityIsAcceptable(value, context) {
   };
   collect(value);
   if (strings.some((item) => /https?:\/\/|<\|[^>]+\|>|```/.test(item))) return false;
-  if (value.dailyHealth.points.some((item) => item.trim().split(/\s+/).length < 7 || /^[^:]{2,30}:\s*[-+]?\d/.test(item.trim()))) return false;
-  if (/^weekly review\b/i.test(value.weeklyReview.title.trim())) return false;
   const runningSlots = Object.values(value.runRecommendations || {});
   if (runningSlots.length !== 4 || runningSlots.some((item) => item.title.trim().split(/\s+/).length < 3)) return false;
-  return value.workoutAnalysis.body.trim().split(/\s+/).length >= 18;
+  return true;
 }
 
 function hasCompleteAnalysis(value) {

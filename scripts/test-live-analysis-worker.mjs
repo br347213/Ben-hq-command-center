@@ -30,7 +30,7 @@ const env = {
   REFRESH_SHARED_SECRET: secret,
   AI: {
     async run(model, input) {
-      assert.equal(model, "@cf/qwen/qwen3-30b-a3b-fp8");
+      assert.equal(model, "@cf/meta/llama-3.1-8b-instruct-fast");
       assert.equal(input.response_format.type, "json_schema");
       return { response: analysis, usage: { prompt_tokens: 100, completion_tokens: 200 } };
     },
@@ -61,7 +61,7 @@ const response = await worker.fetch(new Request("https://worker.example/analyze"
 assert.equal(response.status, 200);
 const payload = await response.json();
 assert.equal(payload.analysis.coachingFocus.title, analysis.coachingFocus.title);
-assert.equal(payload.model, "@cf/qwen/qwen3-30b-a3b-fp8");
+assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
 
 const rejected = await worker.fetch(new Request("https://worker.example/analyze", {
   method: "POST",
