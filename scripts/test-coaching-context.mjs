@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const source = readFileSync(new URL("../app.js", import.meta.url), "utf8")
-  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference, preserveLongitudinalTraining };\n");
+  .replace(/\ninit\(\);\s*$/, "\nglobalThis.__coachingTest = { buildCoachingContext, buildLiveAnalysisContext, buildWorkoutAnalysis, buildAiRunRecommendation, cleanGeneratedText, sanitizeGeneratedAnalysis, trainingMetricReference, preserveLongitudinalTraining };\n");
 const markup = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 for (const privateMedicalDetail of ["Xanax", "mirtazapine", "fluvoxamine", "buspirone", "bipolar disorder"]) {
   assert.equal(source.includes(privateMedicalDetail), false, `${privateMedicalDetail} must not be published in client source`);
@@ -44,7 +44,7 @@ context.globalThis = context;
 vm.createContext(context);
 vm.runInContext(source, context);
 
-const { buildCoachingContext, buildWorkoutAnalysis, buildAiRunRecommendation, trainingMetricReference, preserveLongitudinalTraining } = context.__coachingTest;
+const { buildCoachingContext, buildLiveAnalysisContext, buildWorkoutAnalysis, buildAiRunRecommendation, cleanGeneratedText, sanitizeGeneratedAnalysis, trainingMetricReference, preserveLongitudinalTraining } = context.__coachingTest;
 const now = new Date(2026, 7, 14, 8, 0, 0);
 const activityDates = ["2026-08-13", "2026-08-09", "2026-08-04", "2026-07-30"];
 
@@ -139,6 +139,43 @@ const burnoutContext = buildCoachingContext(packet(), now);
 assert.match(burnoutContext.focus.rationale, /burnt out/i);
 assert.match(burnoutContext.focus.action, /motivation/i);
 
+vm.runInContext("workoutFeedback = {};", context);
+
+const sundayNow = new Date(2026, 7, 23, 13, 0, 0);
+const saturdayActivity = {
+  activityId: "sat-run-1",
+  date: "2026-08-22",
+  startTimeLocal: "2026-08-22T18:20:00-04:00",
+  type: "running",
+  name: "Buncombe County Running",
+  distanceMiles: 4.04,
+  durationMinutes: 38,
+  averageHr: 159,
+  maxHr: 180,
+  aerobicEffect: 3.5,
+};
+context.livePacket = packet({ training: { lastWorkout: saturdayActivity.name, lastWorkoutDetail: saturdayActivity, activityDetails: [saturdayActivity] } });
+vm.runInContext(`privatePacket = livePacket; completions = {}; workoutFeedback = {
+  "sat-run-1": { activityId: "sat-run-1", date: "2026-08-22", name: "Buncombe County Running", intent: "easy", note: "Felt controlled", updatedAt: "2026-08-22T20:00:00-04:00" },
+  "old-reflection": { activityId: "old-reflection", date: "2026-08-16", name: "Older run", intent: "long", note: "Unrelated historical reflection", updatedAt: "2026-08-16T20:00:00-04:00" }
+};`, context);
+const liveContext = buildLiveAnalysisContext("test", sundayNow);
+assert.equal(liveContext.today.scheduledWorkout.title, "Easy long run");
+assert.equal(liveContext.today.hasGarminWorkoutRecordedToday, false);
+assert.match(liveContext.today.chronology, /latest completed Garmin workout was yesterday.*2026-08-22/i);
+assert.equal(liveContext.training.latestCompletedWorkout.occurredOn, "2026-08-22");
+assert.equal(liveContext.training.latestCompletedWorkout.occurredToday, false);
+assert.equal(liveContext.training.latestCompletedWorkout.scheduledPlanOnThatDate.title, "Easy or tempo run");
+assert.equal(liveContext.training.latestCompletedWorkout.matchingReflection.note, "Felt controlled");
+assert.equal(liveContext.training.latestCompletedWorkout.matchingReflection.intendedSession, "easy");
+assert.equal(cleanGeneratedText(". Next move"), "Next move");
+const sanitizedConfidence = sanitizeGeneratedAnalysis({
+  workoutAnalysis: { confidence: ".6" }, coachingFocus: { confidence: "0.92", horizon: "The upcoming week will focus on easy running" }, weeklyReview: { confidence: "medium" },
+  runRecommendations: { sunday: { confidence: "high" }, tuesday: { confidence: "low" }, wednesday: { confidence: ".7" }, saturday: { confidence: "reasonable" } },
+});
+assert.equal(sanitizedConfidence.workoutAnalysis.confidence, "Reasonable confidence");
+assert.equal(sanitizedConfidence.coachingFocus.confidence, "High confidence");
+assert.equal(sanitizedConfidence.coachingFocus.horizon, "Next 1–2 weeks");
 vm.runInContext("workoutFeedback = {};", context);
 
 const incomplete = buildCoachingContext(packet({

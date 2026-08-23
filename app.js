@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.1.9";
+const APP_VERSION = "3.2.0";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -463,7 +463,31 @@ function liveAnalysisSummary(analysis) {
 function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
   const coaching = buildCoachingContext(privatePacket, now);
   const training = privatePacket.training || {};
+  const currentDate = localDateKey(now);
   const activityDetails = Array.isArray(training.activityDetails) ? training.activityDetails : [];
+  const latestActivity = training.lastWorkoutDetail && typeof training.lastWorkoutDetail === "object" ? training.lastWorkoutDetail : null;
+  const latestActivityDate = latestActivity
+    ? (/^\d{4}-\d{2}-\d{2}$/.test(latestActivity.date || "") ? latestActivity.date : String(latestActivity.startTimeLocal || "").slice(0, 10))
+    : "";
+  const latestActivityDay = /^\d{4}-\d{2}-\d{2}$/.test(latestActivityDate) ? parseLocalDateKey(latestActivityDate) : null;
+  const latestScheduledWorkout = latestActivityDay ? workoutForDate(latestActivityDay) : null;
+  const latestReflection = latestActivity ? feedbackForActivity(latestActivity) : null;
+  const daysSinceLatest = latestActivityDay
+    ? Math.max(0, Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(latestActivityDay.getFullYear(), latestActivityDay.getMonth(), latestActivityDay.getDate())) / 86_400_000))
+    : null;
+  const reflectionForAnalysis = (item) => ({
+    activityId: item.activityId || "",
+    date: item.date || "",
+    workout: item.name || "Workout",
+    rpe: item.rpe || "",
+    feel: item.feel || "",
+    enjoyment: item.enjoyment || "",
+    bodyMindSignal: item.bodySignal || "",
+    intendedSession: item.intent || "",
+    planChoice: item.planChoice || "",
+    note: item.note || "",
+    belongsToLatestCompletedWorkout: Boolean(latestActivity && activityFeedbackKey(latestActivity) === String(item.activityId || "")),
+  });
   const recentActivities = activityDetails
     .slice()
     .sort((left, right) => String(right.startTimeLocal || right.date || "").localeCompare(String(left.startTimeLocal || left.date || "")))
@@ -474,17 +498,7 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
     .filter((item) => item && typeof item === "object")
     .sort((left, right) => String(right.updatedAt || right.date || "").localeCompare(String(left.updatedAt || left.date || "")))
     .slice(0, 12)
-    .map((item) => ({
-      date: item.date || "",
-      workout: item.name || "Workout",
-      rpe: item.rpe || "",
-      feel: item.feel || "",
-      enjoyment: item.enjoyment || "",
-      bodyMindSignal: item.bodySignal || "",
-      intendedSession: item.intent || "",
-      planChoice: item.planChoice || "",
-      note: item.note || "",
-    }));
+    .map(reflectionForAnalysis);
   const runPlan = WEEK.map((workout, weekday) => ({ workout, date: dateForPlanningWeekday(weekday, now) }))
     .filter(({ workout }) => workout.type === "Run")
     .map(({ workout, date }) => ({
@@ -503,7 +517,7 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
   return {
     schemaVersion: 1,
     requestedAt: now.toISOString(),
-    currentDate: localDateKey(now),
+    currentDate,
     localTime: now.toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit", timeZoneName: "short" }),
     reason,
     athlete: ATHLETE_PROFILE,
@@ -515,13 +529,31 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
     },
     today: {
       outcome: getOutcome(localDateKey(now)) || "not marked",
-      staticPlan: workoutForDate(now),
+      scheduledWorkout: workoutForDate(now),
+      hasGarminWorkoutRecordedToday: latestActivityDate === currentDate,
+      mostRecentGarminWorkoutDate: latestActivityDate || null,
+      chronology: latestActivityDate === currentDate
+        ? "The latest completed Garmin workout occurred today."
+        : `Today's scheduled workout has not been recorded by Garmin. The latest completed Garmin workout was ${daysSinceLatest === 1 ? "yesterday" : `${daysSinceLatest ?? "an unknown number of"} days ago`} on ${latestActivityDate || "an unknown date"}.`,
       recentCompletions,
       consistency: coaching.consistency,
     },
     health: privatePacket.health || {},
     training: {
-      latestWorkout: compactActivityForAnalysis(training.lastWorkoutDetail),
+      latestCompletedWorkout: latestActivity ? {
+        activity: compactActivityForAnalysis(latestActivity),
+        occurredOn: latestActivityDate || null,
+        daysBeforeCurrentDate: daysSinceLatest,
+        occurredToday: latestActivityDate === currentDate,
+        scheduledPlanOnThatDate: latestScheduledWorkout ? {
+          day: latestScheduledWorkout.day,
+          title: latestScheduledWorkout.title,
+          type: latestScheduledWorkout.type,
+          summary: latestScheduledWorkout.summary,
+          main: latestScheduledWorkout.main,
+        } : null,
+        matchingReflection: latestReflection ? reflectionForAnalysis(latestReflection) : null,
+      } : null,
       weeklyLoad: training.weeklyLoad || {},
       activityHistory: training.activityHistory || {},
       ytdHeartRateZones: training.hrZonesYtd || null,
@@ -573,6 +605,7 @@ function cleanGeneratedText(value) {
     .replace(/\*\*/g, "")
     .replace(/`/g, "")
     .replace(/^\s*[#*-]+\s*/g, "")
+    .replace(/^\s*(?:[.•·]+(?=\s|[A-Za-z])|\d+\s*[:.)-])\s*/g, "")
     .replace(/\s+/g, " ")
     .trim();
   cleaned = cleaned
@@ -593,9 +626,32 @@ function cleanGeneratedText(value) {
   return cleaned;
 }
 
+function normalizeCoachConfidence(value) {
+  const cleaned = cleanGeneratedText(value);
+  const numeric = Number.parseFloat(cleaned);
+  if (/high|strong/i.test(cleaned) || (Number.isFinite(numeric) && numeric >= .8)) return "High confidence";
+  if (/reasonable|medium|moderate/i.test(cleaned) || (Number.isFinite(numeric) && numeric >= .55)) return "Reasonable confidence";
+  if (/low|limited|provisional/i.test(cleaned) || Number.isFinite(numeric)) return "Limited confidence";
+  return cleaned && cleaned.length <= 28 ? cleaned : "Reasonable confidence";
+}
+
 function sanitizeGeneratedAnalysis(value) {
   if (Array.isArray(value)) return value.map(sanitizeGeneratedAnalysis);
-  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeGeneratedAnalysis(item)]));
+  if (value && typeof value === "object") {
+    const cleaned = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeGeneratedAnalysis(item)]));
+    if (cleaned.workoutAnalysis && cleaned.coachingFocus && cleaned.weeklyReview && cleaned.runRecommendations) {
+      cleaned.workoutAnalysis.confidence = normalizeCoachConfidence(cleaned.workoutAnalysis.confidence);
+      cleaned.coachingFocus.confidence = normalizeCoachConfidence(cleaned.coachingFocus.confidence);
+      cleaned.weeklyReview.confidence = normalizeCoachConfidence(cleaned.weeklyReview.confidence);
+      cleaned.coachingFocus.horizon = cleaned.coachingFocus.horizon && cleaned.coachingFocus.horizon.length <= 28
+        ? cleaned.coachingFocus.horizon
+        : "Next 1–2 weeks";
+      Object.values(cleaned.runRecommendations).forEach((recommendation) => {
+        recommendation.confidence = normalizeCoachConfidence(recommendation.confidence);
+      });
+    }
+    return cleaned;
+  }
   return typeof value === "string" ? cleanGeneratedText(value) : value;
 }
 

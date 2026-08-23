@@ -258,9 +258,30 @@ function analysisQualityIsAcceptable(value, context) {
     else if (item && typeof item === "object") Object.values(item).forEach(collect);
   };
   collect(value);
-  if (strings.some((item) => /https?:\/\/|<\|[^>]+\|>|```/.test(item))) return false;
+  if (strings.some((item) => /https?:\/\/|<\|[^>]+\|>|```|<\/?[a-z][^>]*>/i.test(item))) return false;
+  const weakCoaching = [
+    value.workoutAnalysis?.title,
+    value.workoutAnalysis?.body,
+    value.workoutAnalysis?.effect,
+    value.workoutAnalysis?.next,
+    value.coachingFocus?.title,
+    value.coachingFocus?.rationale,
+    value.coachingFocus?.action,
+    value.weeklyReview?.title,
+    value.weeklyReview?.summary,
+  ].filter(Boolean).join(" ");
+  if (/\b(?:successful(?:ly)? complet|positive impact|maintain(?:ing)? (?:his|your) current level|this past workout|this past week has seen|continue with the planned schedule)\b/i.test(weakCoaching)) return false;
+  if (strings.some((item) => /^\s*[.•]|\+0(?:\.0+)?%\b/.test(item))) return false;
+  const latest = context?.training?.latestCompletedWorkout;
+  const plannedTitle = String(latest?.scheduledPlanOnThatDate?.title || "");
+  const reflectedIntent = String(latest?.matchingReflection?.intendedSession || "");
+  const latestWasLong = /long/i.test(plannedTitle) || /long/i.test(reflectedIntent);
+  const workoutText = [value.workoutAnalysis?.title, value.workoutAnalysis?.body, value.workoutAnalysis?.intent].join(" ");
+  if (!latestWasLong && /\blong run\b/i.test(workoutText)) return false;
+  if (latest && !latest.occurredToday && /\btoday(?:'s)? (?:completed |latest )?(?:run|workout|session)\b/i.test(workoutText)) return false;
   const runningSlots = Object.values(value.runRecommendations || {});
-  if (runningSlots.length !== 4 || runningSlots.some((item) => item.title.trim().split(/\s+/).length < 3)) return false;
+  if (runningSlots.length !== 4 || runningSlots.some((item) => item.title.trim().split(/\s+/).length < 3 || !Array.isArray(item.prescription) || item.prescription.length < 2 || !Array.isArray(item.evidence) || item.evidence.length < 2)) return false;
+  if (!Array.isArray(value.workoutAnalysis?.signals) || value.workoutAnalysis.signals.length < 2) return false;
   return true;
 }
 
@@ -281,20 +302,26 @@ function systemPrompt() {
 
 This is genuine analysis, not a phrase-selection task. Weigh the whole context: recovery trends, recent and long-term load, fitness/fatigue/form, workout intent versus execution, heart-rate zones, weather, strength exposure, consistency, goals, constraints, history, and Ben's own reflection. Current evidence outweighs historical benchmarks. Separate correlation from certainty. Garmin wrist heart rate is useful but noisy; do not treat a single peak as definitive.
 
+Chronology is non-negotiable. "today.scheduledWorkout" is a plan, not evidence that it happened. "training.latestCompletedWorkout" is the most recent recorded session and includes its actual date, the schedule for that date, and only the reflection belonging to that session. Never apply today's plan or an unrelated historical reflection to the latest completed workout. If today's scheduled workout is unrecorded, describe it as upcoming.
+
+Before writing, internally do four things: establish the timeline; compare the latest session with the plan and reflection from that same date; identify the strongest multi-day or multi-week pattern; and choose the smallest training adaptation most likely to improve Ben's stated goals. Output only the conclusions.
+
 Each output has a distinct job:
 - dailyHealth is a calm whole-health synthesis, not an athletic readiness score.
-- dailyGuidance is the single useful decision for today.
+- dailyGuidance is the single useful decision for today: keep, modify, replace, or skip the scheduled work, with a reason.
 - runRecommendations contains exactly four named slots: sunday, tuesday, wednesday, and saturday. Analyze the matching supplied runningDays entry for each slot while preserving the static schedule as a fallback.
-- workoutAnalysis explains what the latest session changed, whether it matched its intended purpose, and what to do next. Do not merely restate its stats.
-- coachingFocus names the most important short-term limiter or opportunity after considering all factors.
-- weeklyReview identifies a real pattern across the week.
-- insightCards surface three different athletic patterns worth understanding.
+- workoutAnalysis judges the latest completed session against the plan and reflection from that same date, explains what adaptation or recovery cost it created, and changes the next decision when warranted. Do not narrate the workout.
+- coachingFocus names one short-term limiter or opportunity, one concrete change, and an observable sign that the change is working.
+- weeklyReview compares this week with the prior period and states what should change or stay fixed because of that pattern.
+- insightCards surface three different athletic patterns, each pairing a comparison with its training implication.
 
 Avoid generic encouragement, canned coaching slogans, and repeated phrases. Never say work was productive merely because it was completed. Do not recycle exact wording found in priorOutputs. If the correct conclusion is unchanged, say what current evidence strengthens, weakens, or qualifies it instead of inventing novelty. Use specific evidence, but do not dump numbers or repeat the same evidence across sections. Keep every field concise enough for a phone. Return plain prose only: no Markdown, asterisks, headings inside fields, field-name labels, or decorative punctuation.
 
 Keep prose fields to one or two short sentences and roughly 45 words maximum. Prescription items should be executable and under 20 words. Evidence items should name a signal or comparison in under 12 words. Complete every required field, then stop.
 
 Never emit HTML or XML tags. Address Ben directly as "you" in coaching prose; never call him "the athlete." Do not prefix titles with field labels such as "Workout Analysis," "Weekly Review," or "Insight." Aerobic training effect does not prove pace steadiness, and average heart rate alone does not establish a session's zone distribution. Do not invent causal interpretations that are not supported by the supplied series, splits, conditions, intent, and reflection.
+
+Paraphrasing an activity, metric, schedule, or reflection is not insight. Every section must add at least one comparison, consequence, tradeoff, decision, or review trigger that is not already stated verbatim in the inputs. Never call a session successful or productive simply because it was completed. Never invent percentages, targets, pace ranges, or subjective feelings. Signal cards must use real supplied values or honest qualitative comparisons; never output +0% placeholders. Do not predict that Ben will complete future workouts. If the data does not justify a change, explicitly say what should remain fixed and what evidence would trigger reconsideration.
 
 Do not default to progressive overload, intervals, more intensity, or more mileage. Recommend any of those only when the supplied current evidence and Ben's goals make that the best next action. Do not prescribe a cadence target; cadence is an observed trend, not a technique goal. The workout analysis must interpret this specific latest session against its intended role, surrounding training, recovery, weather, longer-term distribution, and subjective feedback.
 
