@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.2.2";
+const APP_VERSION = "3.2.3";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -243,8 +243,8 @@ const STORAGE = {
   legacyPacket: "ben-hq-private-daily-v1",
   feedback: "fitness-hq-workout-feedback-v1",
   recommendationHistory: "fitness-hq-recommendations-v1",
-  liveAnalysis: "fitness-hq-live-analysis-v7",
-  liveAnalysisHistory: "fitness-hq-live-analysis-history-v7",
+  liveAnalysis: "fitness-hq-live-analysis-v8",
+  liveAnalysisHistory: "fitness-hq-live-analysis-history-v8",
 };
 
 const OUTCOME_LABELS = {
@@ -289,6 +289,14 @@ function writeJson(key, value) {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // The UI remains usable if storage is unavailable.
+  }
+}
+
+function removeStored(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // The current data-first view remains usable if storage is unavailable.
   }
 }
 
@@ -757,6 +765,8 @@ async function requestLiveAnalysis(reason = "app load") {
       renderAllTracking();
       return true;
     } catch (error) {
+      liveAnalysis = null;
+      removeStored(STORAGE.liveAnalysis);
       liveAnalysisState = { status: "error", reason, error: error?.message || "Live coaching analysis is unavailable." };
       renderAllTracking();
       return false;

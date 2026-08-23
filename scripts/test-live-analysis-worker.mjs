@@ -13,7 +13,7 @@ const analysis = {
     wednesday: { kind: "easy", title: "Low-cost easy run", summary: "Protect separation from harder work.", prescription: ["Keep breathing easy", "Do not add a fast finish"], evidence: ["Intensity distribution", "Weekly rhythm"], confidence: "Reasonable confidence" },
     saturday: { kind: "quality", title: "Controlled tempo option", summary: "Use one purposeful quality slot only if recovery holds.", prescription: ["Warm up easily", "Keep tempo controlled"], evidence: ["One-quality-session limit", "Current load"], confidence: "Provisional" },
   },
-  workoutAnalysis: { title: "The last run filled the quality slot", body: "The workout was meaningfully harder than an easy run, so it supplied this week's quality stimulus and changes the role of the next session.", effect: "Count the cardiovascular stimulus once.", next: "Keep the next run easy.", signals: [{ label: "Intent", value: "Easy → quality", detail: "Effort exceeded intent" }, { label: "Context", value: "Warm conditions", detail: "Heat raised cost" }], intent: "easy → quality", confidence: "High confidence" },
+  workoutAnalysis: { title: "The last run filled the quality slot", body: "Compared with the same-date easy-run intent, the workout was meaningfully harder, so it supplied this week's quality stimulus and changes the role of the next session.", effect: "Count the cardiovascular stimulus once rather than adding another hard effort before the next recovery cycle.", next: "Keep the next run easy.", signals: [{ label: "Intent versus execution", value: "Easy → quality", detail: "Effort exceeded intent" }, { label: "Conditions", value: "Warm conditions", detail: "Heat raised cost" }], intent: "easy → quality", confidence: "High confidence" },
   coachingFocus: { title: "Separate easy and hard running", rationale: "The current intensity distribution is the clearest opportunity.", action: "Keep routine runs conversational.", successMarker: "Easy days become repeatable.", horizon: "Next 2 weeks", confidence: "High confidence" },
   weeklyReview: { title: "Intensity rose while frequency held", summary: "The week had enough stimulus.", win: "Frequency remained consistent.", watch: "Do not stack quality work.", confidence: "High confidence" },
   insightCards: [
@@ -24,6 +24,17 @@ const analysis = {
 };
 
 let modelCalls = 0;
+let runSlotCalls = 0;
+function responseForSchema(input) {
+  const required = input.response_format.json_schema.required || [];
+  if (required.includes("recommendation")) {
+    const recommendation = Object.values(analysis.runRecommendations)[runSlotCalls % 4];
+    runSlotCalls += 1;
+    return { recommendation };
+  }
+  if (required.length === 1 && required.includes("workoutAnalysis")) return { workoutAnalysis: analysis.workoutAnalysis };
+  return analysis;
+}
 const env = {
   ALLOWED_ORIGIN: origin,
   REFRESH_SHARED_SECRET: secret,
@@ -32,7 +43,7 @@ const env = {
       modelCalls += 1;
       assert.equal(model, "@cf/meta/llama-3.1-8b-instruct-fast");
       assert.equal(input.response_format.type, "json_schema");
-      return { response: analysis, usage: { prompt_tokens: 100, completion_tokens: 200 } };
+      return { response: responseForSchema(input), usage: { prompt_tokens: 100, completion_tokens: 200 } };
     },
   },
 };
@@ -62,7 +73,7 @@ assert.equal(response.status, 200);
 const payload = await response.json();
 assert.equal(payload.analysis.coachingFocus.title, analysis.coachingFocus.title);
 assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
-assert.equal(modelCalls, 2);
+assert.equal(modelCalls, 6);
 
 const repairTimestamp = Date.now() + 1;
 const repairNonce = crypto.randomUUID();
@@ -70,8 +81,10 @@ const repairSignature = await sign(repairTimestamp, repairNonce, contextJson);
 const repairEnv = {
   ...env,
   AI: {
-    async run() {
-      const nearJson = JSON.stringify(analysis)
+    async run(model, input) {
+      const schemaResponse = responseForSchema(input);
+      if (!input.response_format.json_schema.required.includes("dailyGuidance")) return { response: schemaResponse };
+      const nearJson = JSON.stringify(schemaResponse)
         .replace('"weeklyReview":', "weeklyReview:")
         .replace("Recovery is normal", 'Recovery is "normal"')
         .replace(/}$/, ",}");
