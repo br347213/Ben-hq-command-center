@@ -1,5 +1,5 @@
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
-const ANALYSIS_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+const ANALYSIS_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const MAX_CONTEXT_BYTES = 120_000;
 
 function shortString() {
@@ -201,7 +201,9 @@ Each output has a distinct job:
 - weeklyReview identifies a real pattern across the week.
 - insightCards surface three different athletic patterns worth understanding.
 
-Avoid generic encouragement, canned coaching slogans, and repeated phrases. Never say work was productive merely because it was completed. Do not recycle exact wording found in priorOutputs. If the correct conclusion is unchanged, say what current evidence strengthens, weakens, or qualifies it instead of inventing novelty. Use specific evidence, but do not dump numbers or repeat the same evidence across sections. Keep every field concise enough for a phone.
+Avoid generic encouragement, canned coaching slogans, and repeated phrases. Never say work was productive merely because it was completed. Do not recycle exact wording found in priorOutputs. If the correct conclusion is unchanged, say what current evidence strengthens, weakens, or qualifies it instead of inventing novelty. Use specific evidence, but do not dump numbers or repeat the same evidence across sections. Keep every field concise enough for a phone. Return plain prose only: no Markdown, asterisks, headings inside fields, field-name labels, or decorative punctuation.
+
+Do not default to progressive overload, intervals, more intensity, or more mileage. Recommend any of those only when the supplied current evidence and Ben's goals make that the best next action. The workout analysis must interpret this specific latest session against its intended role, surrounding training, recovery, weather, longer-term distribution, and subjective feedback.
 
 Respect the fixed plan, sustainable consistency, one quality run per week, the athlete's known mileage response, pain constraints, and motivation. Do not diagnose, prescribe medication, or give medical treatment advice. For pain, illness, unusual cardiac symptoms, or significant mental-health symptoms, use appropriately cautious training guidance and recommend professional evaluation when warranted. Return only the requested JSON.`;
 }

@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.1.1";
+const APP_VERSION = "3.1.2";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -467,7 +467,7 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
   const recentActivities = activityDetails
     .slice()
     .sort((left, right) => String(right.startTimeLocal || right.date || "").localeCompare(String(left.startTimeLocal || left.date || "")))
-    .slice(0, 42)
+    .slice(0, 21)
     .map(compactActivityForAnalysis)
     .filter(Boolean);
   const reflections = Object.values(workoutFeedback)
@@ -498,7 +498,7 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
   const recentCompletions = Object.entries(completions)
     .filter(([date]) => /^\d{4}-\d{2}-\d{2}$/.test(date) && parseLocalDateKey(date) <= now)
     .sort(([left], [right]) => right.localeCompare(left))
-    .slice(0, 42)
+    .slice(0, 28)
     .map(([date, value]) => ({ date, status: typeof value === "string" ? value : value?.status || "", source: value?.source || "manual" }));
   return {
     schemaVersion: 1,
@@ -530,7 +530,9 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
         loadMethod: training.analytics?.loadMethod || "",
         references: training.analytics?.references || {},
         current: training.analytics?.current || {},
-        series90Day: Array.isArray(training.analytics?.series) ? training.analytics.series.slice(-90) : [],
+        series90Day: Array.isArray(training.analytics?.series)
+          ? training.analytics.series.slice(-90).filter((_, index, series) => index % 3 === 0 || index >= series.length - 14)
+          : [],
       },
       recentActivities,
       derivedCurrentRead: {
@@ -556,6 +558,21 @@ function hasCompleteLiveAnalysis(analysis) {
     && typeof analysis.coachingFocus?.title === "string"
     && typeof analysis.weeklyReview?.title === "string"
     && Array.isArray(analysis.insightCards);
+}
+
+function cleanGeneratedText(value) {
+  return String(value || "")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "")
+    .replace(/^\s*[#*-]+\s*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sanitizeGeneratedAnalysis(value) {
+  if (Array.isArray(value)) return value.map(sanitizeGeneratedAnalysis);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeGeneratedAnalysis(item)]));
+  return typeof value === "string" ? cleanGeneratedText(value) : value;
 }
 
 function liveRecommendationForDate(date) {
@@ -629,7 +646,7 @@ async function requestLiveAnalysis(reason = "app load") {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !hasCompleteLiveAnalysis(payload.analysis)) throw new Error(payload.error || "Live coaching analysis failed");
       liveAnalysis = {
-        ...payload.analysis,
+        ...sanitizeGeneratedAnalysis(payload.analysis),
         _meta: { generatedAt: payload.generatedAt || new Date().toISOString(), model: payload.model || "Workers AI", reason },
       };
       writeJson(STORAGE.liveAnalysis, liveAnalysis);
