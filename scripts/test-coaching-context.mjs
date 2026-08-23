@@ -168,6 +168,10 @@ assert.equal(liveContext.training.latestCompletedWorkout.occurredToday, false);
 assert.equal(liveContext.training.latestCompletedWorkout.scheduledPlanOnThatDate.title, "Easy or tempo run");
 assert.equal(liveContext.training.latestCompletedWorkout.matchingReflection.note, "Felt controlled");
 assert.equal(liveContext.training.latestCompletedWorkout.matchingReflection.intendedSession, "easy");
+assert.equal(liveContext.training.analytics.currentState.longTermFitnessLoadPoints, 12);
+assert.equal(liveContext.training.analytics.currentState.shortTermFatigueLoadPoints, 8);
+assert.equal(liveContext.training.analytics.currentState.sevenDayFitnessRampPoints, -1.6);
+assert.match(liveContext.training.analytics.metricSemantics.longTermFitnessLoadPoints, /level, not a change/i);
 assert.equal(cleanGeneratedText(". Next move"), "Next move");
 const sanitizedConfidence = sanitizeGeneratedAnalysis({
   workoutAnalysis: { confidence: ".6" }, coachingFocus: { confidence: "0.92", horizon: "The upcoming week will focus on easy running" }, weeklyReview: { confidence: "medium" },

@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.2.1";
+const APP_VERSION = "3.2.2";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -243,8 +243,8 @@ const STORAGE = {
   legacyPacket: "ben-hq-private-daily-v1",
   feedback: "fitness-hq-workout-feedback-v1",
   recommendationHistory: "fitness-hq-recommendations-v1",
-  liveAnalysis: "fitness-hq-live-analysis-v6",
-  liveAnalysisHistory: "fitness-hq-live-analysis-history-v6",
+  liveAnalysis: "fitness-hq-live-analysis-v7",
+  liveAnalysisHistory: "fitness-hq-live-analysis-history-v7",
 };
 
 const OUTCOME_LABELS = {
@@ -463,6 +463,7 @@ function liveAnalysisSummary(analysis) {
 function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
   const coaching = buildCoachingContext(privatePacket, now);
   const training = privatePacket.training || {};
+  const currentAnalytics = training.analytics?.current || {};
   const currentDate = localDateKey(now);
   const activityDetails = Array.isArray(training.activityDetails) ? training.activityDetails : [];
   const latestActivity = training.lastWorkoutDetail && typeof training.lastWorkoutDetail === "object" ? training.lastWorkoutDetail : null;
@@ -561,7 +562,24 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
         model: training.analytics?.model || "",
         loadMethod: training.analytics?.loadMethod || "",
         references: training.analytics?.references || {},
-        current: training.analytics?.current || {},
+        currentState: {
+          longTermFitnessLoadPoints: currentAnalytics.fitness,
+          shortTermFatigueLoadPoints: currentAnalytics.fatigue,
+          formFitnessMinusFatigue: currentAnalytics.form,
+          sevenDayFitnessRampPoints: currentAnalytics.ramp7Day,
+          loadBalanceFatigueDividedByFitness: currentAnalytics.loadBalance,
+          monotony7Day: currentAnalytics.monotony7Day,
+          strain7Day: currentAnalytics.strain7Day,
+          runningEfficiency28Day: currentAnalytics.runningEfficiency28,
+          runningEfficiencyChangePct: currentAnalytics.runningEfficiencyChangePct,
+        },
+        metricSemantics: {
+          longTermFitnessLoadPoints: "Current long-term load estimate. It is a level, not a change.",
+          shortTermFatigueLoadPoints: "Current short-term load estimate. It is a level, not a change or a subjective feeling.",
+          formFitnessMinusFatigue: "Fitness minus fatigue. Positive is fresher; negative reflects more accumulated short-term load.",
+          sevenDayFitnessRampPoints: "The direction and size of the fitness estimate's change over seven days.",
+          loadBalanceFatigueDividedByFitness: "Short-term fatigue divided by long-term fitness; context for whether recent load is light, balanced, or elevated.",
+        },
         series90Day: Array.isArray(training.analytics?.series)
           ? training.analytics.series.slice(-90).filter((_, index, series) => index % 3 === 0 || index >= series.length - 14)
           : [],
@@ -574,6 +592,7 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
         recent28DayCounts: coaching.training.recent28,
         zoneMix: coaching.training.zoneMix,
         priorityCandidate: coaching.focus,
+        latestSessionEffortClassification: coaching.training.latestEffort,
       },
     },
     reflections,

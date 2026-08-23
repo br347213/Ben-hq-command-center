@@ -270,8 +270,8 @@ function parseModelResponse(result) {
   }
 }
 
-function analysisQualityIsAcceptable(value, context) {
-  if (!hasCompleteAnalysis(value)) return false;
+function analysisQualityIssue(value, context) {
+  if (!hasCompleteAnalysis(value)) return "incomplete-analysis";
   const strings = [];
   const collect = (item) => {
     if (typeof item === "string") strings.push(item);
@@ -279,7 +279,7 @@ function analysisQualityIsAcceptable(value, context) {
     else if (item && typeof item === "object") Object.values(item).forEach(collect);
   };
   collect(value);
-  if (strings.some((item) => /https?:\/\/|<\|[^>]+\|>|```|<\/?[a-z][^>]*>|\[\[|\]\]/i.test(item))) return false;
+  if (strings.some((item) => /https?:\/\/|<\|[^>]+\|>|```|<\/?[a-z][^>]*>|\[\[|\]\]/i.test(item))) return "format-artifact";
   const weakCoaching = [
     value.workoutAnalysis?.title,
     value.workoutAnalysis?.body,
@@ -291,19 +291,21 @@ function analysisQualityIsAcceptable(value, context) {
     value.weeklyReview?.title,
     value.weeklyReview?.summary,
   ].filter(Boolean).join(" ");
-  if (/\b(?:successful(?:ly)? complet|positive impact|maintain(?:ing)? (?:his|your) current level|this past workout|this past week has seen|continue with the planned schedule|strong correlation|correlates? with)\b/i.test(weakCoaching)) return false;
-  if (strings.some((item) => /^\s*[.•]|^[+-]\d+(?:\.\d+)?%\b/.test(item))) return false;
+  if (/\b(?:successful(?:ly)? complet|positive impact|maintain(?:ing)? (?:his|your) current level|this past workout|this past week has seen|continue with the planned schedule|strong correlation|correlates? with|not pushing (?:yourself )?hard enough|modify the schedule|rewrite the schedule|resulted in (?:an? )?(?:decrease|increase) in fitness)\b/i.test(weakCoaching)) return "generic-or-unsupported-coaching";
+  if (strings.some((item) => /^\s*[.•]|^[+-]\d+(?:\.\d+)?%\b/.test(item))) return "invented-or-malformed-signal";
   const latest = context?.training?.latestCompletedWorkout;
   const plannedTitle = String(latest?.scheduledPlanOnThatDate?.title || "");
   const reflectedIntent = String(latest?.matchingReflection?.intendedSession || "");
   const latestWasLong = /long/i.test(plannedTitle) || /long/i.test(reflectedIntent);
   const workoutText = [value.workoutAnalysis?.title, value.workoutAnalysis?.body, value.workoutAnalysis?.intent].join(" ");
-  if (!latestWasLong && /\blong run\b/i.test(workoutText)) return false;
-  if (latest && !latest.occurredToday && /\btoday(?:'s)? (?:completed |latest )?(?:run|workout|session)\b/i.test(workoutText)) return false;
+  if (!latestWasLong && /\blong run\b/i.test(workoutText)) return "latest-workout-plan-conflation";
+  if (latest && !latest.occurredToday && /\btoday(?:'s)? (?:completed |latest )?(?:run|workout|session)\b/i.test(workoutText)) return "latest-workout-date-conflation";
   const runningSlots = Object.values(value.runRecommendations || {});
-  if (runningSlots.length !== 4 || runningSlots.some((item) => item.title.trim().split(/\s+/).length < 3 || !Array.isArray(item.prescription) || item.prescription.length < 2 || !Array.isArray(item.evidence) || item.evidence.length < 2)) return false;
-  if (!Array.isArray(value.workoutAnalysis?.signals) || value.workoutAnalysis.signals.length < 2) return false;
-  return true;
+  if (runningSlots.length !== 4 || runningSlots.some((item) => item.title.trim().split(/\s+/).length < 3 || !Array.isArray(item.prescription) || item.prescription.length < 2 || !Array.isArray(item.evidence) || item.evidence.length < 2)) return "incomplete-run-plan";
+  if (runningSlots.some((item) => /^(?:sunday|tuesday|wednesday|saturday) run recommendation$/i.test(item.title.trim()))) return "generic-run-title";
+  if (/^(?:latest completed )?workout analysis$/i.test(String(value.workoutAnalysis?.title || "").trim())) return "generic-workout-title";
+  if (!Array.isArray(value.workoutAnalysis?.signals) || value.workoutAnalysis.signals.length < 2) return "incomplete-workout-signals";
+  return "";
 }
 
 function hasCompleteAnalysis(value) {
@@ -322,6 +324,8 @@ function systemPrompt() {
   return `You are Fitness HQ's private coaching analyst for one athlete, Ben. Produce a fresh, evidence-grounded coaching read from the supplied current data.
 
 This is genuine analysis, not a phrase-selection task. Weigh the whole context: recovery trends, recent and long-term load, fitness/fatigue/form, workout intent versus execution, heart-rate zones, weather, strength exposure, consistency, goals, constraints, history, and Ben's own reflection. Current evidence outweighs historical benchmarks. Separate correlation from certainty. Garmin wrist heart rate is useful but noisy; do not treat a single peak as definitive.
+
+Metric semantics are authoritative. Long-term fitness and short-term fatigue are current load levels, not increases or decreases. Only sevenDayFitnessRampPoints describes the direction of fitness change. High fatigue means recent load is high relative to the long-term estimate; it never means Ben is "not pushing hard enough." Do not infer a trend unless the context supplies an explicit comparison or time series.
 
 Chronology is non-negotiable. "today.scheduledWorkout" is a plan, not evidence that it happened. "training.latestCompletedWorkout" is the most recent recorded session and includes its actual date, the schedule for that date, and only the reflection belonging to that session. Never apply today's plan or an unrelated historical reflection to the latest completed workout. If today's scheduled workout is unrecorded, describe it as upcoming.
 
@@ -393,13 +397,14 @@ async function analyze(body, origin, env) {
       }
     };
     const [coreResult, planResult] = await Promise.all([
-      runInference(coreCoachingSchema, "Return only the core coaching fields requested by the schema. Prioritize chronology, decisions, adaptation, and comparisons over summaries.", 1750, 0.38),
+      runInference(coreCoachingSchema, "Return only the core coaching fields requested by the schema. Prioritize chronology, decisions, adaptation, and comparisons over summaries. Use the supplied metricSemantics exactly and audit every causal claim before returning it.", 1750, 0.24),
       runInference(runPlanSchema, "Return only runRecommendations. Optimize each fixed running day around the same current evidence and the supplied priority candidate; do not rewrite the weekly rhythm.", 1250, 0.28),
     ]);
     const coreAnalysis = parseModelResponse(coreResult);
     const planAnalysis = parseModelResponse(planResult);
     const analysis = { ...coreAnalysis, runRecommendations: planAnalysis.runRecommendations };
-    if (!analysisQualityIsAcceptable(analysis, context)) throw new Error("Model response did not meet coaching quality requirements");
+    const qualityIssue = analysisQualityIssue(analysis, context);
+    if (qualityIssue) throw new Error(`Model response did not meet coaching quality requirements: ${qualityIssue}`);
     return response({
       analysis,
       generatedAt: new Date().toISOString(),
