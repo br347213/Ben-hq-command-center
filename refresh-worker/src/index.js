@@ -205,6 +205,8 @@ Avoid generic encouragement, canned coaching slogans, and repeated phrases. Neve
 
 Do not default to progressive overload, intervals, more intensity, or more mileage. Recommend any of those only when the supplied current evidence and Ben's goals make that the best next action. The workout analysis must interpret this specific latest session against its intended role, surrounding training, recovery, weather, longer-term distribution, and subjective feedback.
 
+Every dailyHealth point must interpret or connect at least two health signals; a naked metric such as "Resting HR: 50" is not an insight. The workoutAnalysis body must explain why the session matters in the current training arc; put raw statistics in signals instead. The weeklyReview title must state the actual pattern, not label itself "Weekly Review." Use every runningDays targetDate exactly as supplied and return recommendations in the same order.
+
 Respect the fixed plan, sustainable consistency, one quality run per week, the athlete's known mileage response, pain constraints, and motivation. Do not diagnose, prescribe medication, or give medical treatment advice. For pain, illness, unusual cardiac symptoms, or significant mental-health symptoms, use appropriately cautious training guidance and recommend professional evaluation when warranted. Return only the requested JSON.`;
 }
 
@@ -233,7 +235,7 @@ async function analyze(body, origin, env) {
       ],
       response_format: { type: "json_schema", json_schema: coachingSchema },
       max_tokens: 2200,
-      temperature: 0.72,
+      temperature: 0.62,
       top_p: 0.9,
       repetition_penalty: 1.08,
       frequency_penalty: 0.25,

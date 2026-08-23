@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.1.2";
+const APP_VERSION = "3.1.3";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -260,7 +260,7 @@ let syncSettings = loadSyncSettings();
 let privatePacket = loadPrivatePacket();
 let workoutFeedback = readJson(STORAGE.feedback, {});
 let recommendationHistory = readJson(STORAGE.recommendationHistory, {});
-let liveAnalysis = readJson(STORAGE.liveAnalysis, null);
+let liveAnalysis = sanitizeGeneratedAnalysis(readJson(STORAGE.liveAnalysis, null));
 let liveAnalysisHistory = readJson(STORAGE.liveAnalysisHistory, []);
 let liveAnalysisState = { status: liveAnalysis ? "ready" : "idle", reason: "", error: "" };
 let liveAnalysisRequest = null;
@@ -561,12 +561,15 @@ function hasCompleteLiveAnalysis(analysis) {
 }
 
 function cleanGeneratedText(value) {
-  return String(value || "")
+  let cleaned = String(value || "")
+    .replace(/<\|[^>]+\|>/g, "")
     .replace(/\*\*/g, "")
     .replace(/`/g, "")
     .replace(/^\s*[#*-]+\s*/g, "")
     .replace(/\s+/g, " ")
     .trim();
+  if (cleaned.startsWith("[") && cleaned.endsWith("]")) cleaned = cleaned.slice(1, -1).trim();
+  return cleaned;
 }
 
 function sanitizeGeneratedAnalysis(value) {
@@ -577,9 +580,12 @@ function sanitizeGeneratedAnalysis(value) {
 
 function liveRecommendationForDate(date) {
   const key = localDateKey(date);
-  return Array.isArray(liveAnalysis?.runRecommendations)
-    ? liveAnalysis.runRecommendations.find((item) => item?.targetDate === key) || null
-    : null;
+  if (!Array.isArray(liveAnalysis?.runRecommendations)) return null;
+  const exact = liveAnalysis.runRecommendations.find((item) => String(item?.targetDate || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] === key);
+  if (exact) return exact;
+  const runWeekdays = WEEK.map((workout, weekday) => ({ workout, weekday })).filter(({ workout }) => workout.type === "Run");
+  const position = runWeekdays.findIndex(({ weekday }) => weekday === date.getDay());
+  return position >= 0 ? liveAnalysis.runRecommendations[position] || null : null;
 }
 
 function resolvedRunRecommendation(date, coaching = buildCoachingContext()) {
