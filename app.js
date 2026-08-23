@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.2.0";
+const APP_VERSION = "3.2.1";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -243,8 +243,8 @@ const STORAGE = {
   legacyPacket: "ben-hq-private-daily-v1",
   feedback: "fitness-hq-workout-feedback-v1",
   recommendationHistory: "fitness-hq-recommendations-v1",
-  liveAnalysis: "fitness-hq-live-analysis-v5",
-  liveAnalysisHistory: "fitness-hq-live-analysis-history-v5",
+  liveAnalysis: "fitness-hq-live-analysis-v6",
+  liveAnalysisHistory: "fitness-hq-live-analysis-history-v6",
 };
 
 const OUTCOME_LABELS = {
@@ -573,6 +573,7 @@ function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
         recentActivityCounts: coaching.training.recent7,
         recent28DayCounts: coaching.training.recent28,
         zoneMix: coaching.training.zoneMix,
+        priorityCandidate: coaching.focus,
       },
     },
     reflections,
@@ -612,7 +613,7 @@ function cleanGeneratedText(value) {
     .replace(/^(?:weekly review|workout analysis|insight)\s*:\s*/i, "")
     .replace(/\bthe athlete needs\b/gi, "You need")
     .replace(/\bthe athlete\b/gi, "you");
-  if (cleaned.startsWith("[") && cleaned.endsWith("]")) cleaned = cleaned.slice(1, -1).trim();
+  while (cleaned.startsWith("[") && cleaned.endsWith("]")) cleaned = cleaned.slice(1, -1).trim();
   const letters = cleaned.replace(/[^A-Za-z]/g, "");
   const uppercaseLetters = letters.replace(/[^A-Z]/g, "");
   if (letters.length > 24 && uppercaseLetters.length / letters.length > 0.88) {

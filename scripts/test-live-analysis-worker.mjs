@@ -23,11 +23,13 @@ const analysis = {
   ],
 };
 
+let modelCalls = 0;
 const env = {
   ALLOWED_ORIGIN: origin,
   REFRESH_SHARED_SECRET: secret,
   AI: {
     async run(model, input) {
+      modelCalls += 1;
       assert.equal(model, "@cf/meta/llama-3.1-8b-instruct-fast");
       assert.equal(input.response_format.type, "json_schema");
       return { response: analysis, usage: { prompt_tokens: 100, completion_tokens: 200 } };
@@ -60,6 +62,7 @@ assert.equal(response.status, 200);
 const payload = await response.json();
 assert.equal(payload.analysis.coachingFocus.title, analysis.coachingFocus.title);
 assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
+assert.equal(modelCalls, 2);
 
 const repairTimestamp = Date.now() + 1;
 const repairNonce = crypto.randomUUID();

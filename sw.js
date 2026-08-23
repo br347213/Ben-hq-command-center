@@ -1,12 +1,12 @@
-const CACHE_NAME = "fitness-hq-v57";
+const CACHE_NAME = "fitness-hq-v58";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=3.2.0",
-  "./app.js?v=3.2.0",
-  "./manifest.webmanifest?v=3.2.0",
-  "./assets/my-command-center-logo.png?v=3.2.0",
-  "./assets/fitness-hq-home-icon.png?v=3.2.0",
+  "./styles.css?v=3.2.1",
+  "./app.js?v=3.2.1",
+  "./manifest.webmanifest?v=3.2.1",
+  "./assets/my-command-center-logo.png?v=3.2.1",
+  "./assets/fitness-hq-home-icon.png?v=3.2.1",
   "./assets/ocean-bathymetry.webp"
 ];
 
