@@ -7,10 +7,11 @@ const NAV_ITEMS = [
 ];
 
 const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/refresh";
+const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.0.4";
-const COACHING_MODEL_VERSION = "2.1";
+const APP_VERSION = "3.1.0";
+const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
     "Use current fitness rather than goal fitness to set intensity.",
@@ -242,6 +243,8 @@ const STORAGE = {
   legacyPacket: "ben-hq-private-daily-v1",
   feedback: "fitness-hq-workout-feedback-v1",
   recommendationHistory: "fitness-hq-recommendations-v1",
+  liveAnalysis: "fitness-hq-live-analysis-v1",
+  liveAnalysisHistory: "fitness-hq-live-analysis-history-v1",
 };
 
 const OUTCOME_LABELS = {
@@ -257,6 +260,10 @@ let syncSettings = loadSyncSettings();
 let privatePacket = loadPrivatePacket();
 let workoutFeedback = readJson(STORAGE.feedback, {});
 let recommendationHistory = readJson(STORAGE.recommendationHistory, {});
+let liveAnalysis = readJson(STORAGE.liveAnalysis, null);
+let liveAnalysisHistory = readJson(STORAGE.liveAnalysisHistory, []);
+let liveAnalysisState = { status: liveAnalysis ? "ready" : "idle", reason: "", error: "" };
+let liveAnalysisRequest = null;
 let toastTimer = null;
 
 function escapeHtml(value) {
@@ -428,6 +435,216 @@ function historicalResponseCue(coaching, situation) {
   return patterns.bodyMind;
 }
 
+function compactActivityForAnalysis(activity) {
+  if (!activity || typeof activity !== "object") return null;
+  const keys = [
+    "activityId", "date", "startTimeLocal", "name", "type", "distanceMiles", "durationMinutes",
+    "averagePaceMinutesPerMile", "averageHr", "maxHr", "calories", "elevationGainFeet",
+    "aerobicEffect", "anaerobicEffect", "averageCadence", "vo2Max", "hrZones", "weather",
+  ];
+  return Object.fromEntries(keys.filter((key) => activity[key] !== undefined && activity[key] !== null).map((key) => [key, activity[key]]));
+}
+
+function liveAnalysisSummary(analysis) {
+  if (!analysis || typeof analysis !== "object") return null;
+  return {
+    generatedAt: analysis._meta?.generatedAt || "",
+    dailyGuidance: analysis.dailyGuidance?.title || "",
+    dailyHealth: analysis.dailyHealth?.headline || "",
+    workoutAnalysis: analysis.workoutAnalysis?.title || "",
+    coachingFocus: analysis.coachingFocus?.title || "",
+    weeklyReview: analysis.weeklyReview?.title || "",
+    runRecommendations: Array.isArray(analysis.runRecommendations)
+      ? analysis.runRecommendations.map((item) => ({ targetDate: item.targetDate, title: item.title }))
+      : [],
+  };
+}
+
+function buildLiveAnalysisContext(reason = "app load", now = new Date()) {
+  const coaching = buildCoachingContext(privatePacket, now);
+  const training = privatePacket.training || {};
+  const activityDetails = Array.isArray(training.activityDetails) ? training.activityDetails : [];
+  const recentActivities = activityDetails
+    .slice()
+    .sort((left, right) => String(right.startTimeLocal || right.date || "").localeCompare(String(left.startTimeLocal || left.date || "")))
+    .slice(0, 42)
+    .map(compactActivityForAnalysis)
+    .filter(Boolean);
+  const reflections = Object.values(workoutFeedback)
+    .filter((item) => item && typeof item === "object")
+    .sort((left, right) => String(right.updatedAt || right.date || "").localeCompare(String(left.updatedAt || left.date || "")))
+    .slice(0, 12)
+    .map((item) => ({
+      date: item.date || "",
+      workout: item.name || "Workout",
+      rpe: item.rpe || "",
+      feel: item.feel || "",
+      enjoyment: item.enjoyment || "",
+      bodyMindSignal: item.bodySignal || "",
+      intendedSession: item.intent || "",
+      planChoice: item.planChoice || "",
+      note: item.note || "",
+    }));
+  const runPlan = WEEK.map((workout, weekday) => ({ workout, date: dateForPlanningWeekday(weekday, now) }))
+    .filter(({ workout }) => workout.type === "Run")
+    .map(({ workout, date }) => ({
+      targetDate: localDateKey(date),
+      day: workout.day,
+      staticTitle: workout.title,
+      staticSummary: workout.summary,
+      staticMain: workout.main,
+      minimum: workout.minimum,
+    }));
+  const recentCompletions = Object.entries(completions)
+    .filter(([date]) => /^\d{4}-\d{2}-\d{2}$/.test(date) && parseLocalDateKey(date) <= now)
+    .sort(([left], [right]) => right.localeCompare(left))
+    .slice(0, 42)
+    .map(([date, value]) => ({ date, status: typeof value === "string" ? value : value?.status || "", source: value?.source || "manual" }));
+  return {
+    schemaVersion: 1,
+    requestedAt: now.toISOString(),
+    currentDate: localDateKey(now),
+    localTime: now.toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit", timeZoneName: "short" }),
+    reason,
+    athlete: ATHLETE_PROFILE,
+    coachingPrinciples: COACHING_KNOWLEDGE.principles,
+    historicalResponse: {
+      trainingCoverage: STRAVA_TRAINING_HISTORY.coverage,
+      recentYears: STRAVA_TRAINING_HISTORY.runningLoad,
+      patterns: STRAVA_TRAINING_HISTORY.responsePatterns,
+    },
+    today: {
+      outcome: getOutcome(localDateKey(now)) || "not marked",
+      staticPlan: workoutForDate(now),
+      recentCompletions,
+      consistency: coaching.consistency,
+    },
+    health: privatePacket.health || {},
+    training: {
+      latestWorkout: compactActivityForAnalysis(training.lastWorkoutDetail),
+      weeklyLoad: training.weeklyLoad || {},
+      activityHistory: training.activityHistory || {},
+      ytdHeartRateZones: training.hrZonesYtd || null,
+      analytics: {
+        model: training.analytics?.model || "",
+        loadMethod: training.analytics?.loadMethod || "",
+        references: training.analytics?.references || {},
+        current: training.analytics?.current || {},
+        series90Day: Array.isArray(training.analytics?.series) ? training.analytics.series.slice(-90) : [],
+      },
+      recentActivities,
+      derivedCurrentRead: {
+        recoveryStatus: coaching.health.status,
+        recoveryScore: coaching.health.score,
+        recentActivityCounts: coaching.training.recent7,
+        recent28DayCounts: coaching.training.recent28,
+        zoneMix: coaching.training.zoneMix,
+      },
+    },
+    reflections,
+    runningDays: runPlan,
+    priorOutputs: liveAnalysisHistory.slice(-3),
+  };
+}
+
+function hasCompleteLiveAnalysis(analysis) {
+  return analysis
+    && typeof analysis.dailyGuidance?.title === "string"
+    && Array.isArray(analysis.dailyHealth?.points)
+    && Array.isArray(analysis.runRecommendations)
+    && typeof analysis.workoutAnalysis?.title === "string"
+    && typeof analysis.coachingFocus?.title === "string"
+    && typeof analysis.weeklyReview?.title === "string"
+    && Array.isArray(analysis.insightCards);
+}
+
+function liveRecommendationForDate(date) {
+  const key = localDateKey(date);
+  return Array.isArray(liveAnalysis?.runRecommendations)
+    ? liveAnalysis.runRecommendations.find((item) => item?.targetDate === key) || null
+    : null;
+}
+
+function resolvedRunRecommendation(date, coaching = buildCoachingContext()) {
+  if (workoutForDate(date).type !== "Run") return null;
+  const generated = liveRecommendationForDate(date);
+  if (generated) {
+    return {
+      ...generated,
+      label: "AI Recommended",
+      status: liveAnalysisState.status === "loading" ? "Updating analysis…" : generated.confidence,
+      evidence: Array.isArray(generated.evidence) ? generated.evidence : [],
+      prescription: Array.isArray(generated.prescription) ? generated.prescription : [],
+    };
+  }
+  if (liveAnalysisState.status === "loading") {
+    return {
+      label: "AI Recommended",
+      status: "Analyzing…",
+      kind: "pending",
+      title: "Coach is reading the current picture",
+      summary: "Garmin, training history, recovery, weather, goals, and your reflections are being analyzed together.",
+      prescription: ["Your static plan remains available while this finishes"],
+      evidence: [],
+      confidence: "Analyzing…",
+    };
+  }
+  const fallback = buildAiRunRecommendation(date, coaching);
+  return fallback ? {
+    ...fallback,
+    label: "Data fallback",
+    status: liveAnalysisState.status === "error" ? "Live analysis unavailable" : "Awaiting live analysis",
+  } : null;
+}
+
+async function requestLiveAnalysis(reason = "app load") {
+  if (liveAnalysisRequest) return liveAnalysisRequest;
+  if (!syncSettings.key || !hasHealthData()) {
+    liveAnalysisState = { status: "unavailable", reason, error: "Garmin data or the private sync key is unavailable." };
+    renderAllTracking();
+    return false;
+  }
+  liveAnalysisState = { status: "loading", reason, error: "" };
+  document.body.classList.add("analysis-loading");
+  renderAllTracking();
+  liveAnalysisRequest = (async () => {
+    try {
+      const contextJson = JSON.stringify(buildLiveAnalysisContext(reason));
+      const timestamp = Date.now();
+      const nonce = crypto.randomUUID();
+      const signature = await signRefreshRequest(timestamp, nonce, contextJson);
+      const response = await fetch(LIVE_ANALYSIS_ENDPOINT, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ timestamp, nonce, signature, contextJson }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !hasCompleteLiveAnalysis(payload.analysis)) throw new Error(payload.error || "Live coaching analysis failed");
+      liveAnalysis = {
+        ...payload.analysis,
+        _meta: { generatedAt: payload.generatedAt || new Date().toISOString(), model: payload.model || "Workers AI", reason },
+      };
+      writeJson(STORAGE.liveAnalysis, liveAnalysis);
+      const snapshot = liveAnalysisSummary(liveAnalysis);
+      if (snapshot) {
+        liveAnalysisHistory = [...liveAnalysisHistory, snapshot].slice(-6);
+        writeJson(STORAGE.liveAnalysisHistory, liveAnalysisHistory);
+      }
+      liveAnalysisState = { status: "ready", reason, error: "" };
+      renderAllTracking();
+      return true;
+    } catch (error) {
+      liveAnalysisState = { status: "error", reason, error: error?.message || "Live coaching analysis is unavailable." };
+      renderAllTracking();
+      return false;
+    } finally {
+      document.body.classList.remove("analysis-loading");
+      liveAnalysisRequest = null;
+    }
+  })();
+  return liveAnalysisRequest;
+}
+
 function recommendedEasyHrRange(packet = privatePacket) {
   const health = packet.health || {};
   const references = packet.training?.analytics?.references || {};
@@ -471,7 +688,7 @@ function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingCon
   const provisional = (targetKey !== todayKey && date > startOfToday) || health.status === "incomplete";
   const confidence = coachingConfidence(coaching, training.latestActivity);
   const base = {
-    label: "AI Recommended",
+    label: "Data fallback",
     status: provisional ? "Provisional" : confidence.label,
     confidence: provisional ? "Provisional" : confidence.label,
     evidence: recommendationEvidence(coaching),
@@ -526,12 +743,14 @@ function buildAiRunRecommendation(date = new Date(), coaching = buildCoachingCon
 
 function runRecommendationMarkup(recommendation, compact = false) {
   if (!recommendation) return "";
+  const prescription = Array.isArray(recommendation.prescription) ? recommendation.prescription : [];
+  const evidence = Array.isArray(recommendation.evidence) ? recommendation.evidence : [];
   return `<div class="ai-run-heading"><span>${escapeHtml(recommendation.label)}</span><small>${escapeHtml(recommendation.status)}</small></div>
     <div class="ai-run-content">
       <div><h3>${escapeHtml(recommendation.title)}</h3><p>${escapeHtml(recommendation.summary)}</p></div>
-      <ol>${recommendation.prescription.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>
+      <ol>${prescription.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>
     </div>
-    ${compact ? "" : `<div class="ai-run-evidence">${recommendation.evidence.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`}`;
+    ${compact || !evidence.length ? "" : `<div class="ai-run-evidence">${evidence.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`}`;
 }
 
 function greeting() {
@@ -601,8 +820,8 @@ function renderTodayWorkout(coaching = buildCoachingContext()) {
   const now = new Date();
   const workout = workoutForDate(now);
   const status = getOutcome(localDateKey(now));
-  const recommendation = buildAiRunRecommendation(now, coaching);
-  rememberRecommendation(now, recommendation);
+  const recommendation = resolvedRunRecommendation(now, coaching);
+  if (recommendation?.kind !== "pending") rememberRecommendation(now, recommendation);
   const recommendationElement = document.getElementById("todayAiRunRecommendation");
   const staticCaption = document.getElementById("todayStaticPlanCaption");
   recommendationElement.hidden = !recommendation;
@@ -751,12 +970,12 @@ function renderPlan(coaching = buildCoachingContext()) {
   const todayIndex = new Date().getDay();
   document.getElementById("weekPlan").innerHTML = WEEK.map((workout, index) => {
     const open = index === todayIndex;
-    const recommendation = workout.type === "Run" ? buildAiRunRecommendation(dateForPlanningWeekday(index), coaching) : null;
+    const recommendation = workout.type === "Run" ? resolvedRunRecommendation(dateForPlanningWeekday(index), coaching) : null;
     const detail = (label, items) => `<div class="plan-detail-block"><strong>${label}</strong><ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
     return `<article class="plan-day ${open ? "is-today open" : ""}" data-plan-day="${index}">
       <button class="plan-day-button" type="button" aria-expanded="${open}">
         <span class="plan-day-name"><strong>${workout.short}</strong><span>${workout.type}</span></span>
-        <span class="plan-day-copy"><strong>${escapeHtml(workout.title)}</strong><span>${escapeHtml(workout.subtitle)}</span>${recommendation ? '<em>AI recommendation available</em>' : ""}</span>
+        <span class="plan-day-copy"><strong>${escapeHtml(workout.title)}</strong><span>${escapeHtml(workout.subtitle)}</span>${recommendation ? `<em>${escapeHtml(recommendation.label)} available</em>` : ""}</span>
         <span class="plan-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"></path></svg></span>
       </button>
       <div class="plan-day-detail">${recommendation ? `<section class="ai-plan-recommendation">${runRecommendationMarkup(recommendation, true)}</section><div class="static-plan-divider"><span>Your static plan</span></div>` : ""}${detail("Main work", workout.main)}${detail("Minimum", workout.minimum)}${detail("Optional", workout.optional)}</div>
@@ -873,7 +1092,7 @@ function renderWorkoutFeedback() {
   document.getElementById("feedbackSavedState").textContent = feedback.updatedAt ? "Saved" : "Not required";
 }
 
-function saveWorkoutFeedback(event) {
+async function saveWorkoutFeedback(event) {
   event.preventDefault();
   const activity = latestWorkoutDetail();
   if (!activity) return;
@@ -896,18 +1115,20 @@ function saveWorkoutFeedback(event) {
   if (hasInput) workoutFeedback[key] = feedback;
   else delete workoutFeedback[key];
   writeJson(STORAGE.feedback, workoutFeedback);
-  renderAllTracking();
   haptic([10]);
-  showToast(hasInput ? "Reflection saved and added to coaching context." : "Reflection cleared.");
+  showToast(hasInput ? "Reflection saved. Coach is analyzing it…" : "Reflection cleared. Coach is updating…");
+  const analyzed = await requestLiveAnalysis(hasInput ? "workout reflection saved" : "workout reflection cleared");
+  showToast(analyzed ? "Fresh coaching analysis is ready." : "Reflection saved. Live analysis is unavailable right now.");
 }
 
-function clearWorkoutFeedback() {
+async function clearWorkoutFeedback() {
   const activity = latestWorkoutDetail();
   if (!activity) return;
   delete workoutFeedback[activityFeedbackKey(activity)];
   writeJson(STORAGE.feedback, workoutFeedback);
-  renderAllTracking();
-  showToast("Reflection cleared.");
+  showToast("Reflection cleared. Coach is updating…");
+  const analyzed = await requestLiveAnalysis("workout reflection cleared");
+  showToast(analyzed ? "Coaching analysis updated." : "Reflection cleared. Live analysis is unavailable right now.");
 }
 
 function workoutEffortRead(activity, training, health) {
@@ -1099,15 +1320,26 @@ function renderWorkoutAnalysis(coaching = buildCoachingContext()) {
     document.getElementById("workoutAnalysisSignals").innerHTML = "";
     return;
   }
-  const analysis = buildWorkoutAnalysis(activity, training, privatePacket.health || {}, coaching);
+  const generated = hasCompleteLiveAnalysis(liveAnalysis) ? liveAnalysis.workoutAnalysis : null;
+  const analysis = generated || (liveAnalysisState.status === "loading" ? {
+    title: "Coach is analyzing the latest workout",
+    body: "Workout intent, effort, zones, weather, recovery, recent load, and your reflection are being considered together.",
+    effect: "Analysis in progress",
+    next: "Your static plan remains available while this finishes",
+    signals: [],
+    intent: "Analyzing…",
+    confidence: "Analyzing…",
+  } : buildWorkoutAnalysis(activity, training, privatePacket.health || {}, coaching));
   title.textContent = analysis.title;
   document.getElementById("workoutAnalysisBody").textContent = analysis.body;
   document.getElementById("workoutAnalysisEffect").textContent = analysis.effect;
   document.getElementById("workoutAnalysisNext").textContent = analysis.next;
   document.getElementById("workoutAnalysisIntent").textContent = analysis.intent;
   document.getElementById("workoutAnalysisConfidence").textContent = analysis.confidence;
-  document.getElementById("workoutAnalysisStatus").textContent = analysis.confidence;
-  document.getElementById("workoutAnalysisSignals").innerHTML = analysis.signals.map((signal) => `<div><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong>${signal.detail ? `<small>${escapeHtml(signal.detail)}</small>` : ""}</div>`).join("");
+  document.getElementById("workoutAnalysisStatus").textContent = generated
+    ? liveAnalysisState.status === "loading" ? "Updating…" : liveAnalysisState.status === "error" ? "Saved analysis" : "Generated"
+    : liveAnalysisState.status === "loading" ? "Analyzing…" : "Data fallback";
+  document.getElementById("workoutAnalysisSignals").innerHTML = (Array.isArray(analysis.signals) ? analysis.signals : []).map((signal) => `<div><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong>${signal.detail ? `<small>${escapeHtml(signal.detail)}</small>` : ""}</div>`).join("");
 }
 
 function currentWeekStats() {
@@ -1508,7 +1740,32 @@ function formatActivityDate(activity) {
   return "Latest synced workout";
 }
 
+function analysisFreshnessLabel() {
+  if (liveAnalysisState.status === "loading") return liveAnalysis ? "Updating analysis…" : "Analyzing current data…";
+  if (liveAnalysisState.status === "error") return liveAnalysis ? "Saved analysis · update missed" : "Live analysis unavailable";
+  if (liveAnalysis?._meta?.generatedAt) {
+    const generated = new Date(liveAnalysis._meta.generatedAt);
+    if (!Number.isNaN(generated.getTime())) return `Generated ${generated.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+    return "Generated analysis";
+  }
+  return "Data fallback";
+}
+
 function renderGuidance(coaching = buildCoachingContext()) {
+  const label = document.querySelector("#todayGuidanceCard .eyebrow");
+  if (liveAnalysis?.dailyGuidance) {
+    if (label) label.textContent = liveAnalysisState.status === "loading" ? "Today's direction · updating" : "Today's direction · generated";
+    document.getElementById("guidanceTitle").textContent = liveAnalysis.dailyGuidance.title;
+    document.getElementById("guidanceBody").textContent = liveAnalysis.dailyGuidance.body;
+    return;
+  }
+  if (liveAnalysisState.status === "loading") {
+    if (label) label.textContent = "Today's direction · analyzing";
+    document.getElementById("guidanceTitle").textContent = "Reading the current picture";
+    document.getElementById("guidanceBody").textContent = "Recovery, training, weather, goals, and your recent feedback are being considered together.";
+    return;
+  }
+  if (label) label.textContent = "Today's direction · data fallback";
   const status = getOutcome(localDateKey());
   const workout = workoutForDate(new Date());
   let title = "Keep the decision small";
@@ -1543,7 +1800,10 @@ function renderTodayHealthInsight(coaching = buildCoachingContext()) {
   const sleepValue = health.sleepHours ?? health.baselines?.sleep7Day;
   const restingHrValue = health.restingHr ?? health.baselines?.restingHr7Day;
   const hasGarmin = hasHealthData();
-  const points = hasGarmin ? coaching.health.points : ["Connect Garmin to combine sleep, heart-rate, and exercise context in one daily read."];
+  const generatedHealth = liveAnalysis?.dailyHealth;
+  const points = generatedHealth?.points || (liveAnalysisState.status === "loading"
+    ? ["Sleep, heart, stress, Body Battery, activity, and recent patterns are being analyzed together."]
+    : hasGarmin ? coaching.health.points : ["Connect Garmin to combine sleep, heart-rate, and exercise context in one daily read."]);
   const weightDate = /^\d{4}-\d{2}-\d{2}$/.test(health.weightDate || "")
     ? parseLocalDateKey(health.weightDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })
     : "";
@@ -1556,8 +1816,9 @@ function renderTodayHealthInsight(coaching = buildCoachingContext()) {
     { label: "Steps", value: hasValue(health.steps) ? Number(health.steps).toLocaleString() : "Not available", detail: "" },
   ];
 
-  document.getElementById("todayHealthFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
-  document.getElementById("todayHealthLead").textContent = hasGarmin ? coaching.health.title : "Connecting the full picture";
+  document.getElementById("todayHealthFreshness").textContent = hasGarmin ? analysisFreshnessLabel() : "Garmin not connected";
+  document.getElementById("todayHealthLead").textContent = generatedHealth?.headline
+    || (liveAnalysisState.status === "loading" ? "Building your whole-health read" : hasGarmin ? coaching.health.title : "Connecting the full picture");
   document.getElementById("todayHealthPoints").innerHTML = points.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
   document.getElementById("todayHealthSignals").innerHTML = signals.map((signal) => `<div class="health-signal"><span>${escapeHtml(signal.label)}</span><strong>${escapeHtml(signal.value)}</strong>${signal.detail ? `<small>${escapeHtml(signal.detail)}</small>` : ""}</div>`).join("");
 }
@@ -1618,12 +1879,20 @@ function buildWeeklyReview(coaching, now = new Date()) {
 }
 
 function renderWeeklyReview(coaching) {
-  const review = buildWeeklyReview(coaching);
+  const review = liveAnalysis?.weeklyReview || (liveAnalysisState.status === "loading" ? {
+    title: "Reviewing what changed this week",
+    summary: "Recent training, recovery, conditions, and reflections are being compared.",
+    win: "Analysis in progress",
+    watch: "Analysis in progress",
+    confidence: "Analyzing…",
+  } : buildWeeklyReview(coaching));
   document.getElementById("weeklyReviewTitle").textContent = review.title;
   document.getElementById("weeklyReviewSummary").textContent = review.summary;
   document.getElementById("weeklyReviewWin").textContent = review.win;
   document.getElementById("weeklyReviewWatch").textContent = review.watch;
-  document.getElementById("weeklyReviewConfidence").textContent = review.confidence;
+  document.getElementById("weeklyReviewConfidence").textContent = liveAnalysis?.weeklyReview
+    ? liveAnalysisState.status === "loading" ? "Updating…" : liveAnalysisState.status === "error" ? "Saved analysis" : review.confidence
+    : liveAnalysisState.status === "loading" ? "Analyzing…" : "Data fallback";
 }
 
 function renderInsights(coaching = buildCoachingContext()) {
@@ -1632,9 +1901,15 @@ function renderInsights(coaching = buildCoachingContext()) {
   const weeklyLoad = training.weeklyLoad || {};
   const hasGarmin = hasHealthData();
 
-  document.getElementById("insightFreshness").textContent = hasGarmin ? freshnessLabel(privatePacket.generatedAt) : "Garmin not connected";
+  document.getElementById("insightFreshness").textContent = hasGarmin ? analysisFreshnessLabel() : "Garmin not connected";
 
-  const focus = coaching.focus;
+  const focus = liveAnalysis?.coachingFocus || (liveAnalysisState.status === "loading" ? {
+    title: "Identifying the highest-value focus",
+    rationale: "The coach is weighing recovery, load, intensity distribution, workout response, consistency, and your goals.",
+    action: "Use the static plan while analysis finishes",
+    successMarker: "A specific, evidence-backed priority",
+    horizon: "Analyzing…",
+  } : coaching.focus);
   document.getElementById("coachingFocusTitle").textContent = hasGarmin ? focus.title : "Connect Garmin to establish the current constraint";
   document.getElementById("coachingFocusRationale").textContent = hasGarmin ? focus.rationale : "The coaching view needs current health and training history before it can prioritize recovery, frequency, intensity, or load.";
   document.getElementById("coachingFocusAction").textContent = hasGarmin ? focus.action : "Follow the fixed plan without catch-up work";
@@ -1894,8 +2169,14 @@ function renderTrainingIntelligence(analytics) {
 }
 
 function buildInsightCards(coaching, hasGarmin) {
+  if (Array.isArray(liveAnalysis?.insightCards) && liveAnalysis.insightCards.length) return liveAnalysis.insightCards;
+  if (liveAnalysisState.status === "loading") return [{
+    label: "Live analysis",
+    title: "Training patterns are being compared",
+    body: "The coach is checking load, zones, recovery, weather, workout execution, history, and feedback before drawing conclusions.",
+  }];
   return hasGarmin
-    ? coaching.insightCards
+    ? coaching.insightCards.map((item) => ({ ...item, label: `${item.label} · data fallback` }))
     : [{
       label: "Health data",
       title: "Garmin is the primary source",
@@ -2205,7 +2486,7 @@ function bytesToHex(bytes) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function signRefreshRequest(timestamp, nonce) {
+async function signRefreshRequest(timestamp, nonce, signedPayload = "") {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(syncSettings.key),
@@ -2213,7 +2494,8 @@ async function signRefreshRequest(timestamp, nonce) {
     false,
     ["sign"],
   );
-  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${nonce}`));
+  const message = `${timestamp}.${nonce}${signedPayload ? `.${signedPayload}` : ""}`;
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
   return bytesToHex(new Uint8Array(signature));
 }
 
@@ -2268,6 +2550,8 @@ async function refreshDashboardData() {
     const previousGeneratedAt = privatePacket.generatedAt;
     await triggerGarminRefresh();
     installPrivatePacket(await waitForNewGarminPacket(previousGeneratedAt), true);
+    const analyzed = await requestLiveAnalysis("manual Garmin refresh");
+    showToast(analyzed ? "Garmin and fresh coaching analysis are up to date." : "Garmin updated. Live coaching analysis is unavailable right now.");
   } catch {
     syncSettings.status = "error";
     syncSettings.progress = "";
@@ -2460,7 +2744,8 @@ async function init() {
   renderAllTracking();
   renderSyncStatus();
   wireEvents();
-  refreshGarminData(false);
+  await refreshGarminData(false);
+  await requestLiveAnalysis("app reload");
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
     navigator.serviceWorker.register(`sw.js?build=${APP_VERSION}`, { updateViaCache: "none" })
       .then((registration) => registration.update())

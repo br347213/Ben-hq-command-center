@@ -2,6 +2,9 @@ name = "ben-hq-garmin-refresh"
 main = "src/index.js"
 compatibility_date = "2026-08-14"
 
+[ai]
+binding = "AI"
+
 [vars]
 ALLOWED_ORIGIN = "https://br347213.github.io"
 GITHUB_OWNER = "br347213"

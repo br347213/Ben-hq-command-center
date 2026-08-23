@@ -183,7 +183,7 @@ assert.match(hotWorkout.next, /similar heat/i);
 const saturday = new Date(2026, 7, 15, 8, 0, 0);
 assert.equal(buildAiRunRecommendation(now, normal, packet(), now), null);
 const currentRecommendation = buildAiRunRecommendation(saturday, normal, packet(), now);
-assert.match(currentRecommendation.label, /AI Recommended/i);
+assert.match(currentRecommendation.label, /Data fallback/i);
 assert.match(currentRecommendation.title, /easy/i);
 assert.equal(currentRecommendation.kind, "easy");
 assert.match(currentRecommendation.summary, /zone distribution/i);

@@ -1,6 +1,6 @@
 # Garmin refresh trigger
 
-This small Cloudflare Worker accepts a signed refresh request from Fitness HQ and starts the private GitHub Actions Garmin workflow. Garmin credentials, tokens, and the dashboard encryption key are stored only as encrypted platform secrets.
+This Cloudflare Worker accepts signed requests from Fitness HQ. `/refresh` starts the private GitHub Actions Garmin workflow; `/analyze` runs a fresh, structured coaching analysis with the Workers AI binding. Garmin credentials, tokens, and the dashboard encryption key are stored only as encrypted platform secrets.
 
 Required Worker secrets:
 
@@ -14,4 +14,4 @@ Required GitHub Actions secrets:
 - `GARMIN_PASSWORD`
 - `GARMIN_TOKENSTORE_B64`
 
-The Worker has no paid services or OpenAI API dependency. The free Workers allowance is more than sufficient for a personal manual-refresh button.
+The Worker has no OpenAI API dependency. Coaching inference uses the account's Workers AI daily allocation and returns an explicit unavailable state when inference cannot run.

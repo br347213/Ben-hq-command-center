@@ -1238,6 +1238,18 @@ body::before {
   50% { opacity: 1; box-shadow: 0 0 0 7px rgba(87, 216, 191, .075); }
 }
 
+.analysis-loading .workout-analysis-status,
+.analysis-loading .health-read-freshness,
+.analysis-loading .freshness,
+.analysis-loading .ai-run-heading small {
+  animation: analysis-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes analysis-breathe {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+
 @media (max-width: 820px) {
   body::before {
     opacity: .46;
