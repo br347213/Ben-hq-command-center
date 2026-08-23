@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.1.0";
+const APP_VERSION = "3.1.1";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -613,11 +613,19 @@ async function requestLiveAnalysis(reason = "app load") {
       const timestamp = Date.now();
       const nonce = crypto.randomUUID();
       const signature = await signRefreshRequest(timestamp, nonce, contextJson);
-      const response = await fetch(LIVE_ANALYSIS_ENDPOINT, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ timestamp, nonce, signature, contextJson }),
-      });
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 70_000);
+      let response;
+      try {
+        response = await fetch(LIVE_ANALYSIS_ENDPOINT, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ timestamp, nonce, signature, contextJson }),
+          signal: controller.signal,
+        });
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !hasCompleteLiveAnalysis(payload.analysis)) throw new Error(payload.error || "Live coaching analysis failed");
       liveAnalysis = {
