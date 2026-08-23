@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.1.8";
+const APP_VERSION = "3.1.9";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -575,6 +575,10 @@ function cleanGeneratedText(value) {
     .replace(/^\s*[#*-]+\s*/g, "")
     .replace(/\s+/g, " ")
     .trim();
+  cleaned = cleaned
+    .replace(/^(?:weekly review|workout analysis|insight)\s*:\s*/i, "")
+    .replace(/\bthe athlete needs\b/gi, "You need")
+    .replace(/\bthe athlete\b/gi, "you");
   if (cleaned.startsWith("[") && cleaned.endsWith("]")) cleaned = cleaned.slice(1, -1).trim();
   const letters = cleaned.replace(/[^A-Za-z]/g, "");
   const uppercaseLetters = letters.replace(/[^A-Z]/g, "");
