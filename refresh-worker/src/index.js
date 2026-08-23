@@ -30,8 +30,8 @@ const coachingSchema = {
     }),
     runRecommendations: {
       type: "array",
-      minItems: 1,
-      maxItems: 5,
+      minItems: 4,
+      maxItems: 4,
       items: {
         type: "object",
         additionalProperties: false,
@@ -175,7 +175,7 @@ function parseModelResponse(result) {
   return JSON.parse(cleaned);
 }
 
-function analysisQualityIsAcceptable(value) {
+function analysisQualityIsAcceptable(value, context) {
   if (!hasCompleteAnalysis(value)) return false;
   const strings = [];
   const collect = (item) => {
@@ -188,6 +188,9 @@ function analysisQualityIsAcceptable(value) {
   if (value.dailyHealth.points.some((item) => item.trim().split(/\s+/).length < 7 || /^[^:]{2,30}:\s*[-+]?\d/.test(item.trim()))) return false;
   if (/^weekly review\b/i.test(value.weeklyReview.title.trim())) return false;
   if (value.runRecommendations.some((item) => item.title.trim().split(/\s+/).length < 3)) return false;
+  const expectedDates = Array.isArray(context?.runningDays) ? context.runningDays.map((item) => item.targetDate) : [];
+  const returnedDates = value.runRecommendations.map((item) => String(item.targetDate || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] || "");
+  if (expectedDates.length !== 4 || returnedDates.length !== expectedDates.length || !expectedDates.every((date) => returnedDates.includes(date))) return false;
   return value.workoutAnalysis.body.trim().split(/\s+/).length >= 18;
 }
 
@@ -219,7 +222,7 @@ Each output has a distinct job:
 
 Avoid generic encouragement, canned coaching slogans, and repeated phrases. Never say work was productive merely because it was completed. Do not recycle exact wording found in priorOutputs. If the correct conclusion is unchanged, say what current evidence strengthens, weakens, or qualifies it instead of inventing novelty. Use specific evidence, but do not dump numbers or repeat the same evidence across sections. Keep every field concise enough for a phone. Return plain prose only: no Markdown, asterisks, headings inside fields, field-name labels, or decorative punctuation.
 
-Do not default to progressive overload, intervals, more intensity, or more mileage. Recommend any of those only when the supplied current evidence and Ben's goals make that the best next action. The workout analysis must interpret this specific latest session against its intended role, surrounding training, recovery, weather, longer-term distribution, and subjective feedback.
+Do not default to progressive overload, intervals, more intensity, or more mileage. Recommend any of those only when the supplied current evidence and Ben's goals make that the best next action. Do not prescribe a cadence target; cadence is an observed trend, not a technique goal. The workout analysis must interpret this specific latest session against its intended role, surrounding training, recovery, weather, longer-term distribution, and subjective feedback.
 
 Every dailyHealth point must interpret or connect at least two health signals; a naked metric such as "Resting HR: 50" is not an insight. The workoutAnalysis body must explain why the session matters in the current training arc; put raw statistics in signals instead. The weeklyReview title must state the actual pattern, not label itself "Weekly Review." Use every runningDays targetDate exactly as supplied and return recommendations in the same order.
 
@@ -268,7 +271,7 @@ async function analyze(body, origin, env) {
       clearTimeout(timeoutId);
     }
     const analysis = parseModelResponse(result);
-    if (!analysisQualityIsAcceptable(analysis)) throw new Error("Model response did not meet coaching quality requirements");
+    if (!analysisQualityIsAcceptable(analysis, context)) throw new Error("Model response did not meet coaching quality requirements");
     return response({
       analysis,
       generatedAt: new Date().toISOString(),
