@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.1.7";
+const APP_VERSION = "3.1.8";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -562,6 +562,13 @@ function hasCompleteLiveAnalysis(analysis) {
 
 function cleanGeneratedText(value) {
   let cleaned = String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#(?:39|x27);/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
     .replace(/<\|[^>]+\|>/g, "")
     .replace(/\*\*/g, "")
     .replace(/`/g, "")
@@ -569,6 +576,16 @@ function cleanGeneratedText(value) {
     .replace(/\s+/g, " ")
     .trim();
   if (cleaned.startsWith("[") && cleaned.endsWith("]")) cleaned = cleaned.slice(1, -1).trim();
+  const letters = cleaned.replace(/[^A-Za-z]/g, "");
+  const uppercaseLetters = letters.replace(/[^A-Z]/g, "");
+  if (letters.length > 24 && uppercaseLetters.length / letters.length > 0.88) {
+    cleaned = cleaned.toLowerCase().replace(/(^|[.!?]\s+)([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
+    cleaned = cleaned.replace(/\bben's\b/g, "Ben's").replace(/\bhr\b/g, "HR").replace(/\bytd\b/g, "YTD").replace(/\bvo₂\b/g, "VO₂");
+  }
+  if (cleaned.length > 120 && !/[.!?]$/.test(cleaned)) {
+    const lastSentence = Math.max(cleaned.lastIndexOf(". "), cleaned.lastIndexOf("! "), cleaned.lastIndexOf("? "));
+    if (lastSentence >= cleaned.length * 0.5) cleaned = cleaned.slice(0, lastSentence + 1);
+  }
   return cleaned;
 }
 

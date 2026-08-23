@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../refresh-worker/src/index.js", import.meta.url), "utf8");
-const worker = (await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`)).default;
+const worker = (await import(new URL(`../refresh-worker/src/index.js?test=${Date.now()}`, import.meta.url))).default;
 const origin = "https://br347213.github.io";
 const secret = "test-private-sync-key";
 
@@ -62,6 +60,30 @@ assert.equal(response.status, 200);
 const payload = await response.json();
 assert.equal(payload.analysis.coachingFocus.title, analysis.coachingFocus.title);
 assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
+
+const repairTimestamp = Date.now() + 1;
+const repairNonce = crypto.randomUUID();
+const repairSignature = await sign(repairTimestamp, repairNonce, contextJson);
+const repairEnv = {
+  ...env,
+  AI: {
+    async run() {
+      const nearJson = JSON.stringify(analysis)
+        .replace('"weeklyReview":', "weeklyReview:")
+        .replace("Recovery is normal", 'Recovery is "normal"')
+        .replace(/}$/, ",}");
+      return { response: `\`\`\`json\n${nearJson}\n\`\`\`` };
+    },
+  },
+};
+const repairedResponse = await worker.fetch(new Request("https://worker.example/analyze", {
+  method: "POST",
+  headers: { origin, "content-type": "application/json" },
+  body: JSON.stringify({ timestamp: repairTimestamp, nonce: repairNonce, signature: repairSignature, contextJson }),
+}), repairEnv);
+assert.equal(repairedResponse.status, 200);
+const repairedPayload = await repairedResponse.json();
+assert.equal(repairedPayload.analysis.weeklyReview.title, analysis.weeklyReview.title);
 
 const rejected = await worker.fetch(new Request("https://worker.example/analyze", {
   method: "POST",
