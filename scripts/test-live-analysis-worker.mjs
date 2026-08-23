@@ -10,7 +10,7 @@ const analysis = {
   dailyGuidance: { title: "Keep the run easy", body: "Recovery is normal, but the week already contains enough intensity." },
   dailyHealth: { headline: "Recovery is broadly steady", points: ["Sleep and resting heart rate are near baseline.", "Stress and training load do not expose a new concern."] },
   runRecommendations: [{ targetDate: "2026-08-23", kind: "easy", title: "Easy 5 miles", summary: "Preserve the aerobic purpose.", prescription: ["Run conversationally", "Stop at five miles"], evidence: ["Current recovery", "Recent load"], confidence: "Reasonable confidence" }],
-  workoutAnalysis: { title: "The last run filled the quality slot", body: "The workout was meaningfully harder than an easy run.", effect: "Count the cardiovascular stimulus once.", next: "Keep the next run easy.", signals: [{ label: "Intent", value: "Easy → quality", detail: "Effort exceeded intent" }, { label: "Context", value: "Warm conditions", detail: "Heat raised cost" }], intent: "easy → quality", confidence: "High confidence" },
+  workoutAnalysis: { title: "The last run filled the quality slot", body: "The workout was meaningfully harder than an easy run, so it supplied this week's quality stimulus and changes the role of the next session.", effect: "Count the cardiovascular stimulus once.", next: "Keep the next run easy.", signals: [{ label: "Intent", value: "Easy → quality", detail: "Effort exceeded intent" }, { label: "Context", value: "Warm conditions", detail: "Heat raised cost" }], intent: "easy → quality", confidence: "High confidence" },
   coachingFocus: { title: "Separate easy and hard running", rationale: "The current intensity distribution is the clearest opportunity.", action: "Keep routine runs conversational.", successMarker: "Easy days become repeatable.", horizon: "Next 2 weeks", confidence: "High confidence" },
   weeklyReview: { title: "Intensity rose while frequency held", summary: "The week had enough stimulus.", win: "Frequency remained consistent.", watch: "Do not stack quality work.", confidence: "High confidence" },
   insightCards: [
@@ -25,7 +25,7 @@ const env = {
   REFRESH_SHARED_SECRET: secret,
   AI: {
     async run(model, input) {
-      assert.equal(model, "@cf/meta/llama-3.3-70b-instruct-fp8-fast");
+      assert.equal(model, "@cf/qwen/qwen3-30b-a3b-fp8");
       assert.equal(input.response_format.type, "json_schema");
       return { response: analysis, usage: { prompt_tokens: 100, completion_tokens: 200 } };
     },
@@ -50,7 +50,7 @@ const response = await worker.fetch(new Request("https://worker.example/analyze"
 assert.equal(response.status, 200);
 const payload = await response.json();
 assert.equal(payload.analysis.coachingFocus.title, analysis.coachingFocus.title);
-assert.equal(payload.model, "@cf/meta/llama-3.3-70b-instruct-fp8-fast");
+assert.equal(payload.model, "@cf/qwen/qwen3-30b-a3b-fp8");
 
 const rejected = await worker.fetch(new Request("https://worker.example/analyze", {
   method: "POST",

@@ -1,5 +1,5 @@
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
-const ANALYSIS_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const ANALYSIS_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
 const MAX_CONTEXT_BYTES = 120_000;
 
 function shortString() {
@@ -168,11 +168,27 @@ async function authenticate(body, env, signedPayload = "") {
 }
 
 function parseModelResponse(result) {
-  const value = result?.response ?? result;
+  const value = result?.response ?? result?.choices?.[0]?.message?.content ?? result;
   if (value && typeof value === "object" && !Array.isArray(value)) return value;
   if (typeof value !== "string") throw new Error("Model returned no structured analysis");
   const cleaned = value.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   return JSON.parse(cleaned);
+}
+
+function analysisQualityIsAcceptable(value) {
+  if (!hasCompleteAnalysis(value)) return false;
+  const strings = [];
+  const collect = (item) => {
+    if (typeof item === "string") strings.push(item);
+    else if (Array.isArray(item)) item.forEach(collect);
+    else if (item && typeof item === "object") Object.values(item).forEach(collect);
+  };
+  collect(value);
+  if (strings.some((item) => /https?:\/\/|<\|[^>]+\|>|```/.test(item))) return false;
+  if (value.dailyHealth.points.some((item) => item.trim().split(/\s+/).length < 7 || /^[^:]{2,30}:\s*[-+]?\d/.test(item.trim()))) return false;
+  if (/^weekly review\b/i.test(value.weeklyReview.title.trim())) return false;
+  if (value.runRecommendations.some((item) => item.title.trim().split(/\s+/).length < 3)) return false;
+  return value.workoutAnalysis.body.trim().split(/\s+/).length >= 18;
 }
 
 function hasCompleteAnalysis(value) {
@@ -252,7 +268,7 @@ async function analyze(body, origin, env) {
       clearTimeout(timeoutId);
     }
     const analysis = parseModelResponse(result);
-    if (!hasCompleteAnalysis(analysis)) throw new Error("Incomplete model response");
+    if (!analysisQualityIsAcceptable(analysis)) throw new Error("Model response did not meet coaching quality requirements");
     return response({
       analysis,
       generatedAt: new Date().toISOString(),
