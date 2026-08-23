@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.1.5";
+const APP_VERSION = "3.1.6";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -243,8 +243,8 @@ const STORAGE = {
   legacyPacket: "ben-hq-private-daily-v1",
   feedback: "fitness-hq-workout-feedback-v1",
   recommendationHistory: "fitness-hq-recommendations-v1",
-  liveAnalysis: "fitness-hq-live-analysis-v3",
-  liveAnalysisHistory: "fitness-hq-live-analysis-history-v3",
+  liveAnalysis: "fitness-hq-live-analysis-v4",
+  liveAnalysisHistory: "fitness-hq-live-analysis-history-v4",
 };
 
 const OUTCOME_LABELS = {
@@ -454,9 +454,9 @@ function liveAnalysisSummary(analysis) {
     workoutAnalysis: analysis.workoutAnalysis?.title || "",
     coachingFocus: analysis.coachingFocus?.title || "",
     weeklyReview: analysis.weeklyReview?.title || "",
-    runRecommendations: Array.isArray(analysis.runRecommendations)
-      ? analysis.runRecommendations.map((item) => ({ targetDate: item.targetDate, title: item.title }))
-      : [],
+    runRecommendations: analysis.runRecommendations && typeof analysis.runRecommendations === "object"
+      ? Object.fromEntries(Object.entries(analysis.runRecommendations).map(([day, item]) => [day, item?.title || ""]))
+      : {},
   };
 }
 
@@ -553,7 +553,7 @@ function hasCompleteLiveAnalysis(analysis) {
   return analysis
     && typeof analysis.dailyGuidance?.title === "string"
     && Array.isArray(analysis.dailyHealth?.points)
-    && Array.isArray(analysis.runRecommendations)
+    && analysis.runRecommendations && typeof analysis.runRecommendations === "object" && !Array.isArray(analysis.runRecommendations)
     && typeof analysis.workoutAnalysis?.title === "string"
     && typeof analysis.coachingFocus?.title === "string"
     && typeof analysis.weeklyReview?.title === "string"
@@ -579,13 +579,8 @@ function sanitizeGeneratedAnalysis(value) {
 }
 
 function liveRecommendationForDate(date) {
-  const key = localDateKey(date);
-  if (!Array.isArray(liveAnalysis?.runRecommendations)) return null;
-  const exact = liveAnalysis.runRecommendations.find((item) => String(item?.targetDate || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] === key);
-  if (exact) return exact;
-  const runWeekdays = WEEK.map((workout, weekday) => ({ workout, weekday })).filter(({ workout }) => workout.type === "Run");
-  const position = runWeekdays.findIndex(({ weekday }) => weekday === date.getDay());
-  return position >= 0 ? liveAnalysis.runRecommendations[position] || null : null;
+  const slot = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][date.getDay()];
+  return liveAnalysis?.runRecommendations?.[slot] || null;
 }
 
 function resolvedRunRecommendation(date, coaching = buildCoachingContext()) {

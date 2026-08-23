@@ -9,12 +9,12 @@ const secret = "test-private-sync-key";
 const analysis = {
   dailyGuidance: { title: "Keep the run easy", body: "Recovery is normal, but the week already contains enough intensity." },
   dailyHealth: { headline: "Recovery is broadly steady", points: ["Sleep and resting heart rate are near baseline.", "Stress and training load do not expose a new concern."] },
-  runRecommendations: [
-    { targetDate: "2026-08-23", kind: "long", title: "Easy long run", summary: "Preserve the aerobic purpose.", prescription: ["Run conversationally", "Stop at five miles"], evidence: ["Current recovery", "Recent load"], confidence: "Reasonable confidence" },
-    { targetDate: "2026-08-25", kind: "easy", title: "Easy aerobic run", summary: "Keep the running rhythm inexpensive.", prescription: ["Run conversationally", "Finish with margin"], evidence: ["Current recovery", "Fixed plan"], confidence: "Reasonable confidence" },
-    { targetDate: "2026-08-26", kind: "easy", title: "Low-cost easy run", summary: "Protect separation from harder work.", prescription: ["Keep breathing easy", "Do not add a fast finish"], evidence: ["Intensity distribution", "Weekly rhythm"], confidence: "Reasonable confidence" },
-    { targetDate: "2026-08-29", kind: "quality", title: "Controlled tempo option", summary: "Use one purposeful quality slot only if recovery holds.", prescription: ["Warm up easily", "Keep tempo controlled"], evidence: ["One-quality-session limit", "Current load"], confidence: "Provisional" },
-  ],
+  runRecommendations: {
+    sunday: { kind: "long", title: "Easy long run", summary: "Preserve the aerobic purpose.", prescription: ["Run conversationally", "Stop at five miles"], evidence: ["Current recovery", "Recent load"], confidence: "Reasonable confidence" },
+    tuesday: { kind: "easy", title: "Easy aerobic run", summary: "Keep the running rhythm inexpensive.", prescription: ["Run conversationally", "Finish with margin"], evidence: ["Current recovery", "Fixed plan"], confidence: "Reasonable confidence" },
+    wednesday: { kind: "easy", title: "Low-cost easy run", summary: "Protect separation from harder work.", prescription: ["Keep breathing easy", "Do not add a fast finish"], evidence: ["Intensity distribution", "Weekly rhythm"], confidence: "Reasonable confidence" },
+    saturday: { kind: "quality", title: "Controlled tempo option", summary: "Use one purposeful quality slot only if recovery holds.", prescription: ["Warm up easily", "Keep tempo controlled"], evidence: ["One-quality-session limit", "Current load"], confidence: "Provisional" },
+  },
   workoutAnalysis: { title: "The last run filled the quality slot", body: "The workout was meaningfully harder than an easy run, so it supplied this week's quality stimulus and changes the role of the next session.", effect: "Count the cardiovascular stimulus once.", next: "Keep the next run easy.", signals: [{ label: "Intent", value: "Easy → quality", detail: "Effort exceeded intent" }, { label: "Context", value: "Warm conditions", detail: "Heat raised cost" }], intent: "easy → quality", confidence: "High confidence" },
   coachingFocus: { title: "Separate easy and hard running", rationale: "The current intensity distribution is the clearest opportunity.", action: "Keep routine runs conversational.", successMarker: "Easy days become repeatable.", horizon: "Next 2 weeks", confidence: "High confidence" },
   weeklyReview: { title: "Intensity rose while frequency held", summary: "The week had enough stimulus.", win: "Frequency remained consistent.", watch: "Do not stack quality work.", confidence: "High confidence" },

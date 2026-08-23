@@ -19,6 +19,20 @@ function sectionSchema(required, overrides = {}) {
   };
 }
 
+const runRecommendationSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    kind: shortString(),
+    title: shortString(),
+    summary: shortString(),
+    prescription: stringArray(2, 4),
+    evidence: stringArray(2, 4),
+    confidence: shortString(),
+  },
+  required: ["kind", "title", "summary", "prescription", "evidence", "confidence"],
+};
+
 const coachingSchema = {
   type: "object",
   additionalProperties: false,
@@ -29,23 +43,15 @@ const coachingSchema = {
       points: stringArray(2, 3),
     }),
     runRecommendations: {
-      type: "array",
-      minItems: 4,
-      maxItems: 4,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          targetDate: shortString(),
-          kind: shortString(),
-          title: shortString(),
-          summary: shortString(),
-          prescription: stringArray(2, 4),
-          evidence: stringArray(2, 4),
-          confidence: shortString(),
-        },
-        required: ["targetDate", "kind", "title", "summary", "prescription", "evidence", "confidence"],
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        sunday: runRecommendationSchema,
+        tuesday: runRecommendationSchema,
+        wednesday: runRecommendationSchema,
+        saturday: runRecommendationSchema,
       },
+      required: ["sunday", "tuesday", "wednesday", "saturday"],
     },
     workoutAnalysis: {
       type: "object",
@@ -187,10 +193,8 @@ function analysisQualityIsAcceptable(value, context) {
   if (strings.some((item) => /https?:\/\/|<\|[^>]+\|>|```/.test(item))) return false;
   if (value.dailyHealth.points.some((item) => item.trim().split(/\s+/).length < 7 || /^[^:]{2,30}:\s*[-+]?\d/.test(item.trim()))) return false;
   if (/^weekly review\b/i.test(value.weeklyReview.title.trim())) return false;
-  if (value.runRecommendations.some((item) => item.title.trim().split(/\s+/).length < 3)) return false;
-  const expectedDates = Array.isArray(context?.runningDays) ? context.runningDays.map((item) => item.targetDate) : [];
-  const returnedDates = value.runRecommendations.map((item) => String(item.targetDate || "").match(/\d{4}-\d{2}-\d{2}/)?.[0] || "");
-  if (expectedDates.length !== 4 || returnedDates.length !== expectedDates.length || !expectedDates.every((date) => returnedDates.includes(date))) return false;
+  const runningSlots = Object.values(value.runRecommendations || {});
+  if (runningSlots.length !== 4 || runningSlots.some((item) => item.title.trim().split(/\s+/).length < 3)) return false;
   return value.workoutAnalysis.body.trim().split(/\s+/).length >= 18;
 }
 
@@ -199,7 +203,7 @@ function hasCompleteAnalysis(value) {
     && typeof value === "object"
     && typeof value.dailyGuidance?.title === "string"
     && Array.isArray(value.dailyHealth?.points)
-    && Array.isArray(value.runRecommendations)
+    && value.runRecommendations && typeof value.runRecommendations === "object" && !Array.isArray(value.runRecommendations)
     && typeof value.workoutAnalysis?.title === "string"
     && typeof value.coachingFocus?.title === "string"
     && typeof value.weeklyReview?.title === "string"
@@ -214,7 +218,7 @@ This is genuine analysis, not a phrase-selection task. Weigh the whole context: 
 Each output has a distinct job:
 - dailyHealth is a calm whole-health synthesis, not an athletic readiness score.
 - dailyGuidance is the single useful decision for today.
-- runRecommendations are executable recommendations for only the supplied running days while preserving the static schedule as a fallback.
+- runRecommendations contains exactly four named slots: sunday, tuesday, wednesday, and saturday. Analyze the matching supplied runningDays entry for each slot while preserving the static schedule as a fallback.
 - workoutAnalysis explains what the latest session changed, whether it matched its intended purpose, and what to do next. Do not merely restate its stats.
 - coachingFocus names the most important short-term limiter or opportunity after considering all factors.
 - weeklyReview identifies a real pattern across the week.
@@ -224,7 +228,7 @@ Avoid generic encouragement, canned coaching slogans, and repeated phrases. Neve
 
 Do not default to progressive overload, intervals, more intensity, or more mileage. Recommend any of those only when the supplied current evidence and Ben's goals make that the best next action. Do not prescribe a cadence target; cadence is an observed trend, not a technique goal. The workout analysis must interpret this specific latest session against its intended role, surrounding training, recovery, weather, longer-term distribution, and subjective feedback.
 
-Every dailyHealth point must interpret or connect at least two health signals; a naked metric such as "Resting HR: 50" is not an insight. The workoutAnalysis body must explain why the session matters in the current training arc; put raw statistics in signals instead. The weeklyReview title must state the actual pattern, not label itself "Weekly Review." Use every runningDays targetDate exactly as supplied and return recommendations in the same order.
+Every dailyHealth point must interpret or connect at least two health signals; a naked metric such as "Resting HR: 50" is not an insight. The workoutAnalysis body must explain why the session matters in the current training arc; put raw statistics in signals instead. The weeklyReview title must state the actual pattern, not label itself "Weekly Review." Fill all four named run slots and never substitute one weekday for another.
 
 Respect the fixed plan, sustainable consistency, one quality run per week, the athlete's known mileage response, pain constraints, and motivation. Do not diagnose, prescribe medication, or give medical treatment advice. For pain, illness, unusual cardiac symptoms, or significant mental-health symptoms, use appropriately cautious training guidance and recommend professional evaluation when warranted. Return only the requested JSON.`;
 }
