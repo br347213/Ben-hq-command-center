@@ -8,18 +8,18 @@ const analysis = {
   dailyGuidance: { title: "Keep the run easy", body: "Recovery is normal, but the week already contains enough intensity." },
   dailyHealth: { headline: "Recovery is broadly steady", points: ["Sleep and resting heart rate are near baseline.", "Stress and training load do not expose a new concern."] },
   runRecommendations: {
-    sunday: { kind: "long", title: "Easy long run", summary: "Preserve the aerobic purpose.", prescription: ["Run conversationally", "Stop at five miles"], evidence: ["Current recovery", "Recent load"], confidence: "Reasonable confidence" },
-    tuesday: { kind: "easy", title: "Easy aerobic run", summary: "Keep the running rhythm inexpensive.", prescription: ["Run conversationally", "Finish with margin"], evidence: ["Current recovery", "Fixed plan"], confidence: "Reasonable confidence" },
-    wednesday: { kind: "easy", title: "Low-cost easy run", summary: "Protect separation from harder work.", prescription: ["Keep breathing easy", "Do not add a fast finish"], evidence: ["Intensity distribution", "Weekly rhythm"], confidence: "Reasonable confidence" },
+    sunday: { kind: "long", title: "Easy long run", summary: "Preserve the aerobic purpose without adding another quality stimulus.", prescription: ["Run conversationally", "Stop at five miles"], evidence: ["Current recovery", "Recent load"], confidence: "Reasonable confidence" },
+    tuesday: { kind: "easy", title: "Easy aerobic run", summary: "Keep the running rhythm inexpensive after the harder recent session.", prescription: ["Run conversationally", "Finish with margin"], evidence: ["Current recovery", "Fixed plan"], confidence: "Reasonable confidence" },
+    wednesday: { kind: "easy", title: "Low-cost easy run", summary: "Protect separation from harder work while preserving useful frequency.", prescription: ["Keep breathing easy", "Do not add a fast finish"], evidence: ["Intensity distribution", "Weekly rhythm"], confidence: "Reasonable confidence" },
     saturday: { kind: "quality", title: "Controlled tempo option", summary: "Use one purposeful quality slot only if recovery holds.", prescription: ["Warm up easily", "Keep tempo controlled"], evidence: ["One-quality-session limit", "Current load"], confidence: "Provisional" },
   },
   workoutAnalysis: { title: "The last run filled the quality slot", body: "Compared with the same-date easy-run intent, the workout was meaningfully harder, so it supplied this week's quality stimulus and changes the role of the next session.", effect: "Count the cardiovascular stimulus once rather than adding another hard effort before the next recovery cycle.", next: "Keep the next run easy.", signals: [{ label: "Intent versus execution", value: "Easy → quality", detail: "Effort exceeded intent" }, { label: "Conditions", value: "Warm conditions", detail: "Heat raised cost" }], intent: "easy → quality", confidence: "High confidence" },
   coachingFocus: { title: "Separate easy and hard running", rationale: "The current intensity distribution is the clearest opportunity.", action: "Keep routine runs conversational.", successMarker: "Easy days become repeatable.", horizon: "Next 2 weeks", confidence: "High confidence" },
   weeklyReview: { title: "Intensity rose while frequency held", summary: "The week had enough stimulus.", win: "Frequency remained consistent.", watch: "Do not stack quality work.", confidence: "High confidence" },
   insightCards: [
-    { label: "Intensity", title: "Easy days are drifting upward", body: "Heart-rate distribution shows more moderate-hard work than intended." },
-    { label: "Load", title: "Fitness and fatigue remain aligned", body: "The current load does not require catch-up work." },
-    { label: "Recovery", title: "Sleep is not the limiter", body: "Recent sleep and resting heart rate remain close to baseline." },
+    { label: "Intensity distribution", title: "Easy days are drifting upward", body: "Heart-rate distribution shows more moderate-hard work than intended." },
+    { label: "Load response", title: "Fitness and fatigue remain aligned", body: "The current load does not require catch-up work." },
+    { label: "Recovery pattern", title: "Sleep is not the limiter", body: "Recent sleep and resting heart rate remain close to baseline." },
   ],
 };
 
@@ -41,7 +41,7 @@ const env = {
   AI: {
     async run(model, input) {
       modelCalls += 1;
-      assert.equal(model, "@cf/meta/llama-3.1-8b-instruct-fast");
+      assert.equal(model, "@cf/openai/gpt-oss-20b");
       assert.equal(input.response_format.type, "json_schema");
       return { response: responseForSchema(input), usage: { prompt_tokens: 100, completion_tokens: 200 } };
     },
@@ -72,8 +72,8 @@ const response = await worker.fetch(new Request("https://worker.example/analyze"
 assert.equal(response.status, 200);
 const payload = await response.json();
 assert.equal(payload.analysis.coachingFocus.title, analysis.coachingFocus.title);
-assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
-assert.equal(modelCalls, 6);
+assert.equal(payload.model, "@cf/openai/gpt-oss-20b");
+assert.equal(modelCalls, 1);
 
 const repairTimestamp = Date.now() + 1;
 const repairNonce = crypto.randomUUID();
@@ -100,6 +100,20 @@ const repairedResponse = await worker.fetch(new Request("https://worker.example/
 assert.equal(repairedResponse.status, 200);
 const repairedPayload = await repairedResponse.json();
 assert.equal(repairedPayload.analysis.weeklyReview.title, analysis.weeklyReview.title);
+
+const limitTimestamp = Date.now() + 2;
+const limitNonce = crypto.randomUUID();
+const limitSignature = await sign(limitTimestamp, limitNonce, contextJson);
+const limitedResponse = await worker.fetch(new Request("https://worker.example/analyze", {
+  method: "POST",
+  headers: { origin, "content-type": "application/json" },
+  body: JSON.stringify({ timestamp: limitTimestamp, nonce: limitNonce, signature: limitSignature, contextJson }),
+}), {
+  ...env,
+  AI: { async run() { throw new Error("4006: you have used up your daily free allocation"); } },
+});
+assert.equal(limitedResponse.status, 429);
+assert.deepEqual(await limitedResponse.json(), { error: "Daily free AI analysis limit reached" });
 
 const rejected = await worker.fetch(new Request("https://worker.example/analyze", {
   method: "POST",

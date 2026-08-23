@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.2.3";
+const APP_VERSION = "3.2.4";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -1875,7 +1875,10 @@ function formatActivityDate(activity) {
 
 function analysisFreshnessLabel() {
   if (liveAnalysisState.status === "loading") return liveAnalysis ? "Updating analysis…" : "Analyzing current data…";
-  if (liveAnalysisState.status === "error") return liveAnalysis ? "Saved analysis · update missed" : "Live analysis unavailable";
+  if (liveAnalysisState.status === "error") {
+    if (/daily free ai analysis limit/i.test(liveAnalysisState.error || "")) return "Daily AI limit reached";
+    return liveAnalysis ? "Saved analysis · update missed" : "Live analysis unavailable";
+  }
   if (liveAnalysis?._meta?.generatedAt) {
     const generated = new Date(liveAnalysis._meta.generatedAt);
     if (!Number.isNaN(generated.getTime())) return `Generated ${generated.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
