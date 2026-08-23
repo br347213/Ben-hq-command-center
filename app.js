@@ -10,7 +10,7 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.2.4";
+const APP_VERSION = "3.2.5";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -1347,13 +1347,16 @@ function buildWorkoutAnalysis(activity, training, health, coaching = buildCoachi
 
   if (isRun) {
     if (hardRun && heatAffected && ["easy", "long", "recovery"].includes(inferredIntent)) title = "The conditions raised the cost above the intended easy run";
+    else if (hardRun && inferredIntent === "quality-or-easy") title = "Saturday’s run filled the quality slot";
     else if (hardRun) title = "This was a quality workout, not an easy aerobic run";
     else if (moderateRun) title = "This run landed in the middle: useful, but too hard to count as easy";
     else title = "This intensity is suitable for rebuilding your aerobic base";
 
     const bodyMindSignal = BODY_MIND_SIGNAL_META[feedback?.bodySignal];
-    body = hardRun && heatAffected
-      ? "Heat raised the cardiovascular cost. Treat this as the week’s quality run even though the intended effort was easier; your history shows this is a recurring response to hot, humid conditions."
+    body = hardRun && heatAffected && inferredIntent === "quality-or-easy"
+      ? "Heat raised the cardiovascular cost, and the effort data classifies this as the quality option from Saturday’s plan. Count it as the week’s hard run rather than assigning it today’s long-run role."
+      : hardRun && heatAffected
+        ? "Heat raised the cardiovascular cost. Treat this as the week’s quality run even though the intended effort was easier; your history shows this is a recurring response to hot, humid conditions."
       : hardRun
         ? "The effort data classifies this as quality work. It should occupy the hard-running slot for the week."
         : moderateRun
