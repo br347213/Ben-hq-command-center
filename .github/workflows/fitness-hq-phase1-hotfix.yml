@@ -1,0 +1,130 @@
+name: Fitness HQ Phase 1 hotfix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fitness-hq-phase1-hotfix
+  cancel-in-progress: false
+
+jobs:
+  hotfix:
+    if: github.event.head_commit.message == 'Apply Fitness HQ Phase 1 hotfix runner'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out live Fitness HQ branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Patch Phase 1 regressions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app = Path('app.js')
+          text = app.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              text = text.replace(old, new, 1)
+
+          replace_once('const APP_VERSION = "3.2.6";', 'const APP_VERSION = "3.2.7";', 'app version')
+
+          replace_once(
+              '''async function requestScheduledAnalysis(now = new Date()) {
+            const slot = currentAnalysisWindow(now);
+            if (!slot || analysisAttemptedThisSession || readJson(STORAGE.analysisWindow, "") === slot.key) return false;
+            return requestLiveAnalysis(`${slot.id} daily analysis`);
+          }''',
+              '''async function requestScheduledAnalysis(now = new Date()) {
+            const slot = currentAnalysisWindow(now);
+            if (!slot || analysisAttemptedThisSession || readJson(STORAGE.analysisWindow, "") === slot.key) return false;
+            // A scheduled window gets one automatic attempt, even if the live service fails.
+            writeJson(STORAGE.analysisWindow, slot.key);
+            return requestLiveAnalysis(`${slot.id} daily analysis`);
+          }''',
+              'scheduled analysis attempt gate',
+          )
+
+          replace_once(
+              '''  writeJson(STORAGE.feedback, workoutFeedback);
+            haptic([10]);
+            showToast(hasInput ? "Reflection saved. Coach is analyzing it…" : "Reflection cleared. Coach is updating…");
+            const analyzed = await requestLiveAnalysis(hasInput ? "workout reflection saved" : "workout reflection cleared");
+            showToast(analyzed ? "Fresh coaching analysis is ready." : "Reflection saved. Live analysis is unavailable right now.");
+          }''',
+              '''  writeJson(STORAGE.feedback, workoutFeedback);
+            haptic([10]);
+            renderAllTracking();
+            showToast(hasInput ? "Reflection saved. It will inform the next coaching analysis." : "Reflection cleared. The next coaching analysis will use the update.");
+          }''',
+              'reflection save analysis trigger',
+          )
+
+          replace_once(
+              '''  delete workoutFeedback[activityFeedbackKey(activity)];
+            writeJson(STORAGE.feedback, workoutFeedback);
+            showToast("Reflection cleared. Coach is updating…");
+            const analyzed = await requestLiveAnalysis("workout reflection cleared");
+            showToast(analyzed ? "Coaching analysis updated." : "Reflection cleared. Live analysis is unavailable right now.");
+          }''',
+              '''  delete workoutFeedback[activityFeedbackKey(activity)];
+            writeJson(STORAGE.feedback, workoutFeedback);
+            renderAllTracking();
+            showToast("Reflection cleared. The next coaching analysis will use the update.");
+          }''',
+              'reflection clear analysis trigger',
+          )
+
+          app.write_text(text, encoding='utf-8')
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          if '3.2.5' not in html:
+              raise SystemExit('index version: expected 3.2.5 references')
+          html = html.replace('3.2.5', '3.2.7')
+          html = html.replace('src="assets/my-command-center-logo.png" alt=""', 'src="assets/my-command-center-logo.png?v=3.2.7" alt=""', 1)
+          index.write_text(html, encoding='utf-8')
+
+          sw = Path('sw.js')
+          service_worker = sw.read_text(encoding='utf-8')
+          if 'const CACHE_NAME = "fitness-hq-v62";' not in service_worker:
+              raise SystemExit('service worker cache name did not match expected v62')
+          service_worker = service_worker.replace('const CACHE_NAME = "fitness-hq-v62";', 'const CACHE_NAME = "fitness-hq-v63";', 1)
+          service_worker = service_worker.replace('3.2.5', '3.2.7')
+          sw.write_text(service_worker, encoding='utf-8')
+          PY
+
+      - name: Validate hotfix
+        run: |
+          node --check app.js
+          git diff --check
+          grep -q 'const APP_VERSION = "3.2.7"' app.js
+          grep -q 'fitness-hq-v63' sw.js
+          grep -q 'my-command-center-logo.png?v=3.2.7' index.html
+          grep -q 'writeJson(STORAGE.analysisWindow, slot.key)' app.js
+          if grep -q 'requestLiveAnalysis(hasInput ? "workout reflection saved"' app.js; then
+            echo 'reflection save still triggers live analysis'
+            exit 1
+          fi
+          if grep -q 'requestLiveAnalysis("workout reflection cleared")' app.js; then
+            echo 'reflection clear still triggers live analysis'
+            exit 1
+          fi
+
+      - name: Publish hotfix
+        run: |
+          git config user.name "Fitness HQ Migration"
+          git config user.email "actions@users.noreply.github.com"
+          git add app.js index.html sw.js
+          git diff --cached --check
+          git commit -m "Fix Phase 1 reflection and PWA cache regressions"
+          git push origin HEAD:gh-pages
