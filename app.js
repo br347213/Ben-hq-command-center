@@ -15,7 +15,7 @@ const DAILY_ANALYSIS_WINDOWS = Object.freeze([
   { id: "midday", startHour: 12 },
   { id: "evening", startHour: 18 },
 ]);
-const APP_VERSION = "3.2.6";
+const APP_VERSION = "3.2.7";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -326,6 +326,8 @@ function markCurrentAnalysisWindow(now = new Date()) {
 async function requestScheduledAnalysis(now = new Date()) {
   const slot = currentAnalysisWindow(now);
   if (!slot || analysisAttemptedThisSession || readJson(STORAGE.analysisWindow, "") === slot.key) return false;
+  // A scheduled window gets one automatic attempt, even if the live service fails.
+  writeJson(STORAGE.analysisWindow, slot.key);
   return requestLiveAnalysis(`${slot.id} daily analysis`);
 }
 
@@ -1273,9 +1275,8 @@ async function saveWorkoutFeedback(event) {
   else delete workoutFeedback[key];
   writeJson(STORAGE.feedback, workoutFeedback);
   haptic([10]);
-  showToast(hasInput ? "Reflection saved. Coach is analyzing it…" : "Reflection cleared. Coach is updating…");
-  const analyzed = await requestLiveAnalysis(hasInput ? "workout reflection saved" : "workout reflection cleared");
-  showToast(analyzed ? "Fresh coaching analysis is ready." : "Reflection saved. Live analysis is unavailable right now.");
+  renderAllTracking();
+  showToast(hasInput ? "Reflection saved. It will inform the next coaching analysis." : "Reflection cleared. The next coaching analysis will use the update.");
 }
 
 async function clearWorkoutFeedback() {
@@ -1283,9 +1284,8 @@ async function clearWorkoutFeedback() {
   if (!activity) return;
   delete workoutFeedback[activityFeedbackKey(activity)];
   writeJson(STORAGE.feedback, workoutFeedback);
-  showToast("Reflection cleared. Coach is updating…");
-  const analyzed = await requestLiveAnalysis("workout reflection cleared");
-  showToast(analyzed ? "Coaching analysis updated." : "Reflection cleared. Live analysis is unavailable right now.");
+  renderAllTracking();
+  showToast("Reflection cleared. The next coaching analysis will use the update.");
 }
 
 function workoutEffortRead(activity, training, health) {
