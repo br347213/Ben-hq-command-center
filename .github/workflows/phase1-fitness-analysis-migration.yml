@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   migrate:
-    if: github.event.head_commit.message == 'Add Phase 1 Fitness HQ migration runner' || github.event.head_commit.message == 'Run Phase 1 Fitness HQ migration'
+    if: github.event.head_commit.message == 'Run Phase 1 Fitness HQ migration'
     runs-on: ubuntu-latest
     steps:
       - name: Check out live Fitness HQ branch
@@ -37,131 +37,50 @@ jobs:
               text = text.replace(old, new, 1)
 
           replace_once(
-              '''const GARMIN_REFRESH_POLL_MS = 2500;
-          const GARMIN_REFRESH_MAX_POLLS = 48;
-          const APP_VERSION = "3.2.5";''',
-              '''const GARMIN_REFRESH_POLL_MS = 2500;
-          const GARMIN_REFRESH_MAX_POLLS = 48;
-          const DAILY_ANALYSIS_WINDOWS = Object.freeze([
-            { id: "morning", startHour: 6 },
-            { id: "midday", startHour: 12 },
-            { id: "evening", startHour: 18 },
-          ]);
-          const APP_VERSION = "3.2.6";''',
+              'const GARMIN_REFRESH_POLL_MS = 2500;\nconst GARMIN_REFRESH_MAX_POLLS = 48;\nconst APP_VERSION = "3.2.5";',
+              'const GARMIN_REFRESH_POLL_MS = 2500;\nconst GARMIN_REFRESH_MAX_POLLS = 48;\nconst DAILY_ANALYSIS_WINDOWS = Object.freeze([\n  { id: "morning", startHour: 6 },\n  { id: "midday", startHour: 12 },\n  { id: "evening", startHour: 18 },\n]);\nconst APP_VERSION = "3.2.6";',
               "analysis window constants",
           )
 
           replace_once(
-              '''  liveAnalysis: "fitness-hq-live-analysis-v8",
-            liveAnalysisHistory: "fitness-hq-live-analysis-history-v8",
-          };''',
-              '''  liveAnalysis: "fitness-hq-live-analysis-v8",
-            liveAnalysisHistory: "fitness-hq-live-analysis-history-v8",
-            analysisWindow: "fitness-hq-analysis-window-v1",
-          };''',
+              '  liveAnalysis: "fitness-hq-live-analysis-v8",\n  liveAnalysisHistory: "fitness-hq-live-analysis-history-v8",\n};',
+              '  liveAnalysis: "fitness-hq-live-analysis-v8",\n  liveAnalysisHistory: "fitness-hq-live-analysis-history-v8",\n  analysisWindow: "fitness-hq-analysis-window-v1",\n};',
               "analysis window storage",
           )
 
           replace_once(
-              '''let liveAnalysisState = { status: liveAnalysis ? "ready" : "idle", reason: "", error: "" };
-          let liveAnalysisRequest = null;
-          let toastTimer = null;''',
-              '''let liveAnalysisState = { status: liveAnalysis ? "ready" : "idle", reason: "", error: "" };
-          let liveAnalysisRequest = null;
-          let analysisAttemptedThisSession = false;
-          let toastTimer = null;''',
+              'let liveAnalysisState = { status: liveAnalysis ? "ready" : "idle", reason: "", error: "" };\nlet liveAnalysisRequest = null;\nlet toastTimer = null;',
+              'let liveAnalysisState = { status: liveAnalysis ? "ready" : "idle", reason: "", error: "" };\nlet liveAnalysisRequest = null;\nlet analysisAttemptedThisSession = false;\nlet toastTimer = null;',
               "session analysis state",
           )
 
           replace_once(
-              '''function localDateKey(value = new Date()) {
-            const date = value instanceof Date ? value : new Date(value);
-            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-          }
-
-          function parseLocalDateKey(key) {''',
-              '''function localDateKey(value = new Date()) {
-            const date = value instanceof Date ? value : new Date(value);
-            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-          }
-
-          function currentAnalysisWindow(now = new Date()) {
-            const slot = [...DAILY_ANALYSIS_WINDOWS].reverse().find((item) => now.getHours() >= item.startHour);
-            if (!slot) return null;
-            return { ...slot, key: `${localDateKey(now)}:${slot.id}` };
-          }
-
-          function markCurrentAnalysisWindow(now = new Date()) {
-            const slot = currentAnalysisWindow(now);
-            if (slot) writeJson(STORAGE.analysisWindow, slot.key);
-          }
-
-          async function requestScheduledAnalysis(now = new Date()) {
-            const slot = currentAnalysisWindow(now);
-            if (!slot || analysisAttemptedThisSession || readJson(STORAGE.analysisWindow, "") === slot.key) return false;
-            return requestLiveAnalysis(`${slot.id} daily analysis`);
-          }
-
-          function parseLocalDateKey(key) {''',
+              'function localDateKey(value = new Date()) {\n  const date = value instanceof Date ? value : new Date(value);\n  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;\n}\n\nfunction parseLocalDateKey(key) {',
+              'function localDateKey(value = new Date()) {\n  const date = value instanceof Date ? value : new Date(value);\n  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;\n}\n\nfunction currentAnalysisWindow(now = new Date()) {\n  const slot = [...DAILY_ANALYSIS_WINDOWS].reverse().find((item) => now.getHours() >= item.startHour);\n  if (!slot) return null;\n  return { ...slot, key: `${localDateKey(now)}:${slot.id}` };\n}\n\nfunction markCurrentAnalysisWindow(now = new Date()) {\n  const slot = currentAnalysisWindow(now);\n  if (slot) writeJson(STORAGE.analysisWindow, slot.key);\n}\n\nasync function requestScheduledAnalysis(now = new Date()) {\n  const slot = currentAnalysisWindow(now);\n  if (!slot || analysisAttemptedThisSession || readJson(STORAGE.analysisWindow, "") === slot.key) return false;\n  return requestLiveAnalysis(`${slot.id} daily analysis`);\n}\n\nfunction parseLocalDateKey(key) {',
               "analysis window helpers",
           )
 
           replace_once(
-              '''  if (!syncSettings.key || !hasHealthData()) {
-            liveAnalysisState = { status: "unavailable", reason, error: "Garmin data or the private sync key is unavailable." };
-            renderAllTracking();
-            return false;
-          }
-            liveAnalysisState = { status: "loading", reason, error: "" };''',
-              '''  if (!syncSettings.key || !hasHealthData()) {
-            liveAnalysisState = { status: "unavailable", reason, error: "Garmin data or the private sync key is unavailable." };
-            renderAllTracking();
-            return false;
-          }
-            analysisAttemptedThisSession = true;
-            liveAnalysisState = { status: "loading", reason, error: "" };''',
+              '  liveAnalysisState = { status: "loading", reason, error: "" };\n  document.body.classList.add("analysis-loading");',
+              '  analysisAttemptedThisSession = true;\n  liveAnalysisState = { status: "loading", reason, error: "" };\n  document.body.classList.add("analysis-loading");',
               "analysis attempt tracking",
           )
 
           replace_once(
-              '''      liveAnalysisState = { status: "ready", reason, error: "" };
-                renderAllTracking();
-                return true;
-              } catch (error) {
-                liveAnalysis = null;
-                removeStored(STORAGE.liveAnalysis);
-                liveAnalysisState = { status: "error", reason, error: error?.message || "Live coaching analysis is unavailable." };''',
-              '''      markCurrentAnalysisWindow();
-                liveAnalysisState = { status: "ready", reason, error: "" };
-                renderAllTracking();
-                return true;
-              } catch (error) {
-                liveAnalysisState = { status: "error", reason, error: error?.message || "Live coaching analysis is unavailable." };''',
+              '      liveAnalysisState = { status: "ready", reason, error: "" };\n      renderAllTracking();\n      return true;\n    } catch (error) {\n      liveAnalysis = null;\n      removeStored(STORAGE.liveAnalysis);\n      liveAnalysisState = { status: "error", reason, error: error?.message || "Live coaching analysis is unavailable." };',
+              '      markCurrentAnalysisWindow();\n      liveAnalysisState = { status: "ready", reason, error: "" };\n      renderAllTracking();\n      return true;\n    } catch (error) {\n      liveAnalysisState = { status: "error", reason, error: error?.message || "Live coaching analysis is unavailable." };',
               "last-known-good analysis preservation",
           )
 
           replace_once(
-              '''  try {
-            installPrivatePacket(await fetchLatestPrivatePacket(), showResult);
-            return true;
-          } catch {''',
-              '''  try {
-            const previousGeneratedAt = privatePacket.generatedAt;
-            const packet = await fetchLatestPrivatePacket();
-            installPrivatePacket(packet, showResult);
-            const previousTime = Date.parse(previousGeneratedAt || "") || 0;
-            const packetTime = Date.parse(packet.generatedAt || "") || 0;
-            if (packetTime > previousTime) await requestLiveAnalysis("new Garmin data");
-            return true;
-          } catch {''',
+              '  try {\n    installPrivatePacket(await fetchLatestPrivatePacket(), showResult);\n    return true;\n  } catch {',
+              '  try {\n    const previousGeneratedAt = privatePacket.generatedAt;\n    const packet = await fetchLatestPrivatePacket();\n    installPrivatePacket(packet, showResult);\n    const previousTime = Date.parse(previousGeneratedAt || "") || 0;\n    const packetTime = Date.parse(packet.generatedAt || "") || 0;\n    if (packetTime > previousTime) await requestLiveAnalysis("new Garmin data");\n    return true;\n  } catch {',
               "new Garmin analysis trigger",
           )
 
           replace_once(
-              '''  await refreshGarminData(false);
-            await requestLiveAnalysis("app reload");''',
-              '''  await refreshGarminData(false);
-            await requestScheduledAnalysis();''',
+              '  await refreshGarminData(false);\n  await requestLiveAnalysis("app reload");',
+              '  await refreshGarminData(false);\n  await requestScheduledAnalysis();',
               "scheduled init analysis",
           )
 
@@ -182,8 +101,8 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           text = Path("app.js").read_text(encoding="utf-8")
-          catch_block = text[text.index('async function requestLiveAnalysis'):text.index('function recommendedEasyHrRange')]
-          if 'liveAnalysis = null' in catch_block or 'removeStored(STORAGE.liveAnalysis)' in catch_block:
+          request_block = text[text.index('async function requestLiveAnalysis'):text.index('function recommendedEasyHrRange')]
+          if 'liveAnalysis = null' in request_block or 'removeStored(STORAGE.liveAnalysis)' in request_block:
               raise SystemExit('live analysis failure still clears last-known-good analysis')
           PY
 
@@ -199,5 +118,3 @@ jobs:
             git commit -m "Apply Phase 1 analysis scheduling"
             git push origin HEAD:gh-pages
           fi
-
-# trigger: phase-1-2026-09-13
