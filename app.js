@@ -10,7 +10,12 @@ const GARMIN_REFRESH_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.
 const LIVE_ANALYSIS_ENDPOINT = "https://ben-hq-garmin-refresh.br347213.workers.dev/analyze";
 const GARMIN_REFRESH_POLL_MS = 2500;
 const GARMIN_REFRESH_MAX_POLLS = 48;
-const APP_VERSION = "3.2.5";
+const DAILY_ANALYSIS_WINDOWS = Object.freeze([
+  { id: "morning", startHour: 6 },
+  { id: "midday", startHour: 12 },
+  { id: "evening", startHour: 18 },
+]);
+const APP_VERSION = "3.2.6";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -245,6 +250,7 @@ const STORAGE = {
   recommendationHistory: "fitness-hq-recommendations-v1",
   liveAnalysis: "fitness-hq-live-analysis-v8",
   liveAnalysisHistory: "fitness-hq-live-analysis-history-v8",
+  analysisWindow: "fitness-hq-analysis-window-v1",
 };
 
 const OUTCOME_LABELS = {
@@ -264,6 +270,7 @@ let liveAnalysis = sanitizeGeneratedAnalysis(readJson(STORAGE.liveAnalysis, null
 let liveAnalysisHistory = readJson(STORAGE.liveAnalysisHistory, []);
 let liveAnalysisState = { status: liveAnalysis ? "ready" : "idle", reason: "", error: "" };
 let liveAnalysisRequest = null;
+let analysisAttemptedThisSession = false;
 let toastTimer = null;
 
 function escapeHtml(value) {
@@ -303,6 +310,23 @@ function removeStored(key) {
 function localDateKey(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function currentAnalysisWindow(now = new Date()) {
+  const slot = [...DAILY_ANALYSIS_WINDOWS].reverse().find((item) => now.getHours() >= item.startHour);
+  if (!slot) return null;
+  return { ...slot, key: `${localDateKey(now)}:${slot.id}` };
+}
+
+function markCurrentAnalysisWindow(now = new Date()) {
+  const slot = currentAnalysisWindow(now);
+  if (slot) writeJson(STORAGE.analysisWindow, slot.key);
+}
+
+async function requestScheduledAnalysis(now = new Date()) {
+  const slot = currentAnalysisWindow(now);
+  if (!slot || analysisAttemptedThisSession || readJson(STORAGE.analysisWindow, "") === slot.key) return false;
+  return requestLiveAnalysis(`${slot.id} daily analysis`);
 }
 
 function parseLocalDateKey(key) {
@@ -727,6 +751,7 @@ async function requestLiveAnalysis(reason = "app load") {
     renderAllTracking();
     return false;
   }
+  analysisAttemptedThisSession = true;
   liveAnalysisState = { status: "loading", reason, error: "" };
   document.body.classList.add("analysis-loading");
   renderAllTracking();
@@ -761,12 +786,11 @@ async function requestLiveAnalysis(reason = "app load") {
         liveAnalysisHistory = [...liveAnalysisHistory, snapshot].slice(-6);
         writeJson(STORAGE.liveAnalysisHistory, liveAnalysisHistory);
       }
+      markCurrentAnalysisWindow();
       liveAnalysisState = { status: "ready", reason, error: "" };
       renderAllTracking();
       return true;
     } catch (error) {
-      liveAnalysis = null;
-      removeStored(STORAGE.liveAnalysis);
       liveAnalysisState = { status: "error", reason, error: error?.message || "Live coaching analysis is unavailable." };
       renderAllTracking();
       return false;
@@ -2608,7 +2632,12 @@ async function refreshGarminData(showResult = false) {
   syncSettings.progress = "Checking Garmin";
   renderSyncStatus();
   try {
-    installPrivatePacket(await fetchLatestPrivatePacket(), showResult);
+    const previousGeneratedAt = privatePacket.generatedAt;
+    const packet = await fetchLatestPrivatePacket();
+    installPrivatePacket(packet, showResult);
+    const previousTime = Date.parse(previousGeneratedAt || "") || 0;
+    const packetTime = Date.parse(packet.generatedAt || "") || 0;
+    if (packetTime > previousTime) await requestLiveAnalysis("new Garmin data");
     return true;
   } catch {
     syncSettings.status = "error";
@@ -2884,7 +2913,7 @@ async function init() {
   renderSyncStatus();
   wireEvents();
   await refreshGarminData(false);
-  await requestLiveAnalysis("app reload");
+  await requestScheduledAnalysis();
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
     navigator.serviceWorker.register(`sw.js?build=${APP_VERSION}`, { updateViaCache: "none" })
       .then((registration) => registration.update())
