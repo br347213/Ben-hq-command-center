@@ -199,3 +199,5 @@ jobs:
             git commit -m "Apply Phase 1 analysis scheduling"
             git push origin HEAD:gh-pages
           fi
+
+# trigger: phase-1-2026-09-13
