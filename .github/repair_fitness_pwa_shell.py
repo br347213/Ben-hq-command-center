@@ -54,6 +54,7 @@ s = sw.read_text()
 s = s.replace('fitness-hq-v65', 'fitness-hq-v66').replace('fitness-hq-v64', 'fitness-hq-v66')
 s = s.replace('3.2.8', VERSION).replace('3.2.9', VERSION)
 s = s.replace(f"assets/my-command-center-logo.png?v={VERSION}", f"assets/my-command-center-logo.png?v={LOGO_TAG}")
+s = s.replace(f'  "./app-hotfix.js?v={VERSION}",\n', '')
 start = '  if (url.pathname.endsWith("/app.js")) {'
 if start in s:
     begin = s.index(start)
