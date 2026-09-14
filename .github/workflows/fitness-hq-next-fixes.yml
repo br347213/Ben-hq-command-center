@@ -1,0 +1,175 @@
+name: Apply Fitness HQ next fixes
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Apply Fitness HQ next fixes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Patch Fitness HQ
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'Expected text not found in {path}: {old[:80]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          # PWA/app version bump.
+          app = Path('app.js')
+          text = app.read_text()
+          text = text.replace('const APP_VERSION = "3.2.8";', 'const APP_VERSION = "3.2.9";', 1)
+
+          old_catch = '''  } catch {
+    syncSettings.status = "error";
+    syncSettings.progress = "";
+    syncSettings.error = "The Garmin refresh did not finish.";
+    saveSyncSettings();
+    renderSyncStatus();
+    showToast("Garmin did not finish refreshing. Your last good data is still here.");
+  }
+}'''
+          new_catch = '''  } catch {
+    // If the cloud workflow cannot be dispatched, still check the newest published
+    // Garmin packet and force a fresh coaching analysis. This keeps manual Refresh
+    // useful while preserving the last-known-good packet on any failure.
+    try {
+      const packet = await fetchLatestPrivatePacket();
+      installPrivatePacket(packet, true);
+      const analyzed = await requestLiveAnalysis("manual snapshot refresh");
+      showToast(analyzed
+        ? "Latest Garmin snapshot checked and coaching refreshed."
+        : "Latest Garmin snapshot checked. Live coaching analysis is unavailable right now.");
+    } catch {
+      syncSettings.status = "error";
+      syncSettings.progress = "";
+      syncSettings.error = "The Garmin refresh did not finish.";
+      saveSyncSettings();
+      renderSyncStatus();
+      showToast("Garmin did not finish refreshing. Your last good data is still here.");
+    }
+  }
+}'''
+          if old_catch not in text:
+              raise SystemExit('refreshDashboardData catch block not found')
+          text = text.replace(old_catch, new_catch, 1)
+          app.write_text(text)
+
+          # Cache-bust all app shell references.
+          index = Path('index.html')
+          index.write_text(index.read_text().replace('3.2.8', '3.2.9'))
+          sw = Path('sw.js')
+          sw_text = sw.read_text().replace('fitness-hq-v64', 'fitness-hq-v65').replace('3.2.8', '3.2.9')
+          sw.write_text(sw_text)
+
+          # Refresh Garmin automatically shortly after the three daily analysis windows.
+          wf = Path('.github/workflows/refresh-garmin.yml')
+          wf_text = wf.read_text()
+          trigger = 'on:\n  workflow_dispatch:\n  push:'
+          replacement = 'on:\n  workflow_dispatch:\n  schedule:\n    - cron: "15 10,16,22 * * *"\n  push:'
+          if trigger not in wf_text:
+              raise SystemExit('refresh workflow trigger block not found')
+          wf.write_text(wf_text.replace(trigger, replacement, 1))
+
+          # Ground the weekly review in actual metrics rather than trusting free-form model prose.
+          worker = Path('refresh-worker/src/index.js')
+          w = worker.read_text()
+          w = w.replace('const WORKER_VERSION = "2026-09-14c";', 'const WORKER_VERSION = "2026-09-14d";', 1)
+
+          marker = 'function normalizeAnalysis(value, context) {'
+          helper = r'''function groundedWeeklyReview(context) {
+  const weekly = context?.training?.weeklyLoad || {};
+  const current = context?.training?.analytics?.currentState || {};
+  const miles = finiteNumber(weekly.distanceMiles);
+  const runs = finiteNumber(weekly.activities);
+  const priorRuns = finiteNumber(weekly.previousActivities);
+  const change = finiteNumber(weekly.distanceChangePct);
+  const fitness = finiteNumber(current.longTermFitnessLoadPoints);
+  const fatigue = finiteNumber(current.shortTermFatigueLoadPoints);
+  const loadBalance = finiteNumber(current.loadBalanceFatigueDividedByFitness);
+
+  let title = "Keep this week repeatable before adding more";
+  if (change !== null && change >= 25) title = "Running load rose sharply this week";
+  else if (change !== null && change <= -25) title = "Running load is lighter than last week";
+  else if (runs !== null && priorRuns !== null && runs > priorRuns) title = "Run frequency increased this week";
+  else if (runs !== null && priorRuns !== null && runs < priorRuns) title = "Run frequency eased this week";
+
+  const summaryParts = [];
+  if (miles !== null) summaryParts.push(`${miles.toFixed(1)} miles in the last seven days`);
+  if (runs !== null) summaryParts.push(`${Math.round(runs)} run${Math.round(runs) === 1 ? "" : "s"}`);
+  if (change !== null) summaryParts.push(`${change >= 0 ? "+" : ""}${change.toFixed(1)}% distance versus the prior seven days`);
+  const summary = summaryParts.length
+    ? `${summaryParts.join(" · ")}. Treat that change as the main load signal rather than labeling the week successful or unsuccessful.`
+    : "Recent running volume and frequency are the main weekly signals; keep the next decision proportional to the data that is actually available.";
+
+  let win = runs !== null && priorRuns !== null
+    ? `Run frequency is ${Math.round(runs)} session${Math.round(runs) === 1 ? "" : "s"} versus ${Math.round(priorRuns)} in the prior seven days.`
+    : "The useful win is preserving a repeatable schedule without catch-up work.";
+  if (miles !== null && change !== null && change > 0) {
+    win = `You accumulated ${miles.toFixed(1)} running miles while frequency stayed at ${Math.round(runs ?? 0)} session${Math.round(runs ?? 0) === 1 ? "" : "s"}.`;
+  }
+
+  let watch = "Watch for repeated fatigue, pain, illness, or routine runs drifting harder than intended.";
+  if (fatigue !== null && fitness !== null && fatigue > fitness) {
+    watch = `Short-term load (${fatigue.toFixed(1)}) is above long-term load (${fitness.toFixed(1)}). Keep the next sessions low-cost until that gap narrows.`;
+  } else if (loadBalance !== null && loadBalance > 1.2) {
+    watch = `Load balance is ${loadBalance.toFixed(2)}, so recent work is elevated relative to your longer-term base. Avoid another abrupt load jump.`;
+  } else if (change !== null && change >= 25) {
+    watch = `Distance is up ${change.toFixed(1)}% versus the prior seven days. Let that increase settle before adding more volume or intensity.`;
+  }
+
+  return { title, summary, win, watch, confidence: "Reasonable confidence" };
+}
+
+'''
+          if marker not in w:
+              raise SystemExit('normalizeAnalysis marker not found')
+          w = w.replace(marker, helper + marker, 1)
+
+          old_weekly = '''    weeklyReview: {
+      title: text(analysis.weeklyReview?.title, "Keep the week repeatable before adding more"),
+      summary: text(analysis.weeklyReview?.summary, "Use recent running volume, recovery, intensity, and reflections together to judge whether the current week should stay fixed."),
+      win: text(analysis.weeklyReview?.win, "The useful win is completing work that does not require a recovery correction afterward."),
+      watch: text(analysis.weeklyReview?.watch, "Watch for repeated fatigue, pain, illness, or ordinary runs drifting too hard."),
+      confidence: text(analysis.weeklyReview?.confidence, "Reasonable confidence", 60),
+    },'''
+          if old_weekly not in w:
+              raise SystemExit('weekly review normalization block not found')
+          w = w.replace(old_weekly, '    weeklyReview: groundedWeeklyReview(context),', 1)
+
+          prompt_line = 'If you cite Garmin aerobic effect, use the exact latestCompletedWorkout.activity.aerobicEffect value supplied in the context.'
+          prompt_replacement = prompt_line + ' Never describe a session as a success merely because it was completed. Never claim anaerobic demand unless supplied anaerobicEffect or zone evidence supports it.'
+          if prompt_line not in w:
+              raise SystemExit('prompt grounding line not found')
+          w = w.replace(prompt_line, prompt_replacement, 1)
+          worker.write_text(w)
+          PY
+
+      - name: Validate JavaScript
+        run: |
+          node --check app.js
+          node --check refresh-worker/src/index.js
+          grep -q '3.2.9' app.js
+          grep -q '2026-09-14d' refresh-worker/src/index.js
+
+      - name: Commit fixes to gh-pages
+        run: |
+          git config user.name "Fitness HQ Maintenance"
+          git config user.email "actions@users.noreply.github.com"
+          git add app.js index.html sw.js .github/workflows/refresh-garmin.yml refresh-worker/src/index.js
+          git commit -m "Improve live coaching and Garmin refresh resilience"
+          git push origin HEAD:gh-pages
