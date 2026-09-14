@@ -41,7 +41,7 @@ const env = {
   AI: {
     async run(model, input) {
       modelCalls += 1;
-      assert.equal(model, "@cf/openai/gpt-oss-20b");
+      assert.equal(model, "@cf/meta/llama-3.1-8b-instruct-fast");
       assert.equal(input.response_format.type, "json_schema");
       return { response: responseForSchema(input), usage: { prompt_tokens: 100, completion_tokens: 200 } };
     },
@@ -72,7 +72,7 @@ const response = await worker.fetch(new Request("https://worker.example/analyze"
 assert.equal(response.status, 200);
 const payload = await response.json();
 assert.equal(payload.analysis.coachingFocus.title, analysis.coachingFocus.title);
-assert.equal(payload.model, "@cf/openai/gpt-oss-20b");
+assert.equal(payload.model, "@cf/meta/llama-3.1-8b-instruct-fast");
 assert.equal(modelCalls, 1);
 
 const repairTimestamp = Date.now() + 1;

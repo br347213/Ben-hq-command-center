@@ -1,7 +1,7 @@
 import { jsonrepair } from "jsonrepair";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
-const ANALYSIS_MODEL = "@cf/openai/gpt-oss-20b";
+const ANALYSIS_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
 const MAX_CONTEXT_BYTES = 120_000;
 
 function shortString() {
@@ -481,7 +481,6 @@ async function analyze(body, origin, env) {
             response_format: { type: "json_schema", json_schema: schema },
             max_tokens: maxTokens,
             temperature,
-            reasoning_effort: "low",
             top_p: 0.9,
             repetition_penalty: 1.08,
             frequency_penalty: 0.25,
