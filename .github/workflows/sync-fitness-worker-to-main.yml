@@ -1,4 +1,4 @@
-name: Apply Fitness HQ analysis key migration
+name: Apply Fitness HQ grounding patch
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   migrate:
-    if: github.event.head_commit.message == 'Run Fitness HQ analysis key migration'
+    if: github.event.head_commit.message == 'Apply Fitness HQ grounding patch'
     runs-on: ubuntu-latest
     steps:
       - name: Check out live branch
@@ -18,24 +18,22 @@ jobs:
         with:
           ref: gh-pages
           fetch-depth: 0
-      - name: Load migration script from main
+      - name: Load patch script from main
         run: |
           git fetch origin main
           git show origin/main:.github/apply_analysis_key_migration.py > /tmp/apply_analysis_key_migration.py
           python /tmp/apply_analysis_key_migration.py
-      - name: Validate migration
+      - name: Validate patch
         run: |
-          node --check app.js
           node --check refresh-worker/src/index.js
-          grep -q 'APP_VERSION = "3.2.8"' app.js
-          grep -q 'id="enterAnalysisKey"' index.html
-          grep -q 'ANALYSIS_SHARED_SECRET' refresh-worker/src/index.js
-          grep -q 'fitness-hq-v64' sw.js
+          grep -q 'WORKER_VERSION = "2026-09-14c"' refresh-worker/src/index.js
+          grep -q 'function healthContextPoints' refresh-worker/src/index.js
+          grep -q 'function groundedWorkoutSignals' refresh-worker/src/index.js
           git diff --check
-      - name: Commit live migration
+      - name: Commit live patch
         run: |
           git config user.name "Fitness HQ Migration"
           git config user.email "actions@users.noreply.github.com"
-          git add index.html app.js sw.js refresh-worker/src/index.js refresh-worker/README.md
-          git commit -m "Separate Fitness HQ live analysis key"
+          git add refresh-worker/src/index.js
+          git commit -m "Ground Fitness HQ generated health and workout data"
           git push origin HEAD:gh-pages
