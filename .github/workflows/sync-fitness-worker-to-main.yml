@@ -1,4 +1,4 @@
-name: Apply Fitness HQ grounding patch
+name: Repair Fitness HQ shell from source
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   migrate:
-    if: github.event.head_commit.message == 'Apply Fitness HQ grounding patch'
+    if: github.event.head_commit.message == 'Repair Fitness HQ shell from source'
     runs-on: ubuntu-latest
     steps:
       - name: Check out live branch
@@ -18,22 +18,37 @@ jobs:
         with:
           ref: gh-pages
           fetch-depth: 0
-      - name: Load patch script from main
+
+      - name: Load repair script from main
         run: |
           git fetch origin main
-          git show origin/main:.github/apply_analysis_key_migration.py > /tmp/apply_analysis_key_migration.py
-          python /tmp/apply_analysis_key_migration.py
-      - name: Validate patch
+          git show origin/main:.github/repair_fitness_pwa_shell.py > /tmp/repair_fitness_pwa_shell.py
+          python /tmp/repair_fitness_pwa_shell.py
+
+      - name: Validate repaired shell
         run: |
-          node --check refresh-worker/src/index.js
-          grep -q 'WORKER_VERSION = "2026-09-14c"' refresh-worker/src/index.js
-          grep -q 'function healthContextPoints' refresh-worker/src/index.js
-          grep -q 'function groundedWorkoutSignals' refresh-worker/src/index.js
+          node --check app.js
+          node --check sw.js
+          grep -q 'const APP_VERSION = "3.2.10"' app.js
+          grep -q 'v3.2.10' index.html
+          grep -q 'logo-c5edccef-3.2.10' index.html
+          grep -q 'fitness-hq-v66' sw.js
+          if grep -q 'app-hotfix.js' sw.js; then echo 'temporary hotfix still injected' && exit 1; fi
           git diff --check
-      - name: Commit live patch
+
+      - name: Commit live repair
         run: |
-          git config user.name "Fitness HQ Migration"
+          git config user.name "Fitness HQ Maintenance"
           git config user.email "actions@users.noreply.github.com"
-          git add refresh-worker/src/index.js
-          git commit -m "Ground Fitness HQ generated health and workout data"
-          git push origin HEAD:gh-pages
+          git add app.js index.html sw.js manifest.webmanifest
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Repair Fitness HQ PWA shell and logo cache"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:gh-pages; then exit 0; fi
+            git fetch origin gh-pages
+            git rebase origin/gh-pages
+          done
+          exit 1
