@@ -1,4 +1,4 @@
-name: Repair Fitness HQ shell from source
+name: Cleanup Fitness HQ migration scaffolding
 
 on:
   push:
@@ -9,46 +9,33 @@ permissions:
   contents: write
 
 jobs:
-  migrate:
-    if: github.event.head_commit.message == 'Repair Fitness HQ shell from source'
+  cleanup:
+    if: github.event.head_commit.message == 'Cleanup Fitness HQ migration scaffolding'
     runs-on: ubuntu-latest
     steps:
-      - name: Check out live branch
+      - name: Check out main
         uses: actions/checkout@v4
         with:
-          ref: gh-pages
+          ref: main
           fetch-depth: 0
 
-      - name: Load repair script from main
+      - name: Remove one-off migration and diagnostic files
         run: |
-          git fetch origin main
-          git show origin/main:.github/repair_fitness_pwa_shell.py > /tmp/repair_fitness_pwa_shell.py
-          python /tmp/repair_fitness_pwa_shell.py
+          git rm -f --ignore-unmatch \
+            .github/analysis-key-run-trigger \
+            .github/fitness-hq-auth-patch-trigger \
+            .github/apply_analysis_key_migration.py \
+            .github/repair_fitness_pwa_shell.py \
+            .github/workflows/apply-analysis-key.yml \
+            .github/workflows/fitness-hq-auth-diagnostic.yml \
+            .github/workflows/fitness-hq-next-fixes.yml \
+            .github/workflows/fitness-hq-smoke-test.yml \
+            .github/workflows/fix-fitness-pwa-shell.yml \
+            .github/workflows/sync-fitness-worker-to-main.yml
 
-      - name: Validate repaired shell
-        run: |
-          node --check app.js
-          node --check sw.js
-          grep -q 'const APP_VERSION = "3.2.10"' app.js
-          grep -q 'v3.2.10' index.html
-          grep -q 'logo-c5edccef-3.2.10' index.html
-          grep -q 'fitness-hq-v66' sw.js
-          if grep -q 'app-hotfix.js' sw.js; then echo 'temporary hotfix still injected' && exit 1; fi
-          git diff --check
-
-      - name: Commit live repair
+      - name: Commit cleanup
         run: |
           git config user.name "Fitness HQ Maintenance"
           git config user.email "actions@users.noreply.github.com"
-          git add app.js index.html sw.js manifest.webmanifest
-          if git diff --cached --quiet; then
-            echo "No changes needed"
-            exit 0
-          fi
-          git commit -m "Repair Fitness HQ PWA shell and logo cache"
-          for attempt in 1 2 3; do
-            if git push origin HEAD:gh-pages; then exit 0; fi
-            git fetch origin gh-pages
-            git rebase origin/gh-pages
-          done
-          exit 1
+          git commit -m "Remove Fitness HQ migration scaffolding"
+          git push origin HEAD:main
