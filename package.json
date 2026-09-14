@@ -1,0 +1,8 @@
+{
+  "name": "ben-hq-command-center-cloudflare-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "jsonrepair": "3.15.0"
+  }
+}
