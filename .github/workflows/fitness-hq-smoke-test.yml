@@ -11,39 +11,20 @@ jobs:
   smoke-test:
     if: github.event.head_commit.message == 'Run Fitness HQ live smoke test'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 2
     steps:
-      - name: Call deployed analysis endpoint
-        env:
-          BEN_HQ_SYNC_KEY: ${{ secrets.BEN_HQ_SYNC_KEY }}
+      - name: Check deployed Worker status
         run: |
           node --input-type=module <<'NODE'
-          import crypto from 'node:crypto';
-          const endpoint = 'https://ben-hq-garmin-refresh.br347213.workers.dev/analyze';
-          const origin = 'https://br347213.github.io';
-          const secret = process.env.BEN_HQ_SYNC_KEY || '';
-          if (!secret) throw new Error('BEN_HQ_SYNC_KEY is unavailable');
-          const contextJson = JSON.stringify({
-            schemaVersion: 1,
-            currentDate: new Date().toISOString().slice(0, 10),
-            athlete: { name: 'Ben' },
-            training: { weeklyLoad: {}, latestCompletedWorkout: null },
-            runningDays: [],
-          });
-          const timestamp = Date.now();
-          const nonce = crypto.randomUUID();
-          const signature = crypto.createHmac('sha256', secret)
-            .update(`${timestamp}.${nonce}.${contextJson}`)
-            .digest('hex');
+          const endpoint = 'https://ben-hq-garmin-refresh.br347213.workers.dev/status';
           const started = Date.now();
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { origin, 'content-type': 'application/json' },
-            body: JSON.stringify({ timestamp, nonce, signature, contextJson }),
-          });
+          const response = await fetch(endpoint, { headers: { accept: 'application/json' } });
           const text = await response.text();
           console.log(`HTTP ${response.status}`);
           console.log(`Elapsed ${Date.now() - started} ms`);
-          console.log(text.slice(0, 2000));
+          console.log(text);
           if (response.status !== 200) process.exit(1);
+          const payload = JSON.parse(text);
+          if (payload.workerVersion !== '2026-09-14b') process.exit(2);
+          if (!payload.bindings?.ai || !payload.bindings?.analysisSecret) process.exit(3);
           NODE
