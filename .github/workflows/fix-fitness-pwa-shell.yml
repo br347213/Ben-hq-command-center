@@ -1,3 +1,4 @@
+# trigger: source-level PWA repair
 name: Fix Fitness HQ PWA shell
 
 on:
@@ -75,7 +76,6 @@ jobs:
           s = s.replace('3.2.8', VERSION).replace('3.2.9', VERSION)
           s = s.replace(f'assets/my-command-center-logo.png?v={VERSION}', f'assets/my-command-center-logo.png?v={LOGO_TAG}')
 
-          # Remove the temporary app.js concatenation hotfix. The fixes now live in app.js itself.
           start = '  if (url.pathname.endsWith("/app.js")) {'
           if start in s:
               begin = s.index(start)
