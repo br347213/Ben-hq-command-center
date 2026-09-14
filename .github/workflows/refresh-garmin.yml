@@ -93,5 +93,7 @@ jobs:
           git add data/ben-hq-latest.enc.json
           if ! git diff --cached --quiet; then
             git commit -m "Refresh Garmin dashboard data"
+            git fetch origin gh-pages
+            git rebase origin/gh-pages
             git push origin HEAD:gh-pages
           fi
