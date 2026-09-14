@@ -8,168 +8,200 @@ def replace_once(text, old, new, label):
     return text.replace(old, new, 1)
 
 
-# index.html
-p = Path("index.html")
-s = p.read_text()
-s = s.replace("3.2.7", "3.2.8")
-old_actions = '<div class="settings-actions"><button class="secondary-button" id="enterSyncKey" type="button">Connect sync key</button></div>'
-new_actions = '<div class="settings-actions"><button class="secondary-button" id="enterSyncKey" type="button">Connect sync key</button><button class="secondary-button" id="enterAnalysisKey" type="button">Connect analysis key</button></div>'
-if 'id="enterAnalysisKey"' not in s:
-    s = replace_once(s, old_actions, new_actions, "settings analysis key button")
-if 'id="analysisKeyPanel"' not in s:
-    panel = '''
-    <div class="secure-entry-backdrop" id="analysisKeyPanel" hidden>
-      <section class="secure-entry-card" role="dialog" aria-modal="true" aria-labelledby="analysisKeyTitle">
-        <button class="secure-entry-close" id="closeAnalysisKeyPanel" type="button" aria-label="Close analysis key entry">×</button>
-        <p class="eyebrow">Live coaching setup</p>
-        <h2 id="analysisKeyTitle">Connect analysis key</h2>
-        <p>This key is only for live AI coaching. Generate a new one here, copy it into Cloudflare as <strong>ANALYSIS_SHARED_SECRET</strong>, then save the same key here.</p>
-        <form id="analysisKeyForm">
-          <label for="analysisKeyInput">Private analysis key</label>
-          <input id="analysisKeyInput" name="analysisKey" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" minlength="32" required />
-          <div class="secure-entry-actions">
-            <button class="secondary-button" id="generateAnalysisKey" type="button">Generate new key</button>
-            <button class="primary-button" type="submit">Save analysis key</button>
-            <button class="text-button" id="cancelAnalysisKeyPanel" type="button">Cancel</button>
-          </div>
-          <p class="secure-entry-note">After generating, tap the field, Select All, and Copy before saving. Do not share this key anywhere else.</p>
-        </form>
-      </section>
-    </div>
-'''
-    marker = '<script src="app.js?v=3.2.8"></script>'
-    if marker not in s:
-        marker = '<script src="app.js"></script>'
-    if marker not in s:
-        raise SystemExit("app script marker not found")
-    s = s.replace(marker, panel + "    " + marker, 1)
-p.write_text(s)
-
-# app.js
-p = Path("app.js")
-s = p.read_text()
-s = replace_once(s, 'const APP_VERSION = "3.2.7";', 'const APP_VERSION = "3.2.8";', "app version")
-if 'analysisKey: "fitness-hq-analysis-key-v1"' not in s:
-    s = replace_once(s, '  sync: "fitness-hq-sync-v1",', '  sync: "fitness-hq-sync-v1",\n  analysisKey: "fitness-hq-analysis-key-v1",', "analysis storage")
-if 'let analysisKey = localStorage.getItem(STORAGE.analysisKey)' not in s:
-    s = replace_once(s, 'let syncSettings = loadSyncSettings();', 'let syncSettings = loadSyncSettings();\nlet analysisKey = localStorage.getItem(STORAGE.analysisKey) || "";', "analysis key state")
-old_sign = '''async function signRefreshRequest(timestamp, nonce, signedPayload = "") {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(syncSettings.key),'''
-new_sign = '''async function signRefreshRequest(timestamp, nonce, signedPayload = "", secret = syncSettings.key) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),'''
-if new_sign not in s:
-    s = replace_once(s, old_sign, new_sign, "signing helper")
-old_guard = '''  if (!syncSettings.key || !hasHealthData()) {
-    liveAnalysisState = { status: "unavailable", reason, error: "Garmin data or the private sync key is unavailable." };'''
-new_guard = '''  if (!analysisKey || !hasHealthData()) {
-    liveAnalysisState = { status: "unavailable", reason, error: "Garmin data or the private analysis key is unavailable." };'''
-if new_guard not in s:
-    s = replace_once(s, old_guard, new_guard, "analysis key guard")
-old_analysis_sign = '      const signature = await signRefreshRequest(timestamp, nonce, contextJson);'
-new_analysis_sign = '      const signature = await signRefreshRequest(timestamp, nonce, contextJson, analysisKey);'
-if new_analysis_sign not in s:
-    s = replace_once(s, old_analysis_sign, new_analysis_sign, "analysis signature")
-if "function openAnalysisKeyPanel()" not in s:
-    functions = '''function openAnalysisKeyPanel() {
-  const panel = document.getElementById("analysisKeyPanel");
-  const input = document.getElementById("analysisKeyInput");
-  input.value = analysisKey;
-  panel.hidden = false;
-  window.requestAnimationFrame(() => { input.focus(); input.select(); });
-}
-
-function closeAnalysisKeyPanel() {
-  document.getElementById("analysisKeyPanel").hidden = true;
-}
-
-function generateAnalysisKey() {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  let binary = "";
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-  const value = btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
-  const input = document.getElementById("analysisKeyInput");
-  input.value = value;
-  input.focus();
-  input.select();
-  showToast("New analysis key generated. Copy it to Cloudflare, then save it here.");
-}
-
-async function connectAnalysisKey(event) {
-  event.preventDefault();
-  const value = document.getElementById("analysisKeyInput").value.trim();
-  if (value.length < 32) {
-    showToast("Use an analysis key at least 32 characters long.");
-    return;
-  }
-  analysisKey = value;
-  localStorage.setItem(STORAGE.analysisKey, analysisKey);
-  closeAnalysisKeyPanel();
-  const button = document.getElementById("enterAnalysisKey");
-  if (button) button.textContent = "Replace analysis key";
-  showToast("Analysis key saved. Testing live coaching now.");
-  if (hasHealthData()) await requestLiveAnalysis("analysis key connected");
-}
-
-'''
-    s = replace_once(s, "function openSyncKeyPanel() {", functions + "function openSyncKeyPanel() {", "analysis key functions")
-status_line = '  connectButton.textContent = syncSettings.key ? "Replace sync key" : "Connect sync key";'
-status_new = status_line + '\n  const analysisButton = document.getElementById("enterAnalysisKey");\n  if (analysisButton) analysisButton.textContent = analysisKey ? "Replace analysis key" : "Connect analysis key";'
-if "analysisButton.textContent = analysisKey" not in s:
-    s = replace_once(s, status_line, status_new, "analysis key button state")
-event_line = '  document.getElementById("enterSyncKey").addEventListener("click", openSyncKeyPanel);'
-event_new = event_line + '''
-  document.getElementById("enterAnalysisKey")?.addEventListener("click", openAnalysisKeyPanel);
-  document.getElementById("analysisKeyForm")?.addEventListener("submit", connectAnalysisKey);
-  document.getElementById("generateAnalysisKey")?.addEventListener("click", generateAnalysisKey);
-  document.getElementById("closeAnalysisKeyPanel")?.addEventListener("click", closeAnalysisKeyPanel);
-  document.getElementById("cancelAnalysisKeyPanel")?.addEventListener("click", closeAnalysisKeyPanel);
-  document.getElementById("analysisKeyPanel")?.addEventListener("click", (event) => {
-    if (event.target.id === "analysisKeyPanel") closeAnalysisKeyPanel();
-  });'''
-if 'analysisKeyForm")?.addEventListener' not in s:
-    s = replace_once(s, event_line, event_new, "analysis key events")
-p.write_text(s)
-
-# Worker authentication split.
 p = Path("refresh-worker/src/index.js")
 s = p.read_text()
-old_auth = '''async function authenticate(body, env, signedPayload = "") {
-  if (!validEnvelope(body)) return false;
-  const actual = decodeHex(body.signature);
-  const expected = await expectedSignature(env.REFRESH_SHARED_SECRET, `${body.timestamp}.${body.nonce}${signedPayload ? `.${signedPayload}` : ""}`);
-  return equalBytes(actual, expected);
-}'''
-new_auth = '''async function authenticate(body, secret, signedPayload = "") {
-  if (!validEnvelope(body) || !secret) return false;
-  try {
-    const actual = decodeHex(body.signature);
-    const expected = await expectedSignature(secret, `${body.timestamp}.${body.nonce}${signedPayload ? `.${signedPayload}` : ""}`);
-    return equalBytes(actual, expected);
-  } catch (error) {
-    console.error("Worker authentication failed", error);
-    return false;
+
+s = replace_once(
+    s,
+    'const WORKER_VERSION = "2026-09-14b";',
+    'const WORKER_VERSION = "2026-09-14c";',
+    "worker version",
+)
+
+marker = '''function targetRun(context, slot) {
+'''
+helpers = r'''function finiteNumber(value) {
+  const number = Number(value);
+  return value !== null && value !== undefined && value !== "" && Number.isFinite(number) ? number : null;
+}
+
+function healthContextPoints(context) {
+  const health = context?.health || {};
+  const baselines = health.baselines || {};
+  const sleep = finiteNumber(health.sleepHours);
+  const sleepBaseline = finiteNumber(baselines.sleep7Day);
+  const restingHr = finiteNumber(health.restingHr);
+  const restingHrBaseline = finiteNumber(baselines.restingHr7Day);
+  const bodyBattery = finiteNumber(health.bodyBattery);
+  const stress = finiteNumber(health.stress);
+  const points = [];
+
+  if (sleep !== null && restingHr !== null) {
+    points.push(`Latest sleep is ${sleep.toFixed(1)} h and resting HR is ${Math.round(restingHr)} bpm; use the pair as context rather than a single readiness score.`);
+  } else if (sleepBaseline !== null && restingHrBaseline !== null) {
+    points.push(`Fresh daily recovery readings are incomplete; available 7-day baselines are ${sleepBaseline.toFixed(1)} h sleep and ${Math.round(restingHrBaseline)} bpm resting HR.`);
+  } else if (sleep !== null || sleepBaseline !== null || restingHr !== null || restingHrBaseline !== null) {
+    const sleepText = sleep !== null ? `${sleep.toFixed(1)} h latest sleep` : sleepBaseline !== null ? `${sleepBaseline.toFixed(1)} h 7-day sleep baseline` : "sleep unavailable";
+    const hrText = restingHr !== null ? `${Math.round(restingHr)} bpm latest resting HR` : restingHrBaseline !== null ? `${Math.round(restingHrBaseline)} bpm 7-day resting-HR baseline` : "resting HR unavailable";
+    points.push(`${sleepText}; ${hrText}. Treat missing daily values as unavailable rather than inferring them.`);
+  } else {
+    points.push("Current sleep and resting-HR readings are unavailable, so the coaching read should not infer recovery from those signals.");
   }
-}'''
-if new_auth not in s:
-    s = replace_once(s, old_auth, new_auth, "worker auth helper")
-if "authenticate(body, env.ANALYSIS_SHARED_SECRET, contextJson)" not in s:
-    s = replace_once(s, "authenticate(body, env, contextJson)", "authenticate(body, env.ANALYSIS_SHARED_SECRET, contextJson)", "analysis worker secret")
-if "authenticate(body, env.REFRESH_SHARED_SECRET)" not in s:
-    s = replace_once(s, "authenticate(body, env)", "authenticate(body, env.REFRESH_SHARED_SECRET)", "refresh worker secret")
-p.write_text(s)
 
-# Worker docs.
-p = Path("refresh-worker/README.md")
-s = p.read_text()
-if '- `ANALYSIS_SHARED_SECRET`' not in s:
-    s = replace_once(s, '- `REFRESH_SHARED_SECRET`', '- `REFRESH_SHARED_SECRET`\n- `ANALYSIS_SHARED_SECRET`', "worker README secret")
-p.write_text(s)
+  if (bodyBattery !== null || stress !== null) {
+    const pieces = [];
+    if (bodyBattery !== null) pieces.push(`Body Battery ${Math.round(bodyBattery)}`);
+    if (stress !== null) pieces.push(`stress ${Math.round(stress)}`);
+    points.push(`${pieces.join(" and ")} add context, but should be weighed with recent training and how you feel.`);
+  } else {
+    points.push("Body Battery and stress are unavailable; recent training, sleep/heart-rate context, and your own feedback carry more weight today.");
+  }
 
-# PWA cache/version.
-p = Path("sw.js")
-s = p.read_text().replace("fitness-hq-v63", "fitness-hq-v64").replace("3.2.7", "3.2.8")
+  return points.slice(0, 3);
+}
+
+function groundAerobicEffectText(value, context, fallback) {
+  let output = text(value, fallback);
+  const actual = finiteNumber(context?.training?.latestCompletedWorkout?.activity?.aerobicEffect);
+  if (actual !== null) {
+    output = output.replace(/(aerobic(?: training)? effect(?: of)?\s*)(\d+(?:\.\d+)?)/gi, `$1${actual.toFixed(1)}`);
+  } else if (/aerobic(?: training)? effect/i.test(output)) {
+    output = fallback;
+  }
+  return output;
+}
+
+function groundedWorkoutSignals(context) {
+  const latest = context?.training?.latestCompletedWorkout;
+  if (!latest?.activity) return [];
+  const activity = latest.activity || {};
+  const scheduled = latest.scheduledPlanOnThatDate || {};
+  const weekly = context?.training?.weeklyLoad || {};
+  const health = context?.health || {};
+  const baselines = health.baselines || {};
+  const signals = [];
+
+  const planned = String(scheduled.title || "").trim();
+  const performed = String(activity.name || activity.type || "").trim();
+  if (planned || performed) {
+    signals.push({
+      label: "Intent versus execution",
+      value: planned && performed ? `${planned} → ${performed}` : (performed || planned),
+      detail: latest.occurredOn ? `Same-date comparison for ${latest.occurredOn}` : "Same-date plan and recorded activity",
+    });
+  }
+
+  const aerobicEffect = finiteNumber(activity.aerobicEffect);
+  const averageHr = finiteNumber(activity.averageHr);
+  if (aerobicEffect !== null) {
+    signals.push({
+      label: "Cardiovascular cost",
+      value: `Garmin aerobic effect ${aerobicEffect.toFixed(1)}`,
+      detail: "Recorded Garmin value from the latest completed workout",
+    });
+  } else if (averageHr !== null) {
+    signals.push({
+      label: "Cardiovascular cost",
+      value: `${Math.round(averageHr)} bpm average HR`,
+      detail: "Recorded average heart rate; wrist HR is useful but not perfectly precise",
+    });
+  }
+
+  const temperature = finiteNumber(activity.weather?.temperatureF);
+  const humidity = finiteNumber(activity.weather?.relativeHumidityPct);
+  if (temperature !== null || humidity !== null) {
+    const weatherParts = [];
+    if (temperature !== null) weatherParts.push(`${Math.round(temperature)}°F`);
+    if (humidity !== null) weatherParts.push(`${Math.round(humidity)}% humidity`);
+    signals.push({
+      label: "Conditions",
+      value: weatherParts.join(" · "),
+      detail: "Recorded conditions for the latest workout",
+    });
+  }
+
+  const weeklyMiles = finiteNumber(weekly.distanceMiles);
+  const loadChange = finiteNumber(weekly.distanceChangePct);
+  if (weeklyMiles !== null || loadChange !== null) {
+    const loadParts = [];
+    if (weeklyMiles !== null) loadParts.push(`${weeklyMiles.toFixed(1)} mi in 7 days`);
+    if (loadChange !== null) loadParts.push(`${loadChange >= 0 ? "+" : ""}${Math.round(loadChange)}% vs prior 7 days`);
+    signals.push({
+      label: "Load context",
+      value: loadParts.join(" · "),
+      detail: "Recent running load surrounding the session",
+    });
+  }
+
+  if (signals.length < 2) {
+    const sleep = finiteNumber(health.sleepHours ?? baselines.sleep7Day);
+    const restingHr = finiteNumber(health.restingHr ?? baselines.restingHr7Day);
+    if (sleep !== null || restingHr !== null) {
+      const parts = [];
+      if (sleep !== null) parts.push(`${sleep.toFixed(1)} h sleep context`);
+      if (restingHr !== null) parts.push(`${Math.round(restingHr)} bpm resting HR`);
+      signals.push({ label: "Recovery context", value: parts.join(" · "), detail: "Available recovery context used for interpretation" });
+    }
+  }
+
+  return signals.slice(0, 4);
+}
+
+'''
+if "function healthContextPoints(context)" not in s:
+    s = replace_once(s, marker, helpers + marker, "grounding helpers")
+
+old_signals = '''  const rawSignals = Array.isArray(analysis.workoutAnalysis?.signals) ? analysis.workoutAnalysis.signals : [];
+  const signals = rawSignals
+    .filter((item) => item && typeof item === "object")
+    .slice(0, 4)
+    .map((item) => ({
+      label: text(item.label, "Load context", 60),
+      value: text(item.value, "Current context", 120),
+      detail: text(item.detail, "Interpreted with the surrounding training week", 180),
+    }));
+  if (signals.length < 2) {
+    signals.push(
+      { label: "Load context", value: "Recent training considered", detail: "The latest session was interpreted with surrounding load." },
+      { label: "Recovery context", value: "Current recovery considered", detail: "Sleep, heart-rate, stress, and subjective context were weighed when available." },
+    );
+  }
+'''
+new_signals = '''  const signals = groundedWorkoutSignals(context);
+  if (signals.length < 2) {
+    signals.push(
+      { label: "Load context", value: "Recent training considered", detail: "The latest session was interpreted with surrounding load." },
+      { label: "Recovery context", value: "Available recovery considered", detail: "Missing recovery values were treated as unavailable rather than inferred." },
+    );
+  }
+'''
+s = replace_once(s, old_signals, new_signals, "grounded workout signals")
+
+old_health = '''    dailyHealth: {
+      headline: text(analysis.dailyHealth?.headline, "Use the current recovery picture as context, not a score"),
+      points: textList(analysis.dailyHealth?.points, [
+        "Read sleep and heart-rate trends together rather than reacting to one number.",
+        "Let unusual fatigue, pain, illness, or stress lower today's training cost.",
+      ], 2, 3),
+    },'''
+new_health = '''    dailyHealth: {
+      headline: text(analysis.dailyHealth?.headline, "Use the current recovery picture as context, not a score"),
+      points: healthContextPoints(context),
+    },'''
+s = replace_once(s, old_health, new_health, "grounded daily health")
+
+old_workout = '''      title: text(analysis.workoutAnalysis?.title, latest ? `Use ${latestName} to set the cost of the next session` : "Waiting for a completed Garmin workout"),
+      body: text(analysis.workoutAnalysis?.body, latest ? "Judge the completed session against its same-day plan and the surrounding training week rather than treating completion itself as proof of success." : "No completed Garmin workout is available to analyze yet."),
+      effect: text(analysis.workoutAnalysis?.effect, latest ? "The practical effect is how much recovery cost this session adds before the next scheduled workout." : "No training effect can be inferred without a recorded session."),'''
+new_workout = '''      title: groundAerobicEffectText(analysis.workoutAnalysis?.title, context, latest ? `Use ${latestName} to set the cost of the next session` : "Waiting for a completed Garmin workout"),
+      body: groundAerobicEffectText(analysis.workoutAnalysis?.body, context, latest ? "Judge the completed session against its same-day plan and the surrounding training week rather than treating completion itself as proof of success." : "No completed Garmin workout is available to analyze yet."),
+      effect: groundAerobicEffectText(analysis.workoutAnalysis?.effect, context, latest ? "The practical effect is how much recovery cost this session adds before the next scheduled workout." : "No training effect can be inferred without a recorded session."),'''
+s = replace_once(s, old_workout, new_workout, "ground aerobic effect prose")
+
+old_prompt = '''Keep every prose field concise for a phone. Address Ben as "you". No Markdown, HTML, URLs, or decorative bullets inside strings.
+'''
+new_prompt = '''Keep every prose field concise for a phone. Address Ben as "you". No Markdown, HTML, URLs, or decorative bullets inside strings. Never output the literal values null, undefined, or NaN. Do not convert units that were not supplied. If a current health value is missing, call it unavailable rather than inventing or substituting a different metric. If you cite Garmin aerobic effect, use the exact latestCompletedWorkout.activity.aerobicEffect value supplied in the context.
+'''
+s = replace_once(s, old_prompt, new_prompt, "grounding prompt")
+
 p.write_text(s)
