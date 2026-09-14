@@ -37,11 +37,11 @@ jobs:
 
           test = Path('scripts/test-live-analysis-worker.mjs')
           test_text = test.read_text(encoding='utf-8')
-          old_assert = 'assert.equal(model, "@cf/openai/gpt-oss-20b");'
-          new_assert = 'assert.equal(model, "@cf/meta/llama-3.1-8b-instruct-fast");'
-          if test_text.count(old_assert) != 1:
-              raise SystemExit(f'expected one old model assertion, found {test_text.count(old_assert)}')
-          test.write_text(test_text.replace(old_assert, new_assert, 1), encoding='utf-8')
+          old_name = '@cf/openai/gpt-oss-20b'
+          new_name = '@cf/meta/llama-3.1-8b-instruct-fast'
+          if test_text.count(old_name) != 2:
+              raise SystemExit(f'expected two old model references, found {test_text.count(old_name)}')
+          test.write_text(test_text.replace(old_name, new_name), encoding='utf-8')
           PY
 
       - name: Install worker dependencies
