@@ -15,7 +15,7 @@ const DAILY_ANALYSIS_WINDOWS = Object.freeze([
   { id: "midday", startHour: 12 },
   { id: "evening", startHour: 18 },
 ]);
-const APP_VERSION = "3.2.8";
+const APP_VERSION = "3.2.10";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -2723,12 +2723,24 @@ async function refreshDashboardData() {
     const analyzed = await requestLiveAnalysis("manual Garmin refresh");
     showToast(analyzed ? "Garmin and fresh coaching analysis are up to date." : "Garmin updated. Live coaching analysis is unavailable right now.");
   } catch {
-    syncSettings.status = "error";
-    syncSettings.progress = "";
-    syncSettings.error = "The Garmin refresh did not finish.";
-    saveSyncSettings();
-    renderSyncStatus();
-    showToast("Garmin did not finish refreshing. Your last good data is still here.");
+    // If on-demand cloud dispatch is unavailable, still pull the newest published
+    // Garmin snapshot and force a coaching refresh. Preserve last-known-good data
+    // if even that fallback cannot complete.
+    try {
+      const packet = await fetchLatestPrivatePacket();
+      installPrivatePacket(packet, true);
+      const analyzed = await requestLiveAnalysis("manual snapshot refresh");
+      showToast(analyzed
+        ? "Latest Garmin snapshot checked and coaching refreshed."
+        : "Latest Garmin snapshot checked. Live coaching analysis is unavailable right now.");
+    } catch {
+      syncSettings.status = "error";
+      syncSettings.progress = "";
+      syncSettings.error = "The Garmin refresh did not finish.";
+      saveSyncSettings();
+      renderSyncStatus();
+      showToast("Garmin did not finish refreshing. Your last good data is still here.");
+    }
   }
 }
 
