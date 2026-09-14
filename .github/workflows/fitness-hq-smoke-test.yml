@@ -1,0 +1,49 @@
+name: Fitness HQ live smoke test
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    if: github.event.head_commit.message == 'Run Fitness HQ live smoke test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call deployed analysis endpoint
+        env:
+          BEN_HQ_SYNC_KEY: ${{ secrets.BEN_HQ_SYNC_KEY }}
+        run: |
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          const endpoint = 'https://ben-hq-garmin-refresh.br347213.workers.dev/analyze';
+          const origin = 'https://br347213.github.io';
+          const secret = process.env.BEN_HQ_SYNC_KEY || '';
+          if (!secret) throw new Error('BEN_HQ_SYNC_KEY is unavailable');
+          const contextJson = JSON.stringify({
+            schemaVersion: 1,
+            currentDate: new Date().toISOString().slice(0, 10),
+            athlete: { name: 'Ben' },
+            training: { weeklyLoad: {}, latestCompletedWorkout: null },
+            runningDays: [],
+          });
+          const timestamp = Date.now();
+          const nonce = crypto.randomUUID();
+          const signature = crypto.createHmac('sha256', secret)
+            .update(`${timestamp}.${nonce}.${contextJson}`)
+            .digest('hex');
+          const started = Date.now();
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { origin, 'content-type': 'application/json' },
+            body: JSON.stringify({ timestamp, nonce, signature, contextJson }),
+          });
+          const text = await response.text();
+          console.log(`HTTP ${response.status}`);
+          console.log(`Elapsed ${Date.now() - started} ms`);
+          console.log(text.slice(0, 2000));
+          if (response.status !== 200) process.exit(1);
+          NODE
