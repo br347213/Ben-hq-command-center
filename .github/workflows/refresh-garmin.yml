@@ -2,6 +2,8 @@ name: Refresh Garmin dashboard
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "15 10,16,22 * * *"
   push:
     branches:
       - gh-pages
