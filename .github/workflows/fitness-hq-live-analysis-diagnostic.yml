@@ -16,8 +16,8 @@ jobs:
         env:
           BEN_HQ_SYNC_KEY: ${{ secrets.BEN_HQ_SYNC_KEY }}
         run: |
-          node <<'NODE'
-          const crypto = require('crypto');
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
           const endpoint = 'https://ben-hq-garmin-refresh.br347213.workers.dev/analyze';
           const origin = 'https://br347213.github.io';
           const secret = process.env.BEN_HQ_SYNC_KEY || '';
