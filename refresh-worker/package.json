@@ -1,0 +1,8 @@
+{
+  "name": "fitness-hq-refresh-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "jsonrepair": "3.15.0"
+  }
+}
