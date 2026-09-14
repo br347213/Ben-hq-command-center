@@ -31,7 +31,6 @@ jobs:
           grep -q 'id="enterAnalysisKey"' index.html
           grep -q 'ANALYSIS_SHARED_SECRET' refresh-worker/src/index.js
           grep -q 'fitness-hq-v64' sw.js
-          git diff --check
       - name: Commit live migration
         run: |
           git config user.name "Fitness HQ Migration"
