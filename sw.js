@@ -1,4 +1,4 @@
-const CACHE_NAME = "fitness-hq-v66";
+const CACHE_NAME = "fitness-hq-v67";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -22,19 +22,24 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function freshRequest(request) {
+  return new Request(request, { cache: "no-store" });
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
+  const sameOrigin = url.origin === self.location.origin;
 
   if (url.pathname.endsWith("/data/ben-hq-latest.enc.json")) {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    event.respondWith(fetch(freshRequest(event.request)).catch(() => caches.match(event.request)));
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
+    fetch(sameOrigin ? freshRequest(event.request) : event.request)
       .then((response) => {
-        if (response.ok && url.origin === self.location.origin) {
+        if (response.ok && sameOrigin) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         }
