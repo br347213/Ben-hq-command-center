@@ -203,11 +203,16 @@ function validEnvelope(body) {
     && /^[0-9a-f-]{20,64}$/i.test(nonce);
 }
 
-async function authenticate(body, env, signedPayload = "") {
-  if (!validEnvelope(body)) return false;
-  const actual = decodeHex(body.signature);
-  const expected = await expectedSignature(env.REFRESH_SHARED_SECRET, `${body.timestamp}.${body.nonce}${signedPayload ? `.${signedPayload}` : ""}`);
-  return equalBytes(actual, expected);
+async function authenticate(body, secret, signedPayload = "") {
+  if (!validEnvelope(body) || !secret) return false;
+  try {
+    const actual = decodeHex(body.signature);
+    const expected = await expectedSignature(secret, `${body.timestamp}.${body.nonce}${signedPayload ? `.${signedPayload}` : ""}`);
+    return equalBytes(actual, expected);
+  } catch (error) {
+    console.error("Worker authentication failed", error);
+    return false;
+  }
 }
 
 function parseModelResponse(result) {
@@ -456,7 +461,7 @@ async function analyze(body, origin, env) {
   if (!contextJson || new TextEncoder().encode(contextJson).byteLength > MAX_CONTEXT_BYTES) {
     return response({ error: "Analysis context is missing or too large" }, 413, origin, env);
   }
-  if (!(await authenticate(body, env, contextJson))) return response({ error: "Signature rejected" }, 401, origin, env);
+  if (!(await authenticate(body, env.ANALYSIS_SHARED_SECRET, contextJson))) return response({ error: "Signature rejected" }, 401, origin, env);
 
   let context;
   try {
@@ -596,7 +601,7 @@ async function analyze(body, origin, env) {
 }
 
 async function dispatchRefresh(body, origin, env) {
-  if (!(await authenticate(body, env))) return response({ error: "Expired or invalid request" }, 401, origin, env);
+  if (!(await authenticate(body, env.REFRESH_SHARED_SECRET))) return response({ error: "Expired or invalid request" }, 401, origin, env);
   const workflowUrl = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/actions/workflows/${env.GITHUB_WORKFLOW_FILE}/dispatches`;
   const dispatched = await fetch(workflowUrl, {
     method: "POST",

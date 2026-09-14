@@ -5,6 +5,7 @@ This Cloudflare Worker accepts signed requests from Fitness HQ. `/refresh` start
 Required Worker secrets:
 
 - `REFRESH_SHARED_SECRET`
+- `ANALYSIS_SHARED_SECRET`
 - `GITHUB_DISPATCH_TOKEN`
 
 Required GitHub Actions secrets:

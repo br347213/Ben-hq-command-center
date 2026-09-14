@@ -15,7 +15,7 @@ const DAILY_ANALYSIS_WINDOWS = Object.freeze([
   { id: "midday", startHour: 12 },
   { id: "evening", startHour: 18 },
 ]);
-const APP_VERSION = "3.2.7";
+const APP_VERSION = "3.2.8";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -243,6 +243,7 @@ const WEEK = [
 const STORAGE = {
   completions: "fitness-hq-completions-v1",
   sync: "fitness-hq-sync-v1",
+  analysisKey: "fitness-hq-analysis-key-v1",
   packet: "fitness-hq-private-packet-v1",
   legacySync: "ben-hq-auto-sync-v1",
   legacyPacket: "ben-hq-private-daily-v1",
@@ -263,6 +264,7 @@ let currentView = "today";
 let calendarCursor = new Date();
 let completions = readJson(STORAGE.completions, {});
 let syncSettings = loadSyncSettings();
+let analysisKey = localStorage.getItem(STORAGE.analysisKey) || "";
 let privatePacket = loadPrivatePacket();
 let workoutFeedback = readJson(STORAGE.feedback, {});
 let recommendationHistory = readJson(STORAGE.recommendationHistory, {});
@@ -748,8 +750,8 @@ function resolvedRunRecommendation(date, coaching = buildCoachingContext()) {
 
 async function requestLiveAnalysis(reason = "app load") {
   if (liveAnalysisRequest) return liveAnalysisRequest;
-  if (!syncSettings.key || !hasHealthData()) {
-    liveAnalysisState = { status: "unavailable", reason, error: "Garmin data or the private sync key is unavailable." };
+  if (!analysisKey || !hasHealthData()) {
+    liveAnalysisState = { status: "unavailable", reason, error: "Garmin data or the private analysis key is unavailable." };
     renderAllTracking();
     return false;
   }
@@ -762,7 +764,7 @@ async function requestLiveAnalysis(reason = "app load") {
       const contextJson = JSON.stringify(buildLiveAnalysisContext(reason));
       const timestamp = Date.now();
       const nonce = crypto.randomUUID();
-      const signature = await signRefreshRequest(timestamp, nonce, contextJson);
+      const signature = await signRefreshRequest(timestamp, nonce, contextJson, analysisKey);
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), 70_000);
       let response;
@@ -2654,10 +2656,10 @@ function bytesToHex(bytes) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function signRefreshRequest(timestamp, nonce, signedPayload = "") {
+async function signRefreshRequest(timestamp, nonce, signedPayload = "", secret = syncSettings.key) {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(syncSettings.key),
+    new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -2759,6 +2761,8 @@ function renderSyncStatus() {
     railText.textContent = "Garmin not connected";
   }
   connectButton.textContent = syncSettings.key ? "Replace sync key" : "Connect sync key";
+  const analysisButton = document.getElementById("enterAnalysisKey");
+  if (analysisButton) analysisButton.textContent = analysisKey ? "Replace analysis key" : "Connect analysis key";
   dot.classList.toggle("offline", !(syncSettings.status === "live" || hasData));
   const isChecking = syncSettings.status === "checking";
   dashboardButton.disabled = isChecking;
@@ -2773,6 +2777,46 @@ function renderSyncStatus() {
           ? "Ready to check"
           : "Connect Garmin";
   dashboardButton.setAttribute("aria-label", isChecking ? "Refreshing Garmin data" : `Refresh Garmin data. ${dashboardStatus.textContent}`);
+}
+
+function openAnalysisKeyPanel() {
+  const panel = document.getElementById("analysisKeyPanel");
+  const input = document.getElementById("analysisKeyInput");
+  input.value = analysisKey;
+  panel.hidden = false;
+  window.requestAnimationFrame(() => { input.focus(); input.select(); });
+}
+
+function closeAnalysisKeyPanel() {
+  document.getElementById("analysisKeyPanel").hidden = true;
+}
+
+function generateAnalysisKey() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  let binary = "";
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  const value = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  const input = document.getElementById("analysisKeyInput");
+  input.value = value;
+  input.focus();
+  input.select();
+  showToast("New analysis key generated. Copy it to Cloudflare, then save it here.");
+}
+
+async function connectAnalysisKey(event) {
+  event.preventDefault();
+  const value = document.getElementById("analysisKeyInput").value.trim();
+  if (value.length < 32) {
+    showToast("Use an analysis key at least 32 characters long.");
+    return;
+  }
+  analysisKey = value;
+  localStorage.setItem(STORAGE.analysisKey, analysisKey);
+  closeAnalysisKeyPanel();
+  const button = document.getElementById("enterAnalysisKey");
+  if (button) button.textContent = "Replace analysis key";
+  showToast("Analysis key saved. Testing live coaching now.");
+  if (hasHealthData()) await requestLiveAnalysis("analysis key connected");
 }
 
 function openSyncKeyPanel() {
@@ -2883,6 +2927,14 @@ function wireEvents() {
   document.getElementById("nextMonth").addEventListener("click", () => changeCalendarMonth(1));
   document.getElementById("jumpToCurrentMonth").addEventListener("click", () => { calendarCursor = new Date(); renderProgress(); });
   document.getElementById("enterSyncKey").addEventListener("click", openSyncKeyPanel);
+  document.getElementById("enterAnalysisKey")?.addEventListener("click", openAnalysisKeyPanel);
+  document.getElementById("analysisKeyForm")?.addEventListener("submit", connectAnalysisKey);
+  document.getElementById("generateAnalysisKey")?.addEventListener("click", generateAnalysisKey);
+  document.getElementById("closeAnalysisKeyPanel")?.addEventListener("click", closeAnalysisKeyPanel);
+  document.getElementById("cancelAnalysisKeyPanel")?.addEventListener("click", closeAnalysisKeyPanel);
+  document.getElementById("analysisKeyPanel")?.addEventListener("click", (event) => {
+    if (event.target.id === "analysisKeyPanel") closeAnalysisKeyPanel();
+  });
   document.getElementById("syncKeyForm").addEventListener("submit", connectSyncKey);
   document.getElementById("closeSyncKeyPanel").addEventListener("click", closeSyncKeyPanel);
   document.getElementById("cancelSyncKeyPanel").addEventListener("click", closeSyncKeyPanel);
