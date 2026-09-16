@@ -1,0 +1,78 @@
+from pathlib import Path
+
+VERSION = "3.2.11"
+
+app = Path("app.js")
+s = app.read_text()
+s = s.replace('const APP_VERSION = "3.2.10";', 'const APP_VERSION = "3.2.11";', 1)
+s = s.replace('"Garmin data is already current."', '`No newer Garmin snapshot is published yet. ${freshnessLabel(privatePacket.generatedAt)}.`', 1)
+s = s.replace('"Garmin data is up to date."', '`Garmin snapshot updated. ${freshnessLabel(privatePacket.generatedAt)}.`', 1)
+old_signature = '  const signature = await signRefreshRequest(timestamp, nonce);'
+new_signature = '  if (!analysisKey) throw new Error("Analysis key is required for on-demand Garmin refresh");\n  const signature = await signRefreshRequest(timestamp, nonce, "", analysisKey);'
+if old_signature not in s:
+    raise SystemExit("refresh signature pattern not found")
+s = s.replace(old_signature, new_signature, 1)
+
+old_freshness = '''function freshnessLabel(value) {
+  if (!value) return "Saved Garmin snapshot";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Saved Garmin snapshot";
+  return `Updated ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+}'''
+new_freshness = '''function freshnessLabel(value) {
+  if (!value) return "Saved Garmin snapshot";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Saved Garmin snapshot";
+  const now = new Date();
+  const sameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+  const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  if (sameDay) return `Updated today at ${time}`;
+  return `Updated ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at ${time}`;
+}'''
+if old_freshness not in s:
+    raise SystemExit("freshness pattern not found")
+s = s.replace(old_freshness, new_freshness, 1)
+
+old_fallback = '''      const packet = await fetchLatestPrivatePacket();
+      installPrivatePacket(packet, true);
+      const analyzed = await requestLiveAnalysis("manual snapshot refresh");
+      showToast(analyzed
+        ? "Latest Garmin snapshot checked and coaching refreshed."
+        : "Latest Garmin snapshot checked. Live coaching analysis is unavailable right now.");'''
+new_fallback = '''      const packet = await fetchLatestPrivatePacket();
+      installPrivatePacket(packet, false);
+      const analyzed = await requestLiveAnalysis("manual snapshot refresh");
+      const published = freshnessLabel(packet.generatedAt);
+      showToast(analyzed
+        ? `Latest published Garmin snapshot checked. ${published}. Coaching refreshed.`
+        : `Latest published Garmin snapshot checked. ${published}. Live coaching analysis is unavailable right now.`);'''
+if old_fallback not in s:
+    raise SystemExit("manual fallback pattern not found")
+s = s.replace(old_fallback, new_fallback, 1)
+app.write_text(s)
+
+worker = Path("refresh-worker/src/index.js")
+w = worker.read_text()
+w = w.replace('const WORKER_VERSION = "2026-09-14c";', 'const WORKER_VERSION = "2026-09-16a";', 1)
+old_dispatch = '''async function dispatchRefresh(body, origin, env) {
+  if (!env.REFRESH_SHARED_SECRET) return response({ error: "Garmin refresh secret is not configured", code: "REFRESH_SECRET_MISSING" }, 503, origin, env);
+  if (!env.GITHUB_DISPATCH_TOKEN) return response({ error: "GitHub dispatch token is not configured", code: "GITHUB_TOKEN_MISSING" }, 503, origin, env);
+  if (!(await authenticate(body, env.REFRESH_SHARED_SECRET))) return response({ error: "Expired or invalid request", code: "SIGNATURE_REJECTED" }, 401, origin, env);'''
+new_dispatch = '''async function dispatchRefresh(body, origin, env) {
+  if (!env.ANALYSIS_SHARED_SECRET) return response({ error: "Refresh authentication is not configured", code: "REFRESH_AUTH_MISSING" }, 503, origin, env);
+  if (!env.GITHUB_DISPATCH_TOKEN) return response({ error: "GitHub dispatch token is not configured", code: "GITHUB_TOKEN_MISSING" }, 503, origin, env);
+  if (!(await authenticate(body, env.ANALYSIS_SHARED_SECRET))) return response({ error: "Expired or invalid request", code: "SIGNATURE_REJECTED" }, 401, origin, env);'''
+if old_dispatch not in w:
+    raise SystemExit("dispatch pattern not found")
+w = w.replace(old_dispatch, new_dispatch, 1)
+w = w.replace('      refreshSecret: Boolean(env.REFRESH_SHARED_SECRET),', '      refreshAuth: Boolean(env.ANALYSIS_SHARED_SECRET),', 1)
+worker.write_text(w)
+
+index = Path("index.html")
+index.write_text(index.read_text().replace("3.2.10", VERSION))
+
+sw = Path("sw.js")
+sw.write_text(sw.read_text().replace("fitness-hq-v67", "fitness-hq-v68").replace("3.2.10", VERSION))
+
+manifest = Path("manifest.webmanifest")
+manifest.write_text(manifest.read_text().replace("3.2.10", VERSION))
