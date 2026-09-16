@@ -1,6 +1,6 @@
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 const ANALYSIS_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
-const WORKER_VERSION = "2026-09-14c";
+const WORKER_VERSION = "2026-09-16a";
 const MAX_CONTEXT_BYTES = 120_000;
 const ANALYSIS_TIMEOUT_MS = 50_000;
 
@@ -478,9 +478,9 @@ async function analyze(body, origin, env) {
 }
 
 async function dispatchRefresh(body, origin, env) {
-  if (!env.REFRESH_SHARED_SECRET) return response({ error: "Garmin refresh secret is not configured", code: "REFRESH_SECRET_MISSING" }, 503, origin, env);
+  if (!env.ANALYSIS_SHARED_SECRET) return response({ error: "Refresh authentication is not configured", code: "REFRESH_AUTH_MISSING" }, 503, origin, env);
   if (!env.GITHUB_DISPATCH_TOKEN) return response({ error: "GitHub dispatch token is not configured", code: "GITHUB_TOKEN_MISSING" }, 503, origin, env);
-  if (!(await authenticate(body, env.REFRESH_SHARED_SECRET))) return response({ error: "Expired or invalid request", code: "SIGNATURE_REJECTED" }, 401, origin, env);
+  if (!(await authenticate(body, env.ANALYSIS_SHARED_SECRET))) return response({ error: "Expired or invalid request", code: "SIGNATURE_REJECTED" }, 401, origin, env);
   const workflowUrl = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/actions/workflows/${env.GITHUB_WORKFLOW_FILE}/dispatches`;
   const dispatched = await fetch(workflowUrl, {
     method: "POST",
@@ -506,7 +506,7 @@ function statusPayload(env) {
     bindings: {
       ai: Boolean(env.AI),
       analysisSecret: Boolean(env.ANALYSIS_SHARED_SECRET),
-      refreshSecret: Boolean(env.REFRESH_SHARED_SECRET),
+      refreshAuth: Boolean(env.ANALYSIS_SHARED_SECRET),
       githubDispatchToken: Boolean(env.GITHUB_DISPATCH_TOKEN),
     },
   };

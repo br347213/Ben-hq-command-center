@@ -15,7 +15,7 @@ const DAILY_ANALYSIS_WINDOWS = Object.freeze([
   { id: "midday", startHour: 12 },
   { id: "evening", startHour: 18 },
 ]);
-const APP_VERSION = "3.2.10";
+const APP_VERSION = "3.2.11";
 const COACHING_MODEL_VERSION = "3.0";
 const COACHING_KNOWLEDGE = Object.freeze({
   principles: [
@@ -2615,8 +2615,8 @@ function installPrivatePacket(packet, showResult = false) {
     const message = importedDays
       ? `${importedDays} Garmin workout day${importedDays === 1 ? "" : "s"} marked complete.`
       : JSON.stringify(privatePacket) === previousPacket
-        ? "Garmin data is already current."
-        : "Garmin data is up to date.";
+        ? `No newer Garmin snapshot is published yet. ${freshnessLabel(privatePacket.generatedAt)}.`
+        : `Garmin snapshot updated. ${freshnessLabel(privatePacket.generatedAt)}.`;
     showToast(message);
   }
   return importedDays;
@@ -2676,7 +2676,8 @@ function wait(milliseconds) {
 async function triggerGarminRefresh() {
   const timestamp = Date.now();
   const nonce = crypto.randomUUID();
-  const signature = await signRefreshRequest(timestamp, nonce);
+  if (!analysisKey) throw new Error("Analysis key is required for on-demand Garmin refresh");
+  const signature = await signRefreshRequest(timestamp, nonce, "", analysisKey);
   const response = await fetch(GARMIN_REFRESH_ENDPOINT, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -2728,11 +2729,12 @@ async function refreshDashboardData() {
     // if even that fallback cannot complete.
     try {
       const packet = await fetchLatestPrivatePacket();
-      installPrivatePacket(packet, true);
+      installPrivatePacket(packet, false);
       const analyzed = await requestLiveAnalysis("manual snapshot refresh");
+      const published = freshnessLabel(packet.generatedAt);
       showToast(analyzed
-        ? "Latest Garmin snapshot checked and coaching refreshed."
-        : "Latest Garmin snapshot checked. Live coaching analysis is unavailable right now.");
+        ? `Latest published Garmin snapshot checked. ${published}. Coaching refreshed.`
+        : `Latest published Garmin snapshot checked. ${published}. Live coaching analysis is unavailable right now.`);
     } catch {
       syncSettings.status = "error";
       syncSettings.progress = "";
@@ -2748,7 +2750,11 @@ function freshnessLabel(value) {
   if (!value) return "Saved Garmin snapshot";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Saved Garmin snapshot";
-  return `Updated ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  const now = new Date();
+  const sameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+  const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  if (sameDay) return `Updated today at ${time}`;
+  return `Updated ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at ${time}`;
 }
 
 function renderSyncStatus() {
