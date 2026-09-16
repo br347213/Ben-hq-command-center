@@ -3,7 +3,7 @@ name: Refresh Garmin dashboard
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 10,22 * * *"
+    - cron: "17 10,16,22 * * *"
 
 permissions:
   contents: write
